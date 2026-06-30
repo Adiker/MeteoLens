@@ -1,5 +1,6 @@
 import { AlertTriangle, Layers, RefreshCw, X } from "lucide-react";
 
+import { API_BASE_URL } from "../api/client";
 import { activeAtBucket, useMapLayersQuery, useSourcesQuery, useWarningsQuery } from "../api/queries";
 import {
   cacheStatusLabel,
@@ -147,7 +148,9 @@ function WarningsList() {
       </h3>
       {warningsQuery.isLoading && <Spinner label="Ładowanie ostrzeżeń..." />}
       {warningsQuery.isError && (
-        <StateNotice tone="error" title="Nie udało się pobrać ostrzeżeń." />
+        <StateNotice tone="error" title="Nie udało się pobrać ostrzeżeń.">
+          Brak połączenia z backendem ({API_BASE_URL}).
+        </StateNotice>
       )}
       {!warningsQuery.isLoading && !warningsQuery.isError && warnings.length === 0 && (
         <StateNotice tone="info" title="Brak aktywnych ostrzeżeń">
@@ -202,7 +205,12 @@ function SourceStatus() {
         </button>
       </div>
       {sourcesQuery.isLoading && <Spinner label="Sprawdzanie źródeł..." />}
-      {sourcesQuery.isError && <StateNotice tone="error" title="Backend nie odpowiada." />}
+      {sourcesQuery.isError && (
+        <StateNotice tone="error" title="Backend nie odpowiada.">
+          Nie udało się połączyć z {API_BASE_URL}. Sprawdź, czy backend MeteoLens działa pod tym
+          adresem (ten port może zajmować inna aplikacja).
+        </StateNotice>
+      )}
       <ul className="space-y-1 text-xs">
         {sources.map((source) => (
           <li key={source.key} className="flex items-center justify-between gap-2">
@@ -264,7 +272,7 @@ export function ControlPanel() {
       )}
       {mapQuery.isError && (
         <StateNotice tone="error" title="Nie udało się pobrać warstw mapy.">
-          Sprawdź, czy backend jest dostępny.
+          Brak połączenia z backendem ({API_BASE_URL}).
         </StateNotice>
       )}
 

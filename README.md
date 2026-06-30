@@ -83,7 +83,10 @@ npm run dev
 ```
 
 The frontend reads the backend base URL from `VITE_API_BASE_URL` (default
-`http://localhost:8000`). With an empty cache the UI shows explicit empty/stale
+`http://localhost:8000`). If port 8000 is taken by another app, run the backend
+elsewhere and point the frontend at it: copy `frontend/.env.example` to
+`frontend/.env.local`, set `VITE_API_BASE_URL=http://localhost:<port>`, and
+restart `npm run dev`. With an empty cache the UI shows explicit empty/stale
 states instead of mock data, so populate the backend cache to see live markers.
 
 Run both with Docker Compose:
