@@ -1,7 +1,8 @@
 import { AlertTriangle, Layers, RefreshCw, X } from "lucide-react";
 
 import { API_BASE_URL } from "../api/client";
-import { activeAtBucket, useMapLayersQuery, useSourcesQuery, useWarningsQuery } from "../api/queries";
+import { useMapLayersQuery, useSourcesQuery, useWarningsQuery } from "../api/queries";
+import { useActiveAt } from "../hooks/useActiveAt";
 import {
   cacheStatusLabel,
   formatTimestamp,
@@ -11,6 +12,7 @@ import {
 import { LAYERS, STATION_LAYERS, WARNING_LAYERS, type WarningType } from "../lib/layers";
 import { cn } from "../lib/utils";
 import { activeLayerKeys, useAppStore } from "../store/appStore";
+import { LocationSummary } from "./LocationSummary";
 import { Spinner, StateNotice } from "./primitives";
 
 const CACHE_DOT: Record<string, string> = {
@@ -125,13 +127,15 @@ function WarningsList() {
   const activeWarningLayers = WARNING_LAYERS.filter((l) => activeLayers[l.key]);
   const type: WarningType | undefined =
     activeWarningLayers.length === 1 ? activeWarningLayers[0].warningType : undefined;
+  // Ticks each minute so the "active" window advances while the panel stays open.
+  const activeAt = useActiveAt();
 
   const warningsQuery = useWarningsQuery({
     type,
     level: filters.warningLevel ?? undefined,
     phenomenon: filters.phenomenon.trim() || undefined,
     // Only show warnings whose validity window covers now; the list is labelled "active".
-    active_at: activeAtBucket(),
+    active_at: activeAt,
   });
 
   if (activeWarningLayers.length === 0) {
@@ -239,8 +243,8 @@ export function ControlPanel() {
     <aside
       className={cn(
         "absolute left-0 top-0 z-20 flex h-full w-[min(360px,100vw)] flex-col gap-4 overflow-y-auto border-r border-border bg-card/95 p-3 text-card-foreground shadow-lg backdrop-blur transition-transform lg:left-4 lg:top-4 lg:h-auto lg:max-h-[calc(100%-2rem)] lg:rounded-lg lg:border",
+        // `open` only drives the mobile drawer; the panel is always visible at lg.
         open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-        !open && "lg:hidden",
       )}
       aria-label="Panel warstw i filtrów"
     >
@@ -258,6 +262,7 @@ export function ControlPanel() {
         </button>
       </div>
 
+      <LocationSummary />
       <LayerToggles />
 
       {noActiveLayers && (
