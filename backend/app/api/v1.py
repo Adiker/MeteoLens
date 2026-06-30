@@ -409,7 +409,7 @@ def get_location_summary(
         if _warning_matches(warning, active_at=now)
     ]
 
-    cached_records = stations + _warnings_from_cache(cache)
+    cached_records = _stations_from_cache(cache) + _warnings_from_cache(cache)
     return LocationSummaryResponse(
         generated_at=now,
         cache=_cache_states(cache, STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS),

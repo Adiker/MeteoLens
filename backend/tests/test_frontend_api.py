@@ -155,6 +155,20 @@ def test_map_layers_include_points_and_missing_geometry(monkeypatch, tmp_path) -
     )
 
 
+def test_location_summary_distinguishes_missing_coords_from_empty_cache(
+    monkeypatch, tmp_path
+) -> None:
+    _seed_cache(tmp_path, ("synop",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/location/summary?lat=52.23&lon=21.01&radius_km=50")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["nearest_stations"] == []
+    assert payload["empty_state"]["code"] == "no_location_data"
+
+
 def test_location_summary_returns_nearest_cached_stations(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro", "meteo", "warningsmeteo"))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
