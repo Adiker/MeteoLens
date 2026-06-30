@@ -56,17 +56,18 @@
 
 ## Stage 4 - Backend API
 
-- [ ] Add `/health`.
-- [ ] Add `/api/v1/sources`.
-- [ ] Add `/api/v1/map/layers`.
-- [ ] Add `/api/v1/stations`.
-- [ ] Add `/api/v1/stations/{id}`.
-- [ ] Add `/api/v1/stations/{id}/observations`.
-- [ ] Add `/api/v1/warnings`.
-- [ ] Add `/api/v1/warnings/{id}`.
-- [ ] Add `/api/v1/location/summary`.
-- [ ] Add CSV/JSON/GeoJSON export endpoints.
-- [ ] Update `API_CONTRACT.md` after implementation.
+- [x] Add `/health`.
+- [x] Add `/api/v1/sources`.
+- [x] Add `/api/v1/map/layers`.
+- [x] Add `/api/v1/stations`.
+- [x] Add `/api/v1/stations/{id}`.
+- [x] Add `/api/v1/stations/{id}/observations`.
+- [x] Add `/api/v1/warnings`.
+- [x] Add `/api/v1/warnings/{id}`.
+- [x] Add `/api/v1/location/summary`.
+- [x] Add CSV/JSON/GeoJSON export endpoints.
+- [x] Add backend tests for cache-backed API endpoints and exports.
+- [x] Update `API_CONTRACT.md` after implementation.
 
 ## Stage 5 - Frontend
 

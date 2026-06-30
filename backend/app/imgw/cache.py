@@ -14,6 +14,17 @@ class CacheStatus(BaseModel):
     error: str | None = None
 
 
+class CachedSourcePayload(BaseModel):
+    source_key: str
+    url: str | None = None
+    retrieved_at: datetime
+    raw_payload: Any = None
+    normalized_payload: list[dict[str, Any]] = []
+    record_count: int = 0
+    parser_warnings: list[str] = []
+    error: str | None = None
+
+
 class SourceCache:
     def __init__(self, cache_dir: Path) -> None:
         self.cache_dir = cache_dir
@@ -56,6 +67,13 @@ class SourceCache:
             "error": error,
         }
         self._path_for(source_key).write_text(_json_dump(payload), encoding="utf-8")
+
+    def read(self, source_key: str) -> CachedSourcePayload | None:
+        cache_file = self._path_for(source_key)
+        if not cache_file.exists():
+            return None
+
+        return CachedSourcePayload.model_validate(_json_load(cache_file))
 
     def status(self, source_key: str, *, ttl_seconds: int) -> CacheStatus:
         cache_file = self._path_for(source_key)

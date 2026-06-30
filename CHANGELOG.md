@@ -10,6 +10,11 @@ All notable changes to MeteoLens will be documented in this file.
 - Added Stage 3 IMGW integration: HTTP client, source definitions, parser layer,
   normalized models, file cache, refresh endpoint, real-shape fixtures, and
   parser/cache/API tests.
+- Added Stage 4 backend API endpoints for map layers, stations, warnings,
+  location summaries, station CSV/JSON exports, and map GeoJSON exports backed
+  by normalized cache records.
+- Added Stage 4 backend tests for empty cache states, station/warning filters,
+  missing geometry metadata, and export attribution.
 - Documented IMGW-PIB source endpoints, archive entry points, fields, risks, and
   parser status.
 - Documented architecture decisions for frontend, backend, cache, database,
