@@ -88,8 +88,10 @@ Planned frontend module layout:
    missing-field, and processed-data metadata.
 
 Stage 3 implements the client, parser, normalization, and file-cache portions of
-this flow for current IMGW JSON endpoints. Stage 4 will expose map/station/
-warning API endpoints backed by those normalized records.
+this flow for current IMGW JSON endpoints. Stage 4 exposes map, station,
+warning, location summary, and export API endpoints backed by those normalized
+records. If cache is empty, these endpoints return an explicit empty state or a
+cache-specific error rather than mock data.
 
 ## Normalization Rules
 
@@ -155,6 +157,20 @@ responses must include:
 - `processed_notice`,
 - stable IDs for permalinks.
 
+Stage 4 API endpoints read from the normalized file cache written by source
+refreshes:
+
+- `/api/v1/map/layers`
+- `/api/v1/stations`
+- `/api/v1/stations/{id}`
+- `/api/v1/stations/{id}/observations`
+- `/api/v1/warnings`
+- `/api/v1/warnings/{id}`
+- `/api/v1/location/summary`
+- `/api/v1/export/station/{id}.csv`
+- `/api/v1/export/station/{id}.json`
+- `/api/v1/export/map.geojson`
+
 ## Map Layers
 
 MVP layers:
@@ -164,6 +180,13 @@ MVP layers:
 - meteorological stations,
 - meteorological warnings,
 - hydrological warnings.
+
+Hydrological and meteorological stations are emitted as GeoJSON point features
+when IMGW coordinates are present. Synoptic records currently lack coordinates
+in the public endpoint and are therefore listed in missing-geometry metadata
+unless a future source provides lat/lon. Warning records are exposed with TERYT,
+basin, or province area codes and marked as missing area geometry until TERYT
+and basin geometry datasets are added.
 
 Post-MVP layers:
 
@@ -187,6 +210,10 @@ Required export metadata:
 - filters and selected object IDs,
 - generated timestamp,
 - list of missing fields when applicable.
+
+Stage 4 implements station CSV, station JSON, and map GeoJSON exports from
+normalized cache records. The map GeoJSON export includes point features and
+foreign members for non-spatial warning records and missing-geometry metadata.
 
 ## Error Handling
 
@@ -216,6 +243,9 @@ Stage 4-5:
 - map layer rendering tests,
 - export tests,
 - basic E2E flows for map, selection, filters, details, and permalink.
+
+Stage 4 adds backend API and export tests using normalized cache records seeded
+from real-shape IMGW fixtures.
 
 ## Deployment
 

@@ -2,8 +2,8 @@
 
 Base path: `/api/v1`.
 
-This is the frontend-facing API contract target. It may change during Stage 4,
-but every public change must update this file.
+This is the frontend-facing API contract. Stage 4 implements the map, station,
+warning, location summary, and export endpoints from normalized cache records.
 
 ## Shared Metadata
 
@@ -33,6 +33,19 @@ Common object fields:
 - `missing_fields`: source fields absent or explicitly `null`.
 - `raw_available`: whether expert raw JSON can be requested.
 
+Collection responses include:
+
+- `generated_at`: response generation timestamp.
+- `cache`: per-source cache status with freshness, record count, parser
+  warnings, and error metadata.
+- `empty_state`: present when no normalized cached records are available or no
+  records match a narrow filter.
+
+When normalized cache is empty, collection endpoints return an explicit
+`empty_state` instead of mock data. Detail endpoints return `503` with
+`cache_empty` if no relevant cache exists, or `404` with `not_found` when cache
+exists but the requested object is absent.
+
 ## Health
 
 `GET /health`
@@ -59,8 +72,8 @@ and parser status will be wired during Stage 3.
 Stage 3 implementation returns parser status and file-cache status for the
 current IMGW sources.
 
-Public refresh endpoints are deferred to Stage 4. Stage 3 cache refresh remains
-an internal backend concern so public API consumers cannot mutate cache state.
+Public refresh endpoints are not exposed in Stage 4. Cache refresh remains an
+internal backend concern so public API consumers cannot mutate cache state.
 
 ## Map Layers
 
@@ -73,19 +86,37 @@ Query parameters:
 - `time`: optional ISO timestamp for time-aware layers.
 - `expert`: optional boolean for extra metadata.
 
-Returns GeoJSON FeatureCollections grouped by layer:
+Implemented layer keys:
+
+- `synop_stations`
+- `hydro_stations`
+- `meteo_stations`
+- `warnings_meteo`
+- `warnings_hydro`
+
+Returns GeoJSON FeatureCollections grouped by layer. Hydro and meteo stations
+are point features when coordinates exist. Synop records are emitted as point
+features only if coordinates exist; otherwise they are listed in
+`missing_geometry`. Warning records do not yet have polygons and are returned in
+`records` with area codes and `missing_area_geometry_dataset` metadata.
 
 ```json
 {
+  "generated_at": "2026-06-30T07:30:00Z",
+  "cache": [],
+  "empty_state": null,
   "layers": [
     {
       "key": "hydro_stations",
       "title": "Stacje hydrologiczne",
-      "source": {},
+      "source_keys": ["hydro"],
+      "sources": [],
       "geojson": {
         "type": "FeatureCollection",
         "features": []
-      }
+      },
+      "records": [],
+      "missing_geometry": []
     }
   ]
 }
@@ -102,10 +133,37 @@ Query parameters:
 - `bbox`: optional bounding box.
 - `limit`: default 200.
 
+Returns:
+
+```json
+{
+  "generated_at": "2026-06-30T07:30:00Z",
+  "cache": [],
+  "empty_state": null,
+  "stations": [
+    {
+      "id": "hydro:151140030",
+      "source_id": "151140030",
+      "source_key": "hydro",
+      "station_type": "hydro",
+      "name": "Przewoźniki",
+      "lat": 51.5253,
+      "lon": 14.8217,
+      "latest_observed_at": "2026-06-30T07:00:00+02:00",
+      "data_delay_seconds": 1800,
+      "missing_fields": ["temperatura_wody"],
+      "source": {},
+      "raw_available": true
+    }
+  ]
+}
+```
+
 `GET /api/v1/stations/{id}`
 
 Returns station metadata, latest observations, source metadata, and raw metadata
-availability.
+availability. IDs use the normalized stable form, for example
+`synop:12295`, `hydro:151140030`, or `meteo:252210290`.
 
 `GET /api/v1/stations/{id}/observations`
 
@@ -116,6 +174,10 @@ Query parameters:
 - `to`: optional ISO timestamp.
 
 Returns time-series values for charts and exports.
+
+Each observation preserves `null` values and includes `missing`,
+`raw_field`, `observed_at`, `retrieved_at`-derived `data_delay_seconds`, and
+unit metadata where available.
 
 ## Warnings
 
@@ -135,6 +197,10 @@ Query parameters:
 Returns warning detail, affected areas, geometry references, source metadata, and
 raw JSON availability.
 
+Warnings currently expose `area_codes` from IMGW TERYT/basin/province metadata
+and `geometry_status: "missing_area_geometry_dataset"` until TERYT and basin
+geometry datasets are added.
+
 ## Location Summary
 
 `GET /api/v1/location/summary`
@@ -146,7 +212,12 @@ Query parameters:
 - `radius_km`: optional, default 50.
 
 Returns nearest stations, latest observations, and active warnings relevant to
-the location.
+the location. Station matching uses distance from cached point coordinates.
+Warnings are returned as active cached warning records, with a note that exact
+location matching is not available until area geometry datasets are cached.
+
+The response includes `generated_at`, `cache`, and `empty_state` metadata like
+other collection endpoints.
 
 ## Exports
 
@@ -159,6 +230,27 @@ the location.
 Export query parameters mirror station/map filters. Every export must include
 attribution, processed-data notice when relevant, generated timestamp, retrieval
 timestamp, and missing-field metadata.
+
+Station CSV columns:
+
+- `station_id`
+- `station_name`
+- `metric`
+- `value`
+- `unit`
+- `observed_at`
+- `retrieved_at`
+- `data_delay_seconds`
+- `missing`
+- `raw_field`
+- `source_key`
+- `attribution`
+- `processed_notice`
+- `missing_fields`
+
+Map GeoJSON includes point station features plus foreign members for
+`non_spatial_records`, `missing_geometry`, `cache`, `attribution`,
+`processed_notice`, and `generated_at`.
 
 ## Raw Expert Data
 
@@ -187,6 +279,13 @@ Planned error codes:
 - `source_timeout`,
 - `parser_failed`,
 - `cache_empty`,
+- `cache_invalid`,
 - `not_found`,
 - `unsupported_layer`,
 - `invalid_filter`.
+
+Empty-state codes for collection responses:
+
+- `no_matching_records`,
+- `no_observations`,
+- `no_location_data`.

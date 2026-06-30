@@ -89,4 +89,3 @@ class ProductManifest(BaseModel):
 
 
 NormalizedRecord = Station | Warning | ProductManifest
-
