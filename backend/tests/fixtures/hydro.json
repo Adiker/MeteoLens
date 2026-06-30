@@ -1,0 +1,21 @@
+[
+  {
+    "id_stacji": "151140030",
+    "stacja": "Przewoźniki",
+    "rzeka": "Skroda",
+    "wojewodztwo": "lubuskie",
+    "lon": "14.8217",
+    "lat": "51.5253",
+    "stan_wody": "227",
+    "stan_wody_data_pomiaru": "2026-06-30 07:00:00",
+    "temperatura_wody": null,
+    "temperatura_wody_data_pomiaru": null,
+    "przeplyw": "0.11",
+    "przeplyw_data": "2026-02-18 09:50:00",
+    "zjawisko_lodowe": "0",
+    "zjawisko_lodowe_data_pomiaru": "2026-02-26 11:20:00",
+    "zjawisko_zarastania": "0",
+    "zjawisko_zarastania_data_pomiaru": "2026-05-14 09:50:00"
+  }
+]
+

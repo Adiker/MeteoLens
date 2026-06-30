@@ -33,10 +33,11 @@ Implemented now:
 - React/Vite frontend skeleton with a MapLibre map shell and source status
   panels.
 - Docker Compose, `.env.example`, basic CI, lint, and tests.
+- IMGW-PIB HTTP client, parser layer, normalized models, file cache, and parser
+  tests for current synop/hydro/meteo/warning endpoints plus product manifests.
 
 Not implemented yet:
 
-- IMGW parser code.
 - Data-driven map layers.
 - Exports.
 
@@ -86,6 +87,7 @@ Local URLs:
 - Frontend: `http://localhost:5173`
 - Backend healthcheck: `http://localhost:8000/health`
 - Backend source status: `http://localhost:8000/api/v1/sources`
+- Manual source refresh: `POST http://localhost:8000/api/v1/sources/synop/refresh`
 
 ## Planned Stack
 

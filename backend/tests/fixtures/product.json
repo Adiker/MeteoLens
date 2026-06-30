@@ -1,0 +1,13 @@
+[
+  {
+    "id": "COSMO_HVD_00_00",
+    "url": "https://danepubliczne.imgw.pl/api/data/product/id/COSMO_HVD_00_00",
+    "opis": "Prognoza meteo GRIB model COSMO 2k8 00/00"
+  },
+  {
+    "id": "COMPO_CAPPI.comp.cappi_h5",
+    "url": "https://danepubliczne.imgw.pl/api/data/product/id/COMPO_CAPPI.comp.cappi_h5",
+    "opis": "COMPO_CAPPI.comp.cappi_h5"
+  }
+]
+

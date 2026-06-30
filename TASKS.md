@@ -41,18 +41,18 @@
 
 ## Stage 3 - IMGW Integration
 
-- [ ] Add IMGW HTTP client with timeouts, retries, response metadata, and clear
+- [x] Add IMGW HTTP client with timeouts, retries, response metadata, and clear
   error reporting.
-- [ ] Add raw response cache model.
-- [ ] Add parser for `api/data/synop`.
-- [ ] Add parser for `api/data/hydro`.
-- [ ] Add parser for `api/data/meteo`.
-- [ ] Add parser for `api/data/warningsmeteo`.
-- [ ] Add parser for `api/data/warningshydro`.
-- [ ] Add product manifest parser for `api/data/product`.
-- [ ] Add normalization layer.
-- [ ] Add parser fixtures from real IMGW responses for tests.
-- [ ] Add tests for null handling, numeric conversion, and timestamps.
+- [x] Add raw response cache model.
+- [x] Add parser for `api/data/synop`.
+- [x] Add parser for `api/data/hydro`.
+- [x] Add parser for `api/data/meteo`.
+- [x] Add parser for `api/data/warningsmeteo`.
+- [x] Add parser for `api/data/warningshydro`.
+- [x] Add product manifest parser for `api/data/product`.
+- [x] Add normalization layer.
+- [x] Add parser fixtures from real IMGW responses for tests.
+- [x] Add tests for null handling, numeric conversion, and timestamps.
 
 ## Stage 4 - Backend API
 

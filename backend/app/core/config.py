@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     imgw_base_url: AnyUrl = "https://danepubliczne.imgw.pl"
     frontend_origin: str = "http://localhost:5173"
     database_url: str = "sqlite:///data/meteolens.sqlite3"
-    cache_dir: Path = Path("data/cache")
+    cache_dir: Path = Path("../data/cache")
     log_level: str = "INFO"
     sync_on_startup: bool = False
     refresh_synop_seconds: int = Field(default=600, ge=60)
@@ -26,4 +26,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

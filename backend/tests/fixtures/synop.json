@@ -1,0 +1,27 @@
+[
+  {
+    "id_stacji": "12295",
+    "stacja": "Białystok",
+    "data_pomiaru": "2026-06-30",
+    "godzina_pomiaru": "7",
+    "temperatura": "24.3",
+    "predkosc_wiatru": "2",
+    "kierunek_wiatru": "290",
+    "wilgotnosc_wzgledna": "65.1",
+    "suma_opadu": "0",
+    "cisnienie": "1021.5"
+  },
+  {
+    "id_stacji": "12550",
+    "stacja": "Częstochowa",
+    "data_pomiaru": "2026-06-30",
+    "godzina_pomiaru": "7",
+    "temperatura": "24.6",
+    "predkosc_wiatru": "2",
+    "kierunek_wiatru": "50",
+    "wilgotnosc_wzgledna": null,
+    "suma_opadu": "0",
+    "cisnienie": null
+  }
+]
+

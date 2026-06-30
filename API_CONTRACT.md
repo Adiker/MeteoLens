@@ -56,6 +56,18 @@ Returns supported source descriptors, cache status, and parser status.
 Stage 2 implementation returns planned descriptors only. Real cache freshness
 and parser status will be wired during Stage 3.
 
+Stage 3 implementation returns parser status and file-cache status for the
+current IMGW sources.
+
+`POST /api/v1/sources/{source_key}/refresh`
+
+Fetches the public IMGW source, parses it, writes raw and normalized payloads to
+the backend cache, and returns refresh metadata. Supported `source_key` values:
+`synop`, `hydro`, `meteo`, `warningsmeteo`, `warningshydro`, `product`.
+
+This endpoint is operational tooling for MVP development. Scheduled refresh and
+frontend-safe map/station/warning endpoints come in Stage 4.
+
 ## Map Layers
 
 `GET /api/v1/map/layers`

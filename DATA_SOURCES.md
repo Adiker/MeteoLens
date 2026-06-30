@@ -32,7 +32,7 @@ Statuses:
 - Cache: 10-minute MVP TTL, store raw payload and parsed rows.
 - Parser: `synop`.
 - Normalized model: `Station`, `Observation`.
-- Status: `planned`.
+- Status: `implemented`.
 
 ## Current Hydrological Data
 
@@ -53,7 +53,7 @@ Statuses:
 - Cache: 10-minute MVP TTL, keep per-metric timestamps.
 - Parser: `hydro`.
 - Normalized model: `Station`, `Observation`.
-- Status: `planned`.
+- Status: `implemented`.
 
 ## Current Meteorological Data
 
@@ -73,7 +73,7 @@ Statuses:
 - Cache: 10-minute MVP TTL.
 - Parser: `meteo`.
 - Normalized model: `Station`, `Observation`.
-- Status: `planned`.
+- Status: `implemented`.
 
 ## Current Meteorological Warnings
 
@@ -90,7 +90,7 @@ Statuses:
 - Cache: 5-minute MVP TTL.
 - Parser: `warningsmeteo`.
 - Normalized model: `Warning`, `WarningArea`.
-- Status: `planned`.
+- Status: `implemented`.
 
 ## Current Hydrological Warnings
 
@@ -107,7 +107,7 @@ Statuses:
 - Cache: 5-minute MVP TTL.
 - Parser: `warningshydro`.
 - Normalized model: `Warning`, `WarningArea`.
-- Status: `planned`.
+- Status: `implemented`.
 
 ## Product/File API
 
@@ -126,7 +126,8 @@ Statuses:
 - Parser: `product_manifest`; GRIB/radar parsers are separate post-MVP work.
 - Normalized model: `ProductManifest`, later `RasterProduct` or
   `ModelProduct`.
-- Status: `risky`.
+- Status: `implemented` for the manifest parser; `risky` for individual
+  GRIB/radar file parsing and rendering.
 
 ## Archived Meteorological Warnings
 
@@ -190,4 +191,3 @@ MeteoLens needs public geometry datasets to render some IMGW data:
 
 These datasets must be documented here before implementation and must pass the
 same legal/attribution review as IMGW data.
-

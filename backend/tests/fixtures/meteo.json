@@ -1,0 +1,25 @@
+[
+  {
+    "kod_stacji": "252210290",
+    "nazwa_stacji": "RYBIENKO",
+    "lon": "21.429167",
+    "lat": "52.577778",
+    "temperatura_gruntu": null,
+    "temperatura_gruntu_data": null,
+    "temperatura_powietrza": null,
+    "temperatura_powietrza_data": null,
+    "wiatr_kierunek": null,
+    "wiatr_kierunek_data": null,
+    "wiatr_srednia_predkosc": null,
+    "wiatr_srednia_predkosc_data": null,
+    "wiatr_predkosc_maksymalna": null,
+    "wiatr_predkosc_maksymalna_data": null,
+    "wilgotnosc_wzgledna": null,
+    "wilgotnosc_wzgledna_data": null,
+    "wiatr_poryw_10min": null,
+    "wiatr_poryw_10min_data": null,
+    "opad_10min": "0",
+    "opad_10min_data": "2026-06-30 07:00:00"
+  }
+]
+
