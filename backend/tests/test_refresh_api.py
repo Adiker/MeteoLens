@@ -17,7 +17,7 @@ def test_refresh_source_fetches_parses_and_caches(monkeypatch, tmp_path) -> None
         return ImgwFetch(
             source_key=source.key,
             url=source.url("https://danepubliczne.imgw.pl"),
-            retrieved_at=datetime(2026, 6, 30, 7, 30, tzinfo=UTC),
+            retrieved_at=datetime.now(UTC),
             status_code=200,
             elapsed_ms=12,
             content_type="application/json",
