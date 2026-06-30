@@ -7,10 +7,11 @@ from typing import Annotated, Any, Literal
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from app.core.config import get_settings
 from app.imgw.cache import CachedSourcePayload, CacheStatus, SourceCache
+from app.imgw.parsers.utils import SOURCE_TIMEZONE
 from app.imgw.sources import SOURCE_BY_KEY, SOURCE_DEFINITIONS
 from app.normalization.models import (
     ATTRIBUTION,
@@ -140,13 +141,11 @@ class WarningResponse(BaseModel):
     raw_available: bool = True
 
 
-class LocationSummaryResponse(BaseModel):
-    generated_at: datetime
+class LocationSummaryResponse(ApiEnvelope):
     location: dict[str, float]
     radius_km: float
     nearest_stations: list[dict[str, Any]]
     warnings: list[dict[str, Any]]
-    empty_state: EmptyState | None = None
     notes: list[str] = Field(default_factory=list)
 
 
@@ -242,7 +241,12 @@ def get_map_layers(
     return MapLayersResponse(
         generated_at=datetime.now(UTC),
         cache=states,
-        empty_state=_empty_state(records, STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS),
+        empty_state=_collection_empty_state(
+            records,
+            _map_layers_have_content(response_layers),
+            STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS,
+            filter_message="No map layer data matched the requested layers or bbox.",
+        ),
         layers=response_layers,
     )
 
@@ -269,7 +273,12 @@ def list_stations(
     return StationsResponse(
         generated_at=datetime.now(UTC),
         cache=_cache_states(cache, STATION_SOURCE_KEYS),
-        empty_state=_empty_state(records, STATION_SOURCE_KEYS),
+        empty_state=_collection_empty_state(
+            records,
+            stations,
+            STATION_SOURCE_KEYS,
+            filter_message="No stations matched the requested filters.",
+        ),
         stations=stations,
     )
 
@@ -349,7 +358,12 @@ def list_warnings(
     return WarningsResponse(
         generated_at=datetime.now(UTC),
         cache=_cache_states(cache, WARNING_SOURCE_KEYS),
-        empty_state=_empty_state(records, WARNING_SOURCE_KEYS),
+        empty_state=_collection_empty_state(
+            records,
+            warnings,
+            WARNING_SOURCE_KEYS,
+            filter_message="No warnings matched the requested filters.",
+        ),
         warnings=warnings,
     )
 
@@ -395,18 +409,20 @@ def get_location_summary(
         if _warning_matches(warning, active_at=now)
     ]
 
+    cached_records = stations + _warnings_from_cache(cache)
     return LocationSummaryResponse(
         generated_at=now,
+        cache=_cache_states(cache, STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS),
         location={"lat": lat, "lon": lon},
         radius_km=radius_km,
         nearest_stations=nearest,
         warnings=active_warnings,
-        empty_state=None
-        if nearest or active_warnings
-        else EmptyState(
-            code="no_location_data",
-            message="No cached station or warning data matched this location summary.",
-            source_keys=list(STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS),
+        empty_state=_collection_empty_state(
+            cached_records,
+            nearest or active_warnings,
+            STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS,
+            filter_code="no_location_data",
+            filter_message="No cached station or warning data matched this location summary.",
         ),
         notes=[
             "Warnings are not spatially matched yet because TERYT and basin "
@@ -445,8 +461,8 @@ def export_station_csv(station_id: str) -> PlainTextResponse:
                 "station_id": station.id,
                 "station_name": station.name,
                 "metric": observation.metric,
-                "value": observation.value,
-                "unit": observation.unit,
+                "value": "" if observation.value is None else observation.value,
+                "unit": "" if observation.unit is None else observation.unit,
                 "observed_at": observation.observed_at.isoformat()
                 if observation.observed_at
                 else "",
@@ -562,10 +578,25 @@ def _records_from_cache(
     records: list[NormalizedRecord] = []
     for source_key in source_keys:
         payload = _read_cached_payload(cache, source_key)
-        if payload is None or payload.error:
+        if payload is None or not payload.normalized_payload:
             continue
         for row in payload.normalized_payload:
-            records.append(NORMALIZED_RECORD_ADAPTER.validate_python(row))
+            try:
+                records.append(NORMALIZED_RECORD_ADAPTER.validate_python(row))
+            except ValidationError as exc:
+                raise HTTPException(
+                    status_code=503,
+                    detail={
+                        "error": {
+                            "code": "cache_invalid",
+                            "message": (
+                                f"Cached source {source_key} contains invalid normalized records."
+                            ),
+                            "source_key": source_key,
+                            "detail": str(exc),
+                        }
+                    },
+                ) from exc
     return records
 
 
@@ -585,14 +616,39 @@ def _warnings_from_cache(cache: SourceCache) -> list[Warning]:
     ]
 
 
-def _empty_state(records: list[Any], source_keys: tuple[str, ...]) -> EmptyState | None:
-    if records:
-        return None
-    return EmptyState(
-        code="cache_empty",
-        message="No cached normalized records are available. Refresh IMGW sources first.",
-        source_keys=list(source_keys),
-    )
+def _collection_empty_state(
+    cached_records: list[Any],
+    filtered_results: list[Any] | bool,
+    source_keys: tuple[str, ...],
+    *,
+    filter_code: str = "no_matching_records",
+    filter_message: str = "No records matched the requested filters.",
+) -> EmptyState | None:
+    if not cached_records:
+        return EmptyState(
+            code="cache_empty",
+            message="No cached normalized records are available. Refresh IMGW sources first.",
+            source_keys=list(source_keys),
+        )
+    has_results = filtered_results if isinstance(filtered_results, bool) else bool(filtered_results)
+    if not has_results:
+        return EmptyState(
+            code=filter_code,
+            message=filter_message,
+            source_keys=list(source_keys),
+        )
+    return None
+
+
+def _map_layers_have_content(layers: list[MapLayerResponse]) -> bool:
+    for layer in layers:
+        if (
+            layer.geojson["features"]
+            or layer.records
+            or layer.missing_geometry
+        ):
+            return True
+    return False
 
 
 def _get_station_or_404(station_id: str) -> Station:
@@ -825,6 +881,24 @@ def _observation_payload(
     return payload
 
 
+def _normalize_query_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=SOURCE_TIMEZONE)
+    return value.astimezone(SOURCE_TIMEZONE)
+
+
+def _compare_datetimes(left: datetime | None, right: datetime | None) -> int | None:
+    if left is None or right is None:
+        return None
+    left_normalized = _normalize_query_datetime(left)
+    right_normalized = _normalize_query_datetime(right)
+    if left_normalized == right_normalized:
+        return 0
+    return -1 if left_normalized < right_normalized else 1
+
+
 def _observation_matches(
     observation: Observation,
     *,
@@ -834,14 +908,15 @@ def _observation_matches(
 ) -> bool:
     if metric is not None and observation.metric != metric:
         return False
-    if observed_from is not None and (
-        observation.observed_at is None or observation.observed_at < observed_from
-    ):
-        return False
-    if observed_to is not None and (
-        observation.observed_at is None or observation.observed_at > observed_to
-    ):
-        return False
+    observed_at = observation.observed_at
+    if observed_from is not None:
+        comparison = _compare_datetimes(observed_at, observed_from)
+        if comparison is None or comparison < 0:
+            return False
+    if observed_to is not None:
+        comparison = _compare_datetimes(observed_at, observed_to)
+        if comparison is None or comparison > 0:
+            return False
     return True
 
 
@@ -865,10 +940,15 @@ def _warning_matches(
     if warning_type is not None and warning.warning_type != warning_type:
         return False
     if active_at is not None:
-        if warning.valid_from is not None and active_at < warning.valid_from:
-            return False
-        if warning.valid_to is not None and active_at > warning.valid_to:
-            return False
+        normalized_active_at = _normalize_query_datetime(active_at)
+        if warning.valid_from is not None:
+            valid_from = _normalize_query_datetime(warning.valid_from)
+            if normalized_active_at < valid_from:
+                return False
+        if warning.valid_to is not None:
+            valid_to = _normalize_query_datetime(warning.valid_to)
+            if normalized_active_at > valid_to:
+                return False
     if level is not None and warning.level != level:
         return False
     if phenomenon is not None and phenomenon.casefold() not in warning.event.casefold():

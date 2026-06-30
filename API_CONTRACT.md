@@ -216,6 +216,9 @@ the location. Station matching uses distance from cached point coordinates.
 Warnings are returned as active cached warning records, with a note that exact
 location matching is not available until area geometry datasets are cached.
 
+The response includes `generated_at`, `cache`, and `empty_state` metadata like
+other collection endpoints.
+
 ## Exports
 
 `GET /api/v1/export/station/{id}.csv`
@@ -276,6 +279,13 @@ Planned error codes:
 - `source_timeout`,
 - `parser_failed`,
 - `cache_empty`,
+- `cache_invalid`,
 - `not_found`,
 - `unsupported_layer`,
 - `invalid_filter`.
+
+Empty-state codes for collection responses:
+
+- `no_matching_records`,
+- `no_observations`,
+- `no_location_data`.

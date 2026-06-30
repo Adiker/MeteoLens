@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CacheStatus(BaseModel):
@@ -10,7 +10,7 @@ class CacheStatus(BaseModel):
     last_success_at: datetime | None = None
     age_seconds: int | None = None
     record_count: int | None = None
-    parser_warnings: list[str] = []
+    parser_warnings: list[str] = Field(default_factory=list)
     error: str | None = None
 
 
@@ -19,9 +19,9 @@ class CachedSourcePayload(BaseModel):
     url: str | None = None
     retrieved_at: datetime
     raw_payload: Any = None
-    normalized_payload: list[dict[str, Any]] = []
+    normalized_payload: list[dict[str, Any]] = Field(default_factory=list)
     record_count: int = 0
-    parser_warnings: list[str] = []
+    parser_warnings: list[str] = Field(default_factory=list)
     error: str | None = None
 
 

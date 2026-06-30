@@ -80,6 +80,47 @@ def test_stations_detail_and_observations_use_normalized_cache(monkeypatch, tmp_
     assert observations[0]["data_delay_seconds"] is not None
 
 
+def test_stations_filter_miss_returns_matching_empty_state(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/stations?type=synop")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["stations"] == []
+    assert payload["empty_state"]["code"] == "no_matching_records"
+
+
+def test_stations_serve_stale_cache_after_refresh_error(monkeypatch, tmp_path) -> None:
+    cache = _seed_cache(tmp_path, ("hydro",))
+    cache.write_error(source_key="hydro", error="timeout")
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/stations?type=hydro")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["stations"][0]["id"] == "hydro:151140030"
+    assert payload["empty_state"] is None
+    hydro_cache = next(state for state in payload["cache"] if state["source_key"] == "hydro")
+    assert hydro_cache["status"]["status"] == "stale"
+    assert hydro_cache["status"]["error"] == "timeout"
+
+
+def test_observations_accept_naive_datetime_filters(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get(
+        "/api/v1/stations/hydro:151140030/observations"
+        "?metric=water_level&from=2026-06-30T05:00:00"
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()["observations"]) == 1
+
+
 def test_warnings_filters_preserve_area_metadata(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("warningsmeteo", "warningshydro"))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
@@ -123,6 +164,7 @@ def test_location_summary_returns_nearest_cached_stations(monkeypatch, tmp_path)
     assert response.status_code == 200
     payload = response.json()
     assert payload["nearest_stations"][0]["id"] == "hydro:151140030"
+    assert payload["cache"]
     assert payload["notes"]
 
 
@@ -136,6 +178,7 @@ def test_station_exports_include_attribution_and_missing_fields(monkeypatch, tmp
     assert csv_response.status_code == 200
     assert "Źródło danych: IMGW-PIB." in csv_response.text
     assert "temperatura_wody" in csv_response.text
+    assert "None" not in csv_response.text.splitlines()[1]
     assert json_response.status_code == 200
     payload = json_response.json()
     assert payload["processed_notice"] == "Dane IMGW-PIB zostały przetworzone przez MeteoLens."
