@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import { decodePermalink, encodePermalink } from "../lib/permalink";
+import { readStoredTheme } from "../lib/theme";
 import { activeLayerKeys, useAppStore } from "../store/appStore";
-import { readStoredTheme } from "./useTheme";
 
 /**
  * Two-way sync between app state and the URL query string.

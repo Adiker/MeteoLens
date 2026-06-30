@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { DEFAULT_ACTIVE_LAYERS, type LayerKey } from "../lib/layers";
+import { initialTheme } from "../lib/theme";
 
 export type ThemePreference = "system" | "light" | "dark";
 export type ViewMode = "simple" | "expert";
@@ -70,7 +71,8 @@ export const useAppStore = create<AppState>((set) => ({
   activeLayers: buildActiveLayers(DEFAULT_ACTIVE_LAYERS),
   selection: null,
   mode: "simple",
-  theme: "system",
+  // Hydrate from persisted preference so the theme hook never overwrites it.
+  theme: initialTheme(),
   filters: DEFAULT_FILTERS,
   mapView: POLAND_VIEW,
   userLocation: null,

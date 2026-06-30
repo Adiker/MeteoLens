@@ -1,27 +1,7 @@
 import { useEffect } from "react";
 
-import { useAppStore, type ThemePreference } from "../store/appStore";
-
-const STORAGE_KEY = "meteolens.theme";
-
-export function readStoredTheme(): ThemePreference | null {
-  try {
-    const value = window.localStorage.getItem(STORAGE_KEY);
-    if (value === "light" || value === "dark" || value === "system") {
-      return value;
-    }
-  } catch {
-    // localStorage may be unavailable (private mode); ignore.
-  }
-  return null;
-}
-
-function resolveDark(theme: ThemePreference): boolean {
-  if (theme === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  }
-  return theme === "dark";
-}
+import { persistTheme, resolveDark } from "../lib/theme";
+import { useAppStore } from "../store/appStore";
 
 /** Reflects the store theme preference onto <html> and persists it. */
 export function useTheme(): void {
@@ -32,12 +12,7 @@ export function useTheme(): void {
       document.documentElement.classList.toggle("dark", resolveDark(theme));
     };
     apply();
-
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // ignore persistence failures
-    }
+    persistTheme(theme);
 
     if (theme !== "system") {
       return;

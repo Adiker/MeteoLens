@@ -5,7 +5,9 @@ services:
     env_file:
       - .env.example
     environment:
-      METEOLENS_FRONTEND_ORIGIN: http://localhost:5173
+      # Must match the host origin the browser uses; follows FRONTEND_PORT so the
+      # configurable port mapping does not break CORS.
+      METEOLENS_FRONTEND_ORIGIN: http://localhost:${FRONTEND_PORT:-5173}
       METEOLENS_DATABASE_URL: sqlite:////data/meteolens.sqlite3
       METEOLENS_CACHE_DIR: /data/cache
     ports:
