@@ -87,7 +87,6 @@ Local URLs:
 - Frontend: `http://localhost:5173`
 - Backend healthcheck: `http://localhost:8000/health`
 - Backend source status: `http://localhost:8000/api/v1/sources`
-- Manual source refresh: `POST http://localhost:8000/api/v1/sources/synop/refresh`
 
 ## Planned Stack
 

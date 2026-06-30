@@ -13,6 +13,9 @@ METEO_METRICS = {
     "wiatr_poryw_10min": ("wind_gust_10min", "m/s", "wiatr_poryw_10min_data"),
     "opad_10min": ("precipitation_10min", "mm", "opad_10min_data"),
 }
+METEO_MISSING_FIELDS = list(METEO_METRICS) + [
+    timestamp_field for _, _, timestamp_field in METEO_METRICS.values()
+]
 
 
 def parse_meteo(payload: Any, source: SourceMetadata) -> tuple[list[Station], list[str]]:
@@ -55,11 +58,10 @@ def parse_meteo(payload: Any, source: SourceMetadata) -> tuple[list[Station], li
                 lat=parse_float(row.get("lat")),
                 lon=parse_float(row.get("lon")),
                 observations=observations,
-                missing_fields=missing_fields(row, required_fields + list(METEO_METRICS)),
+                missing_fields=missing_fields(row, required_fields + METEO_MISSING_FIELDS),
                 source=source,
                 raw=row,
             )
         )
 
     return records, warnings
-

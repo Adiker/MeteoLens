@@ -235,8 +235,7 @@ Stage 3:
 
 - parser tests for every current IMGW source using real captured fixtures,
 - normalizer tests for nulls, numeric strings, timestamps, and missing fields,
-- cache tests for freshness and failed fetch behavior,
-- refresh endpoint test with a patched IMGW client.
+- cache tests for freshness and failed fetch behavior.
 
 Stage 4-5:
 

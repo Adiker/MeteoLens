@@ -67,7 +67,10 @@ def test_stations_detail_and_observations_use_normalized_cache(monkeypatch, tmp_
 
     assert list_response.status_code == 200
     assert list_response.json()["stations"][0]["source"]["provider"] == "IMGW-PIB"
-    assert list_response.json()["stations"][0]["missing_fields"] == ["temperatura_wody"]
+    assert list_response.json()["stations"][0]["missing_fields"] == [
+        "temperatura_wody",
+        "temperatura_wody_data_pomiaru",
+    ]
     assert detail_response.status_code == 200
     assert detail_response.json()["station"]["raw"]["id_stacji"] == "151140030"
     assert observations_response.status_code == 200

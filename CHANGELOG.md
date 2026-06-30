@@ -8,8 +8,7 @@ All notable changes to MeteoLens will be documented in this file.
 - Added Stage 2 application skeleton: FastAPI backend, React/Vite frontend,
   MapLibre map shell, Docker Compose, `.env.example`, CI, and basic tests.
 - Added Stage 3 IMGW integration: HTTP client, source definitions, parser layer,
-  normalized models, file cache, refresh endpoint, real-shape fixtures, and
-  parser/cache/API tests.
+  normalized models, file cache, real-shape fixtures, and parser/cache tests.
 - Added Stage 4 backend API endpoints for map layers, stations, warnings,
   location summaries, station CSV/JSON exports, and map GeoJSON exports backed
   by normalized cache records.

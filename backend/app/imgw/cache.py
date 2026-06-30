@@ -57,6 +57,14 @@ class SourceCache:
 
     def write_error(self, *, source_key: str, error: str) -> None:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = self._path_for(source_key)
+        payload = _load_existing_success(cache_file)
+        if payload is not None:
+            payload["error"] = error
+            payload["last_error_at"] = datetime.now(UTC).isoformat()
+            cache_file.write_text(_json_dump(payload), encoding="utf-8")
+            return
+
         payload = {
             "source_key": source_key,
             "retrieved_at": datetime.now(UTC).isoformat(),
@@ -87,13 +95,14 @@ class SourceCache:
             return CacheStatus(status="invalid", error=str(exc))
 
         age = max(0, round((datetime.now(UTC) - retrieved_at).total_seconds()))
+        has_success_payload = payload.get("raw_payload") is not None
         status = "fresh" if age <= ttl_seconds and not payload.get("error") else "stale"
         if payload.get("error"):
-            status = "error"
+            status = "stale" if has_success_payload else "error"
 
         return CacheStatus(
             status=status,
-            last_success_at=None if payload.get("error") else retrieved_at,
+            last_success_at=retrieved_at if has_success_payload else None,
             age_seconds=age,
             record_count=payload.get("record_count"),
             parser_warnings=payload.get("parser_warnings", []),
@@ -111,3 +120,15 @@ def _json_load(path: Path) -> dict[str, Any]:
     import json
 
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_existing_success(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        payload = _json_load(path)
+    except (OSError, ValueError, TypeError):
+        return None
+    if payload.get("raw_payload") is None:
+        return None
+    return payload

@@ -72,14 +72,8 @@ and parser status will be wired during Stage 3.
 Stage 3 implementation returns parser status and file-cache status for the
 current IMGW sources.
 
-`POST /api/v1/sources/{source_key}/refresh`
-
-Fetches the public IMGW source, parses it, writes raw and normalized payloads to
-the backend cache, and returns refresh metadata. Supported `source_key` values:
-`synop`, `hydro`, `meteo`, `warningsmeteo`, `warningshydro`, `product`.
-
-This endpoint is operational tooling for MVP development. Stage 4 frontend-safe
-endpoints read from the normalized payloads written by this endpoint.
+Public refresh endpoints are not exposed in Stage 4. Cache refresh remains an
+internal backend concern so public API consumers cannot mutate cache state.
 
 ## Map Layers
 
