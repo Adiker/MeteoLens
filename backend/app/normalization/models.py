@@ -18,7 +18,7 @@ class SourceMetadata(BaseModel):
 
 class Observation(BaseModel):
     metric: str
-    value: float | str | None
+    value: float | None
     unit: str | None
     observed_at: datetime | None
     raw_field: str
