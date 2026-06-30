@@ -1,0 +1,193 @@
+# DATA_SOURCES.md - IMGW-PIB Sources
+
+Research date: 2026-06-29.
+
+Primary service: [danepubliczne.imgw.pl](https://danepubliczne.imgw.pl/).
+Official API information:
+[https://danepubliczne.imgw.pl/pl/apiinfo](https://danepubliczne.imgw.pl/pl/apiinfo).
+
+Statuses:
+
+- `planned`: documented for implementation.
+- `implemented`: parser/API support exists.
+- `risky`: source exists but has technical/legal/format uncertainty.
+- `blocked`: cannot be implemented without another decision or source.
+
+## Current Synoptic Data
+
+- Name: current synoptic station data.
+- Endpoint: `https://danepubliczne.imgw.pl/api/data/synop`.
+- Formats: JSON by default; API page documents XML, CSV, HTML via
+  `/format/{format}`.
+- Station filters: `/id/{id}` and `/station/{name}`.
+- Example fields: `id_stacji`, `stacja`, `data_pomiaru`,
+  `godzina_pomiaru`, `temperatura`, `predkosc_wiatru`, `kierunek_wiatru`,
+  `wilgotnosc_wzgledna`, `suma_opadu`, `cisnienie`.
+- Coordinates: not present in the current endpoint response.
+- Update frequency: appears near-hourly, but exact frequency must be documented
+  after longer observation or official confirmation.
+- Stability: stable core API, but geometry requires another source.
+- Limitations: numeric values arrive as strings; some fields can be `null`;
+  `godzina_pomiaru` must be combined with `data_pomiaru`.
+- Cache: 10-minute MVP TTL, store raw payload and parsed rows.
+- Parser: `synop`.
+- Normalized model: `Station`, `Observation`.
+- Status: `planned`.
+
+## Current Hydrological Data
+
+- Name: current hydrological station data.
+- Endpoint: `https://danepubliczne.imgw.pl/api/data/hydro`.
+- Format: JSON.
+- Example fields: `id_stacji`, `stacja`, `rzeka`, `wojewodztwo`, `lon`, `lat`,
+  `stan_wody`, `stan_wody_data_pomiaru`, `temperatura_wody`,
+  `temperatura_wody_data_pomiaru`, `przeplyw`, `przeplyw_data`,
+  `zjawisko_lodowe`, `zjawisko_lodowe_data_pomiaru`, `zjawisko_zarastania`,
+  `zjawisko_zarastania_data_pomiaru`.
+- Coordinates: present as `lon` and `lat`.
+- Update frequency: often sub-hourly/hourly per field; exact source cadence must
+  be verified.
+- Stability: good candidate for MVP.
+- Limitations: each metric has its own timestamp; old ice/vegetation timestamps
+  can coexist with current water-level timestamps.
+- Cache: 10-minute MVP TTL, keep per-metric timestamps.
+- Parser: `hydro`.
+- Normalized model: `Station`, `Observation`.
+- Status: `planned`.
+
+## Current Meteorological Data
+
+- Name: current meteorological station data.
+- Endpoint: `https://danepubliczne.imgw.pl/api/data/meteo`.
+- Format: JSON.
+- Example fields: `kod_stacji`, `nazwa_stacji`, `lon`, `lat`,
+  `temperatura_gruntu`, `temperatura_gruntu_data`, `temperatura_powietrza`,
+  `temperatura_powietrza_data`, `wiatr_kierunek`, `wiatr_kierunek_data`,
+  `wiatr_srednia_predkosc`, `wiatr_predkosc_maksymalna`,
+  `wilgotnosc_wzgledna`, `opad_10min`, and per-field timestamps.
+- Coordinates: present as `lon` and `lat`.
+- Update frequency: appears near-10-minute for some fields, but exact cadence
+  must be verified.
+- Stability: good candidate for MVP.
+- Limitations: many fields can be `null`; timestamps differ by metric.
+- Cache: 10-minute MVP TTL.
+- Parser: `meteo`.
+- Normalized model: `Station`, `Observation`.
+- Status: `planned`.
+
+## Current Meteorological Warnings
+
+- Name: active meteorological warnings.
+- Endpoint: `https://danepubliczne.imgw.pl/api/data/warningsmeteo`.
+- Format: JSON.
+- Example fields: `id`, `nazwa_zdarzenia`, `stopien`,
+  `prawdopodobienstwo`, `obowiazuje_od`, `obowiazuje_do`, `opublikowano`,
+  `tresc`, `komentarz`, `biuro`, `teryt`.
+- Geometry: endpoint returns TERYT code lists, not polygon geometry.
+- Update frequency: event-driven; poll every 5 minutes in MVP.
+- Stability: good candidate for MVP, but geometry dependency is external.
+- Limitations: requires public administrative boundaries keyed by TERYT.
+- Cache: 5-minute MVP TTL.
+- Parser: `warningsmeteo`.
+- Normalized model: `Warning`, `WarningArea`.
+- Status: `planned`.
+
+## Current Hydrological Warnings
+
+- Name: active hydrological warnings.
+- Endpoint: `https://danepubliczne.imgw.pl/api/data/warningshydro`.
+- Format: JSON.
+- Example fields: `opublikowano`, `stopień`, `data_od`, `data_do`,
+  `prawdopodobienstwo`, `numer`, `biuro`, `zdarzenie`, `przebieg`,
+  `komentarz`, `obszary`, `wojewodztwo`, `opis`, `kod_zlewni`.
+- Geometry: basin/area codes need mapping before polygon display.
+- Update frequency: event-driven; poll every 5 minutes in MVP.
+- Stability: good candidate for MVP details; map polygons need more research.
+- Limitations: level can be special, e.g. `-1` for hydrological drought.
+- Cache: 5-minute MVP TTL.
+- Parser: `warningshydro`.
+- Normalized model: `Warning`, `WarningArea`.
+- Status: `planned`.
+
+## Product/File API
+
+- Name: public product list.
+- Endpoint: `https://danepubliczne.imgw.pl/api/data/product`.
+- Detail endpoint: `https://danepubliczne.imgw.pl/api/data/product/id/{id}`.
+- Format: JSON product list; detail endpoint can return file lists.
+- Example products: COSMO GRIB model products, radar-like products such as
+  CAPPI/SRI identifiers.
+- Update frequency: varies by product.
+- Stability: mixed. COSMO detail returned file lists during research. Some
+  listed radar-like IDs returned `Product could not be found`.
+- Limitations: GRIB/radar formats need dedicated parsers and probably a tiling
+  pipeline before map display.
+- Cache: product list 60 minutes; product file manifests 30-60 minutes.
+- Parser: `product_manifest`; GRIB/radar parsers are separate post-MVP work.
+- Normalized model: `ProductManifest`, later `RasterProduct` or
+  `ModelProduct`.
+- Status: `risky`.
+
+## Archived Meteorological Warnings
+
+- Name: archived meteorological warnings.
+- Directory: `https://danepubliczne.imgw.pl/data/arch/ost_meteo/`.
+- Format: indexed year/month archive directories with compressed files.
+- Example structure: yearly directories from 2017 through 2026 were visible
+  during research.
+- Update frequency: archive updates as historical files are published.
+- Stability: useful for post-MVP archive and warning-change analysis.
+- Limitations: file schemas and compression layout need parser research.
+- Cache: manual/daily archive manifest refresh.
+- Parser: `archive_warnings_meteo`.
+- Normalized model: `Warning`, `WarningRevision`.
+- Status: `planned` for post-MVP.
+
+## Archived Hydrological Warnings
+
+- Name: archived hydrological warnings.
+- Directory: `https://danepubliczne.imgw.pl/data/arch/ost_hydro/`.
+- Format: indexed year/month archive directories with compressed files.
+- Example structure: yearly directories from 2017 through 2026 were visible
+  during research.
+- Update frequency: archive updates as historical files are published.
+- Stability: useful for post-MVP archive and warning-change analysis.
+- Limitations: file schemas and compression layout need parser research.
+- Cache: manual/daily archive manifest refresh.
+- Parser: `archive_warnings_hydro`.
+- Normalized model: `Warning`, `WarningRevision`.
+- Status: `planned` for post-MVP.
+
+## Measurement And Observation Archives
+
+- Name: archived measurement and observation data.
+- Directory:
+  `https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/`.
+- Subdirectories: `dane_meteorologiczne`, `dane_hydrologiczne`,
+  `dane_aktynometryczne`, `Biuletyn_PSHM`, `Roczniki`.
+- Meteorological reference files observed: `Opis.txt`, `wykaz_stacji.csv`,
+  map PDFs, daily/monthly/term directories.
+- Hydrological reference files observed: `lista_stacji_hydro.csv`,
+  `hydrologia_info_ogolne.txt`, daily/monthly/annual directories.
+- Format: CSV/TXT/PDF and nested directories; encodings may require detection.
+- Update frequency: archive-specific.
+- Stability: useful but larger than MVP.
+- Limitations: encoding, schema variants, archive volume, and station list
+  reconciliation.
+- Cache: manifest-based refresh, file checksum, and parser version.
+- Parser: `archive_observations`.
+- Normalized model: `Station`, `Observation`, `ArchiveManifest`.
+- Status: `planned` for post-MVP, with station metadata potentially useful for
+  MVP synop geometry.
+
+## External Geometry Dependencies
+
+MeteoLens needs public geometry datasets to render some IMGW data:
+
+- TERYT administrative boundaries for meteorological warnings.
+- Basin/catchment geometries for hydrological warning areas.
+- Official station lists or documented station metadata for synop coordinates.
+
+These datasets must be documented here before implementation and must pass the
+same legal/attribution review as IMGW data.
+

@@ -1,0 +1,2 @@
+"""MeteoLens backend package."""
+

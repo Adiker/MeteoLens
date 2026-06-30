@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 198 24% 97%;
+  --foreground: 205 30% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 205 30% 12%;
+  --muted: 203 20% 91%;
+  --muted-foreground: 204 12% 42%;
+  --border: 203 18% 84%;
+  --primary: 197 78% 32%;
+  --primary-foreground: 0 0% 100%;
+  --warning: 4 72% 48%;
+  --hydro: 205 72% 45%;
+  --meteo: 154 46% 34%;
+  color-scheme: light;
+}
+
+.dark {
+  --background: 204 24% 10%;
+  --foreground: 196 22% 94%;
+  --card: 203 22% 14%;
+  --card-foreground: 196 22% 94%;
+  --muted: 203 18% 20%;
+  --muted-foreground: 202 15% 70%;
+  --border: 203 18% 27%;
+  --primary: 190 78% 42%;
+  --primary-foreground: 0 0% 100%;
+  --warning: 9 80% 62%;
+  --hydro: 205 82% 60%;
+  --meteo: 151 52% 50%;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+

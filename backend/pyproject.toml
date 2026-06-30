@@ -1,0 +1,38 @@
+[project]
+name = "meteolens-backend"
+version = "0.1.0"
+description = "FastAPI backend for MeteoLens public IMGW-PIB data visualisation."
+requires-python = ">=3.12"
+dependencies = [
+  "apscheduler>=3.10.4",
+  "fastapi>=0.115.0",
+  "httpx>=0.27.0",
+  "pydantic-settings>=2.4.0",
+  "uvicorn[standard]>=0.30.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0",
+  "pytest-asyncio>=0.24.0",
+  "ruff>=0.6.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+

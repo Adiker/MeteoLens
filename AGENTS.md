@@ -1,0 +1,76 @@
+# AGENTS.md - MeteoLens
+
+Comprehensive project docs are in `ARCHITECTURE.md`. This file contains the
+mandatory guardrails for AI agents and automation working in this repository.
+
+## Git Workflow
+
+- Never commit directly to `main` unless the user explicitly asks for it.
+- Work on branches with one of these prefixes: `feature/`, `fix/`,
+  `refactor/`, `docs/`, `chore/`.
+- Do not force-push `main`.
+- Do not delete branches without explicit consent.
+- Do not rewrite published history without explicit consent.
+- Before opening a PR, run the tests relevant to the changed parts.
+- If tests are not available yet, state that clearly in the PR description.
+
+## Documentation Rules
+
+- Update `README.md` for end-user behavior, setup, exports, screenshots, and
+  troubleshooting.
+- Update `ARCHITECTURE.md` for backend/frontend structure, data flow, cache,
+  database, public API, parser architecture, deployment, and tests.
+- Update `DATA_SOURCES.md` when IMGW-PIB sources, endpoint fields, formats,
+  parser status, or source risk changes.
+- Update `API_CONTRACT.md` for every public backend API change.
+- Update `UI_UX.md` when user-visible behavior or layout changes.
+- Update `LEGAL_ATTRIBUTION.md` for attribution, licensing, or processed-data
+  notice changes.
+- Update `TASKS.md` when scope is completed, split, blocked, or reprioritized.
+- If documentation does not need changes, say that explicitly in the PR
+  description.
+
+## IMGW Data Guardrails
+
+- Use only public IMGW-PIB data or other data that can legally be fetched and
+  processed.
+- Do not add unofficial or legally risky sources without documenting the risk in
+  `DATA_SOURCES.md` and `LEGAL_ATTRIBUTION.md`.
+- Do not implement Blitzortung or unofficial lightning detection unless the
+  licensing and usage terms are explicitly cleared first.
+- Do not hardcode IMGW data as a final solution.
+- Do not mask data download errors.
+- Do not replace missing values with zero.
+- Show missing values as missing values.
+- Preserve measurement timestamp, retrieval timestamp, and data delay.
+- Keep source attribution visible in UI, exports, and documentation.
+- If data is normalized, aggregated, interpolated, converted, or otherwise
+  transformed, show the processed-data notice.
+
+## Parser And API Rules
+
+- Do not mix IMGW client code, parsers, normalization, cache, and API route
+  logic in one file.
+- Parser changes must add or update parser tests.
+- Public API responses must include source metadata and missing-field metadata.
+- Keep raw IMGW payloads available for expert/debug mode when feasible.
+- Avoid speculative interpolation in MVP. If interpolation is later added, make
+  it opt-in and visibly labelled.
+
+## Frontend Rules
+
+- The map is the primary view.
+- The UI must have loading, empty, and error states.
+- Expert mode must expose raw JSON/source metadata for selected objects.
+- Mobile details must use a bottom-sheet style layout.
+- Do not hide data quality problems behind polished visuals.
+
+## Stage Discipline
+
+- Stage 0-1 is documentation and research only.
+- Stage 2 may add scaffolding, Docker Compose, healthchecks, and basic tests.
+- Stage 3 may add IMGW clients/parsers/cache.
+- Stage 4 may add public backend API endpoints.
+- Stage 5 may add the usable frontend.
+- Stage 6 is quality, test expansion, and known-limitations cleanup.
+
