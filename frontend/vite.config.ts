@@ -9,6 +9,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           map: ["maplibre-gl"],
+          charts: ["echarts"],
           react: ["react", "react-dom"],
           query: ["@tanstack/react-query"]
         }

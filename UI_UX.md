@@ -174,3 +174,22 @@ Do not hide source failures behind an empty map.
 - Source line in every detail panel.
 - Source metadata in export dialogs.
 - Processed-data notice near derived or normalized data.
+
+## Stage 5 Implementation Status
+
+The map-first dashboard is implemented. Notable, intentional deviations from the
+target spec above, driven by current backend data:
+
+- Warnings have no area geometry yet, so warning layers render as a filterable
+  list in the control panel and as a details panel, not as map polygons. The
+  details panel states that spatial matching is unavailable.
+- The IMGW cache exposes a single observation timestamp per station, so the
+  station chart shows current metric values (missing values excluded) rather
+  than a time series, and the bottom timeline/animation control is omitted until
+  time-aware (archive/radar) data is available.
+- Quick filters implemented for MVP are warning level and phenomenon. Province
+  and time-range filters wait on area geometry and archive series.
+- Layer legends are rendered as coloured swatches with on-map counts in the
+  layer toggles; warning legend entries note the missing geometry.
+- The PNG export captures the current MapLibre canvas; CSV/JSON/GeoJSON exports
+  are backend downloads.

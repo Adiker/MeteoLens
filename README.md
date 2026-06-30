@@ -29,17 +29,23 @@ Implemented now:
 - UI/UX specification.
 - Legal attribution rules.
 - Implementation backlog and staged task list.
-- FastAPI backend skeleton with `/health` and `/api/v1/sources`.
-- React/Vite frontend skeleton with a MapLibre map shell and source status
-  panels.
+- FastAPI backend with `/health`, `/api/v1/sources`, map layers, stations,
+  warnings, location summary, and CSV/JSON/GeoJSON exports backed by the cache.
+- React/Vite map-first frontend: layer toggles, station markers, station and
+  warning details (with mobile bottom sheet), station search, "My location",
+  ECharts station chart, CSV/JSON/GeoJSON/PNG exports, URL permalinks, keyboard
+  shortcuts, light/dark/system theme, simple/expert mode, and explicit
+  loading/empty/stale/partial/error states.
 - Docker Compose, `.env.example`, basic CI, lint, and tests.
 - IMGW-PIB HTTP client, parser layer, normalized models, file cache, and parser
   tests for current synop/hydro/meteo/warning endpoints plus product manifests.
 
 Not implemented yet:
 
-- Data-driven map layers.
-- Exports.
+- Warning area polygons (waiting on TERYT/basin geometry datasets; warnings
+  currently render as a filterable list).
+- Timeline/animation over archive or radar data.
+- Automatic public cache refresh (cache is populated by backend internals).
 
 ## Data Sources
 
@@ -76,6 +82,13 @@ npm install
 npm run dev
 ```
 
+The frontend reads the backend base URL from `VITE_API_BASE_URL` (default
+`http://localhost:8000`). If port 8000 is taken by another app, run the backend
+elsewhere and point the frontend at it: copy `frontend/.env.example` to
+`frontend/.env.local`, set `VITE_API_BASE_URL=http://localhost:<port>`, and
+restart `npm run dev`. With an empty cache the UI shows explicit empty/stale
+states instead of mock data, so populate the backend cache to see live markers.
+
 Run both with Docker Compose:
 
 ```bash
@@ -98,9 +111,9 @@ Local URLs:
 
 ## Screenshots And Mockups
 
-No screenshots exist yet because the application UI has not been built. The
-first UI implementation should create screenshot assets under `docs/` and update
-this section. The target layout is specified in [UI_UX.md](UI_UX.md).
+The Stage 5 map-first UI is implemented; screenshot assets under `docs/` are not
+captured yet and should be added from a populated cache. The target layout is
+specified in [UI_UX.md](UI_UX.md).
 
 ## Planned Exports
 
