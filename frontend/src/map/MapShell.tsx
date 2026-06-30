@@ -22,11 +22,32 @@ function selectedFilter(id: string): maplibregl.FilterSpecification {
   return ["==", ["get", "id"], id];
 }
 
+const PNG_ATTRIBUTION =
+  "Źródło danych: IMGW-PIB. Dane przetworzone przez MeteoLens. © OpenStreetMap";
+
 function downloadCanvasPng(map: maplibregl.Map) {
   try {
-    const url = map.getCanvas().toDataURL("image/png");
+    const mapCanvas = map.getCanvas();
+    // The MapLibre/MeteoLens attribution is DOM outside the WebGL canvas, so draw
+    // it onto a composite before export — every export must carry attribution.
+    const footerHeight = 28;
+    const out = document.createElement("canvas");
+    out.width = mapCanvas.width;
+    out.height = mapCanvas.height + footerHeight;
+    const ctx = out.getContext("2d");
+    if (!ctx) {
+      throw new Error("2d context unavailable");
+    }
+    ctx.drawImage(mapCanvas, 0, 0);
+    ctx.fillStyle = "#0b1f2a";
+    ctx.fillRect(0, mapCanvas.height, out.width, footerHeight);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "13px sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(PNG_ATTRIBUTION, 10, mapCanvas.height + footerHeight / 2);
+
     const link = document.createElement("a");
-    link.href = url;
+    link.href = out.toDataURL("image/png");
     link.download = "meteolens-mapa.png";
     link.click();
   } catch {

@@ -22,6 +22,10 @@ export function metricLabel(metric: string): string {
 
 const PL = "pl-PL";
 
+// IMGW data is published in Polish local time; pin the display timezone (with a
+// label) so viewers outside Poland see the source validity window, not a shift.
+const SOURCE_TIMEZONE = "Europe/Warsaw";
+
 export function formatTimestamp(iso: string | null | undefined): string {
   if (!iso) {
     return "—";
@@ -31,8 +35,13 @@ export function formatTimestamp(iso: string | null | undefined): string {
     return iso;
   }
   return new Intl.DateTimeFormat(PL, {
-    dateStyle: "medium",
-    timeStyle: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: SOURCE_TIMEZONE,
+    timeZoneName: "short",
   }).format(date);
 }
 

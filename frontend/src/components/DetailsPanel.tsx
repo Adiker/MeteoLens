@@ -21,7 +21,7 @@ import { Field, Spinner, StateNotice } from "./primitives";
 
 function apiErrorNotice(error: unknown): ReactNode {
   if (error instanceof ApiError) {
-    if (error.code === "cache_empty" || error.status === 503) {
+    if (error.code === "cache_empty") {
       return (
         <StateNotice tone="warning" title="Brak danych w cache">
           Odśwież źródła IMGW w backendzie, aby zobaczyć szczegóły.
@@ -31,6 +31,7 @@ function apiErrorNotice(error: unknown): ReactNode {
     if (error.code === "not_found" || error.status === 404) {
       return <StateNotice tone="info" title="Nie znaleziono obiektu" />;
     }
+    // Other failures (e.g. cache_invalid 503) must surface, not be hidden as "empty".
     return <StateNotice tone="error" title={error.message} />;
   }
   return <StateNotice tone="error" title="Wystąpił błąd podczas pobierania danych." />;

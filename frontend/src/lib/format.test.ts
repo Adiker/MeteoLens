@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { cacheStatusLabel, formatDelay, formatValue, metricLabel, warningLevelLabel } from "./format";
+import {
+  cacheStatusLabel,
+  formatDelay,
+  formatTimestamp,
+  formatValue,
+  metricLabel,
+  warningLevelLabel,
+} from "./format";
 
 describe("format helpers", () => {
   it("formats data delays compactly", () => {
@@ -20,6 +27,14 @@ describe("format helpers", () => {
   it("labels known metrics and falls back for unknown ones", () => {
     expect(metricLabel("temperature")).toBe("Temperatura");
     expect(metricLabel("custom_metric")).toBe("custom metric");
+  });
+
+  it("renders timestamps in Polish source time regardless of runner timezone", () => {
+    // 10:00 UTC is 12:00 in Warsaw (summer, +2); the label keeps the zone explicit.
+    const formatted = formatTimestamp("2026-06-30T10:00:00Z");
+    expect(formatted).toContain("12:00");
+    expect(formatted).toMatch(/GMT\+2|CEST/);
+    expect(formatTimestamp(null)).toBe("—");
   });
 
   it("labels warning levels and cache statuses", () => {

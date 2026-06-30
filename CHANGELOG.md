@@ -29,7 +29,12 @@ All notable changes to MeteoLens will be documented in this file.
   parsing.
 - Made Docker Compose host ports configurable via `BACKEND_PORT`/`FRONTEND_PORT`
   to avoid local port clashes; the frontend API base URL follows `BACKEND_PORT`.
-- Addressed Stage 5 review feedback: filter warnings by current time, restore the
-  permalink map view on first load, disable the map GeoJSON export when no layers
-  are active, and read API error codes from FastAPI `detail.error`.
+- Addressed Stage 5 review feedback: filter warnings by current time (with a
+  minute ticker), restore the permalink map view on first load, disable the map
+  GeoJSON export when no layers are active, read API error codes from FastAPI
+  `detail.error`, wire "My location" into a nearest-stations/warnings summary,
+  keep the layer panel reachable on desktop, hydrate the saved theme before
+  persisting, keep Docker CORS in sync with `FRONTEND_PORT`, embed attribution in
+  PNG exports, surface non-empty cache errors instead of masking them, and render
+  source timestamps in Polish (`Europe/Warsaw`) time.
 - Added MVP roadmap and implementation task queue.
