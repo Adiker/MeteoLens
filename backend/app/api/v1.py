@@ -44,21 +44,23 @@ def list_sources() -> SourcesResponse:
     settings = get_settings()
     base_url = str(settings.imgw_base_url).rstrip("/")
     cache = SourceCache(settings.cache_dir)
-    sources = [
-        SourceDescriptor(
-            key=source.key,
-            title=source.title,
-            url=source.url(base_url),
-            parser_status=source.parser_status,
-            cache_status=cache.status(
-                source.key,
-                ttl_seconds=source.default_ttl_seconds,
-            ).status,
-            cache=cache.status(source.key, ttl_seconds=source.default_ttl_seconds),
-            notes=source.notes,
+    sources = []
+    for source in SOURCE_DEFINITIONS:
+        cache_status = cache.status(
+            source.key,
+            ttl_seconds=source.default_ttl_seconds,
         )
-        for source in SOURCE_DEFINITIONS
-    ]
+        sources.append(
+            SourceDescriptor(
+                key=source.key,
+                title=source.title,
+                url=source.url(base_url),
+                parser_status=source.parser_status,
+                cache_status=cache_status.status,
+                cache=cache_status,
+                notes=source.notes,
+            )
+        )
     return SourcesResponse(retrieved_at=datetime.now(UTC), sources=sources)
 
 

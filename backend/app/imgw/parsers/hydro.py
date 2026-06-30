@@ -10,6 +10,9 @@ HYDRO_METRICS = {
     "zjawisko_lodowe": ("ice_phenomenon", None, "zjawisko_lodowe_data_pomiaru"),
     "zjawisko_zarastania": ("vegetation_phenomenon", None, "zjawisko_zarastania_data_pomiaru"),
 }
+HYDRO_MISSING_FIELDS = list(HYDRO_METRICS) + [
+    timestamp_field for _, _, timestamp_field in HYDRO_METRICS.values()
+]
 
 
 def parse_hydro(payload: Any, source: SourceMetadata) -> tuple[list[Station], list[str]]:
@@ -54,11 +57,10 @@ def parse_hydro(payload: Any, source: SourceMetadata) -> tuple[list[Station], li
                 region=str(row.get("wojewodztwo") or "") or None,
                 watercourse=str(row.get("rzeka") or "") or None,
                 observations=observations,
-                missing_fields=missing_fields(row, required_fields + list(HYDRO_METRICS)),
+                missing_fields=missing_fields(row, required_fields + HYDRO_MISSING_FIELDS),
                 source=source,
                 raw=row,
             )
         )
 
     return records, warnings
-

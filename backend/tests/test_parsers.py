@@ -70,6 +70,19 @@ def test_hydro_parser_uses_per_metric_timestamps() -> None:
     assert water_level.observed_at != flow.observed_at
 
 
+def test_hydro_parser_reports_missing_per_metric_timestamps() -> None:
+    payload = load_fixture("hydro")
+    payload[0]["przeplyw_data"] = None
+
+    result = parse_source("hydro", payload, source_metadata("hydro"))
+
+    station = result.records[0]
+    assert isinstance(station, Station)
+    assert "przeplyw_data" in station.missing_fields
+    flow = next(item for item in station.observations if item.metric == "flow")
+    assert flow.observed_at is None
+
+
 def test_warnings_parsers_keep_area_codes() -> None:
     meteo = parse_source(
         "warningsmeteo",
@@ -90,6 +103,56 @@ def test_warnings_parsers_keep_area_codes() -> None:
     assert hydro.areas[0].code == "Z_P_WP_1856"
 
 
+def test_warnings_parsers_handle_null_area_lists() -> None:
+    meteo_payload = load_fixture("warningsmeteo")
+    hydro_payload = load_fixture("warningshydro")
+    meteo_payload[0]["teryt"] = None
+    hydro_payload[0]["obszary"] = None
+
+    meteo = parse_source(
+        "warningsmeteo",
+        meteo_payload,
+        source_metadata("warningsmeteo"),
+    )
+    hydro = parse_source(
+        "warningshydro",
+        hydro_payload,
+        source_metadata("warningshydro"),
+    )
+
+    assert meteo.warnings == []
+    assert hydro.warnings == []
+    assert isinstance(meteo.records[0], Warning)
+    assert isinstance(hydro.records[0], Warning)
+    assert meteo.records[0].areas == []
+    assert hydro.records[0].areas == []
+    assert "teryt" in meteo.records[0].missing_fields
+    assert "obszary" in hydro.records[0].missing_fields
+
+
+def test_warnings_parsers_warn_on_invalid_area_lists() -> None:
+    meteo_payload = load_fixture("warningsmeteo")
+    hydro_payload = load_fixture("warningshydro")
+    meteo_payload[0]["teryt"] = "1205"
+    hydro_payload[0]["obszary"] = {"wojewodztwo": "śląskie"}
+
+    meteo = parse_source(
+        "warningsmeteo",
+        meteo_payload,
+        source_metadata("warningsmeteo"),
+    )
+    hydro = parse_source(
+        "warningshydro",
+        hydro_payload,
+        source_metadata("warningshydro"),
+    )
+
+    assert meteo.records[0].areas == []
+    assert hydro.records[0].areas == []
+    assert meteo.warnings == ["Meteo warning row 0 field 'teryt' is not a list."]
+    assert hydro.warnings == ["Hydro warning row 0 field 'obszary' is not a list."]
+
+
 def test_product_parser_marks_manifest_only_products() -> None:
     result = parse_source("product", load_fixture("product"), source_metadata("product"))
 
@@ -97,4 +160,3 @@ def test_product_parser_marks_manifest_only_products() -> None:
     assert isinstance(product, ProductManifest)
     assert product.source_id == "COSMO_HVD_00_00"
     assert "GRIB" in product.description
-

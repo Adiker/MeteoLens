@@ -31,9 +31,15 @@ def parse_warnings_meteo(payload: Any, source: SourceMetadata) -> tuple[list[War
             warnings.append(f"Meteo warning row {index} has no id.")
             continue
 
+        teryt_codes = _list_field(
+            row,
+            "teryt",
+            row_label=f"Meteo warning row {index}",
+            warnings=warnings,
+        )
         areas = [
             WarningArea(area_type="teryt", code=str(code), label=str(code))
-            for code in row.get("teryt", [])
+            for code in teryt_codes
             if code not in (None, "")
         ]
         records.append(
@@ -85,12 +91,26 @@ def parse_warnings_hydro(payload: Any, source: SourceMetadata) -> tuple[list[War
 
         source_id = str(row.get("numer") or f"row-{index}")
         areas: list[WarningArea] = []
-        for area in row.get("obszary", []):
+        source_areas = _list_field(
+            row,
+            "obszary",
+            row_label=f"Hydro warning row {index}",
+            warnings=warnings,
+        )
+        for area_index, area in enumerate(source_areas):
             if not isinstance(area, dict):
+                warnings.append(
+                    f"Hydro warning row {index} obszary item {area_index} is not an object."
+                )
                 continue
             region = str(area.get("wojewodztwo") or "") or None
             label = str(area.get("opis") or "") or None
-            basin_codes = area.get("kod_zlewni") or []
+            basin_codes = _list_field(
+                area,
+                "kod_zlewni",
+                row_label=f"Hydro warning row {index} obszary item {area_index}",
+                warnings=warnings,
+            )
             for code in basin_codes:
                 areas.append(
                     WarningArea(
@@ -133,3 +153,19 @@ def parse_warnings_hydro(payload: Any, source: SourceMetadata) -> tuple[list[War
         )
 
     return records, warnings
+
+
+def _list_field(
+    row: dict[str, Any],
+    field: str,
+    *,
+    row_label: str,
+    warnings: list[str],
+) -> list[Any]:
+    value = row.get(field)
+    if value in (None, ""):
+        return []
+    if not isinstance(value, list):
+        warnings.append(f"{row_label} field {field!r} is not a list.")
+        return []
+    return value

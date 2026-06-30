@@ -64,6 +64,9 @@ current IMGW sources.
 Fetches the public IMGW source, parses it, writes raw and normalized payloads to
 the backend cache, and returns refresh metadata. Supported `source_key` values:
 `synop`, `hydro`, `meteo`, `warningsmeteo`, `warningshydro`, `product`.
+If a later refresh fails after a previous successful refresh, the cache keeps
+the last successful raw and normalized payload and reports the new error in
+cache status.
 
 This endpoint is operational tooling for MVP development. Scheduled refresh and
 frontend-safe map/station/warning endpoints come in Stage 4.
