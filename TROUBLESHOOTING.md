@@ -14,6 +14,24 @@ Actions:
 - Check backend logs for status code, timeout, and retrieval timestamp.
 - Keep stale data visibly labelled if serving stale cache is enabled.
 
+## Port Already In Use
+
+Symptoms:
+
+- `docker compose up` fails with `failed to bind host port 0.0.0.0:8000/tcp:
+  address already in use` (or the same for `5173`).
+
+Cause: another local process already listens on that host port. Find it with
+`ss -ltnp | grep :8000`.
+
+Actions:
+
+- Stop the conflicting process, or
+- Publish MeteoLens on a different host port via `BACKEND_PORT` / `FRONTEND_PORT`
+  (see `.env.example`), e.g. `BACKEND_PORT=8010 docker compose up --build`. The
+  frontend's `VITE_API_BASE_URL` follows `BACKEND_PORT` automatically, so the
+  browser still reaches the backend.
+
 ## CORS
 
 Final frontend should call the MeteoLens backend, not IMGW directly. If browser

@@ -25,5 +25,11 @@ All notable changes to MeteoLens will be documented in this file.
   exports, URL permalink state, keyboard shortcuts with help, light/dark/system
   theme, simple/expert mode, and loading/empty/stale/partial/error states.
 - Added frontend dependency `echarts` and frontend unit tests for the app shell,
-  state store, permalink serialization, and formatting helpers.
+  state store, permalink serialization, formatting helpers, and API error
+  parsing.
+- Made Docker Compose host ports configurable via `BACKEND_PORT`/`FRONTEND_PORT`
+  to avoid local port clashes; the frontend API base URL follows `BACKEND_PORT`.
+- Addressed Stage 5 review feedback: filter warnings by current time, restore the
+  permalink map view on first load, disable the map GeoJSON export when no layers
+  are active, and read API error codes from FastAPI `detail.error`.
 - Added MVP roadmap and implementation task queue.

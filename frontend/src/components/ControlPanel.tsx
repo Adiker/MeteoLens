@@ -1,6 +1,6 @@
 import { AlertTriangle, Layers, RefreshCw, X } from "lucide-react";
 
-import { useMapLayersQuery, useSourcesQuery, useWarningsQuery } from "../api/queries";
+import { activeAtBucket, useMapLayersQuery, useSourcesQuery, useWarningsQuery } from "../api/queries";
 import {
   cacheStatusLabel,
   formatTimestamp,
@@ -129,6 +129,8 @@ function WarningsList() {
     type,
     level: filters.warningLevel ?? undefined,
     phenomenon: filters.phenomenon.trim() || undefined,
+    // Only show warnings whose validity window covers now; the list is labelled "active".
+    active_at: activeAtBucket(),
   });
 
   if (activeWarningLayers.length === 0) {

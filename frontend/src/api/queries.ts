@@ -64,13 +64,18 @@ export function useObservationsQuery(id: string | null) {
 }
 
 export function useWarningsQuery(
-  params: { type?: WarningType; level?: number; phenomenon?: string } = {},
+  params: { type?: WarningType; level?: number; phenomenon?: string; active_at?: string } = {},
 ) {
   return useQuery({
     queryKey: ["warnings", params],
     queryFn: () => fetchWarnings(params),
     staleTime: STALE_TIME,
   });
+}
+
+/** Current time bucketed to the minute, for a stable `active_at` query key. */
+export function activeAtBucket(): string {
+  return new Date(Math.floor(Date.now() / 60_000) * 60_000).toISOString();
 }
 
 export function useWarningQuery(id: string | null) {

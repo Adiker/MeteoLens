@@ -7,6 +7,7 @@ import type { StationFeature } from "../api/client";
 import { useMapLayersQuery } from "../api/queries";
 import { CAPTURE_PNG_EVENT, FLY_TO_EVENT, type FlyToDetail } from "../lib/mapBus";
 import { STATION_LAYERS, STATION_TYPE_COLOR } from "../lib/layers";
+import { decodePermalink } from "../lib/permalink";
 import { useAppStore } from "../store/appStore";
 
 const STATIONS_SOURCE = "stations";
@@ -57,10 +58,13 @@ export function MapShell() {
       return undefined;
     }
     const { mapView, select, setMapView } = useAppStore.getState();
+    // Child effects run before the parent's usePermalink hydration, so read the
+    // permalink directly here to honour a shared center/zoom on first load.
+    const initialView = decodePermalink(window.location.search).mapView ?? mapView;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      center: [mapView.lng, mapView.lat],
-      zoom: mapView.zoom,
+      center: [initialView.lng, initialView.lat],
+      zoom: initialView.zoom,
       minZoom: 4,
       maxZoom: 14,
       attributionControl: false,

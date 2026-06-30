@@ -9,7 +9,10 @@ services:
       METEOLENS_DATABASE_URL: sqlite:////data/meteolens.sqlite3
       METEOLENS_CACHE_DIR: /data/cache
     ports:
-      - "8000:8000"
+      # Host port is configurable to avoid clashes with other local services.
+      # Override via BACKEND_PORT in a .env file or inline:
+      #   BACKEND_PORT=8010 docker compose up
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./data:/data
     healthcheck:
@@ -23,9 +26,10 @@ services:
     build:
       context: ./frontend
     environment:
-      VITE_API_BASE_URL: http://localhost:8000
+      # Browser reaches the backend on the host's published BACKEND_PORT.
+      VITE_API_BASE_URL: http://localhost:${BACKEND_PORT:-8000}
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     depends_on:
       backend:
         condition: service_healthy

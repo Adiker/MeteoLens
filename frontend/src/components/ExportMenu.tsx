@@ -62,9 +62,17 @@ export function ExportMenu() {
             </p>
           )}
           <div className="border-t border-border" />
-          <a className={itemClass} role="menuitem" href={mapGeoJsonUrl(activeLayers)} download>
-            Widoczna mapa — GeoJSON
-          </a>
+          {activeLayers.length > 0 ? (
+            <a className={itemClass} role="menuitem" href={mapGeoJsonUrl(activeLayers)} download>
+              Widoczna mapa — GeoJSON
+            </a>
+          ) : (
+            // An empty `layers` param means "all layers" to the backend, so we
+            // disable the export rather than silently exporting hidden data.
+            <button type="button" role="menuitem" className={itemClass} disabled>
+              Widoczna mapa — GeoJSON
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"

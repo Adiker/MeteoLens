@@ -218,8 +218,16 @@ export interface LocationSummaryResponse extends ApiEnvelope {
 // Fetch helpers
 // ---------------------------------------------------------------------------
 
+interface ApiErrorPayload {
+  code?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
 export interface ApiErrorBody {
-  error?: { code?: string; message?: string; [key: string]: unknown };
+  // FastAPI raises HTTPException(detail={"error": ...}) -> nested under `detail`.
+  detail?: { error?: ApiErrorPayload };
+  error?: ApiErrorPayload;
 }
 
 export class ApiError extends Error {
@@ -241,9 +249,10 @@ async function getJson<T>(path: string): Promise<T> {
     let message = `Żądanie API nie powiodło się (${response.status}).`;
     try {
       const body = (await response.json()) as ApiErrorBody;
-      code = body.error?.code;
-      if (body.error?.message) {
-        message = body.error.message;
+      const payload = body.detail?.error ?? body.error;
+      code = payload?.code;
+      if (payload?.message) {
+        message = payload.message;
       }
     } catch {
       // keep default message
