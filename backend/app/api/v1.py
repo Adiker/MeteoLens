@@ -4,6 +4,8 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.core.config import get_settings
+from app.imgw.cache import CacheStatus, SourceCache
+from app.imgw.sources import SOURCE_DEFINITIONS
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
 
@@ -14,6 +16,7 @@ class SourceDescriptor(BaseModel):
     url: str
     parser_status: str
     cache_status: str
+    cache: CacheStatus
     notes: str | None = None
 
 
@@ -24,54 +27,24 @@ class SourcesResponse(BaseModel):
 
 @router.get("/sources", response_model=SourcesResponse)
 def list_sources() -> SourcesResponse:
-    base_url = str(get_settings().imgw_base_url).rstrip("/")
-    planned_sources = [
-        SourceDescriptor(
-            key="synop",
-            title="Aktualne dane synoptyczne",
-            url=f"{base_url}/api/data/synop",
-            parser_status="planned",
-            cache_status="not_configured",
-            notes="Current endpoint does not include coordinates.",
-        ),
-        SourceDescriptor(
-            key="hydro",
-            title="Aktualne dane hydrologiczne",
-            url=f"{base_url}/api/data/hydro",
-            parser_status="planned",
-            cache_status="not_configured",
-        ),
-        SourceDescriptor(
-            key="meteo",
-            title="Aktualne dane meteorologiczne",
-            url=f"{base_url}/api/data/meteo",
-            parser_status="planned",
-            cache_status="not_configured",
-        ),
-        SourceDescriptor(
-            key="warningsmeteo",
-            title="Ostrzeżenia meteorologiczne",
-            url=f"{base_url}/api/data/warningsmeteo",
-            parser_status="planned",
-            cache_status="not_configured",
-            notes="Requires TERYT geometry for polygons.",
-        ),
-        SourceDescriptor(
-            key="warningshydro",
-            title="Ostrzeżenia hydrologiczne",
-            url=f"{base_url}/api/data/warningshydro",
-            parser_status="planned",
-            cache_status="not_configured",
-            notes="Requires basin geometry for polygons.",
-        ),
-        SourceDescriptor(
-            key="product",
-            title="Produkty plikowe IMGW-PIB",
-            url=f"{base_url}/api/data/product",
-            parser_status="risky",
-            cache_status="not_configured",
-            notes="GRIB/radar products are post-MVP research items.",
-        ),
-    ]
-    return SourcesResponse(retrieved_at=datetime.now(UTC), sources=planned_sources)
-
+    settings = get_settings()
+    base_url = str(settings.imgw_base_url).rstrip("/")
+    cache = SourceCache(settings.cache_dir)
+    sources = []
+    for source in SOURCE_DEFINITIONS:
+        cache_status = cache.status(
+            source.key,
+            ttl_seconds=source.default_ttl_seconds,
+        )
+        sources.append(
+            SourceDescriptor(
+                key=source.key,
+                title=source.title,
+                url=source.url(base_url),
+                parser_status=source.parser_status,
+                cache_status=cache_status.status,
+                cache=cache_status,
+                notes=source.notes,
+            )
+        )
+    return SourcesResponse(retrieved_at=datetime.now(UTC), sources=sources)

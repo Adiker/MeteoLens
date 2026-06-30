@@ -87,6 +87,10 @@ Planned frontend module layout:
 7. API serves frontend-ready objects with source, retrieval, observation,
    missing-field, and processed-data metadata.
 
+Stage 3 implements the client, parser, normalization, and file-cache portions of
+this flow for current IMGW JSON endpoints. Stage 4 will expose map/station/
+warning API endpoints backed by those normalized records.
+
 ## Normalization Rules
 
 - Preserve source IDs.
@@ -202,7 +206,7 @@ Stage 2:
 
 Stage 3:
 
-- parser tests for every IMGW source using real captured fixtures,
+- parser tests for every current IMGW source using real captured fixtures,
 - normalizer tests for nulls, numeric strings, timestamps, and missing fields,
 - cache tests for freshness and failed fetch behavior.
 
@@ -247,4 +251,3 @@ source availability.
 - GRIB/model products through dedicated parsers and tiling/rendering pipeline.
 - Local alerting and PWA.
 - PDF report generation.
-

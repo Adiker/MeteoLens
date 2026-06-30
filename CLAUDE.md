@@ -7,8 +7,9 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
 
 - **What:** Web application for visualising public IMGW-PIB meteorological and
   hydrological data for Poland.
-- **Status:** Stage 2 skeleton exists: FastAPI health/source endpoints,
-  React/Vite map shell, Docker Compose, tests, lint, and CI.
+- **Status:** Stage 3 exists: FastAPI health/source endpoints, IMGW client,
+  parser/normalization/cache layer, React/Vite map shell, Docker Compose,
+  tests, lint, and CI.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
   GL, ECharts, TanStack Query, Zustand.
 - **Backend plan:** Python FastAPI, Pydantic, httpx, scheduler, cache, SQLite
@@ -64,8 +65,8 @@ The backend reads `METEOLENS_*` environment variables; see `.env.example`.
 ## Tests
 
 Backend tests use pytest and FastAPI TestClient. Frontend tests use Vitest,
-Testing Library, and jsdom. Stage 3 parser work must include fixtures from real
-IMGW responses stored only for tests.
+Testing Library, and jsdom. Parser fixtures live under `backend/tests/fixtures`
+and must stay test-only.
 
 ## Documentation Rules
 
@@ -81,3 +82,5 @@ IMGW responses stored only for tests.
   backend cache/API.
 - Never turn `null` into `0`.
 - Keep raw source metadata available for expert mode.
+- Public refresh endpoints are deferred to Stage 4; Stage 3 cache refresh stays
+  inside backend implementation work.

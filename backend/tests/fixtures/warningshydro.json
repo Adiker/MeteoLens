@@ -1,0 +1,22 @@
+[
+  {
+    "opublikowano": "2026-05-17 08:45:07",
+    "stopień": "-1",
+    "data_od": "2026-05-17 08:45:56",
+    "data_do": "9999-12-31 23:59:59",
+    "prawdopodobienstwo": "90",
+    "numer": "31",
+    "biuro": "Biuro Prognoz Hydrologicznych we Wrocławiu",
+    "zdarzenie": "Susza hydrologiczna",
+    "przebieg": "Niskie przepływy wody.",
+    "komentarz": "Ostrzeżenie wydawane jest w sytuacji niskich przepływów.",
+    "obszary": [
+      {
+        "wojewodztwo": "wielkopolskie",
+        "opis": "wielkopolskie, Kanał Mosiński, susza hydrologiczna",
+        "kod_zlewni": ["Z_P_WP_1856"]
+      }
+    ]
+  }
+]
+

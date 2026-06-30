@@ -33,10 +33,11 @@ Implemented now:
 - React/Vite frontend skeleton with a MapLibre map shell and source status
   panels.
 - Docker Compose, `.env.example`, basic CI, lint, and tests.
+- IMGW-PIB HTTP client, parser layer, normalized models, file cache, and parser
+  tests for current synop/hydro/meteo/warning endpoints plus product manifests.
 
 Not implemented yet:
 
-- IMGW parser code.
 - Data-driven map layers.
 - Exports.
 

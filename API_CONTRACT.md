@@ -56,6 +56,12 @@ Returns supported source descriptors, cache status, and parser status.
 Stage 2 implementation returns planned descriptors only. Real cache freshness
 and parser status will be wired during Stage 3.
 
+Stage 3 implementation returns parser status and file-cache status for the
+current IMGW sources.
+
+Public refresh endpoints are deferred to Stage 4. Stage 3 cache refresh remains
+an internal backend concern so public API consumers cannot mutate cache state.
+
 ## Map Layers
 
 `GET /api/v1/map/layers`
