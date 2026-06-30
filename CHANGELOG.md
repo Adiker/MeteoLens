@@ -19,4 +19,11 @@ All notable changes to MeteoLens will be documented in this file.
 - Documented architecture decisions for frontend, backend, cache, database,
   exports, and deployment.
 - Documented attribution and processed-data requirements.
+- Added Stage 5 frontend: map-first dashboard with layer registry/toggles,
+  station markers, station/warning details panel with mobile bottom sheet,
+  station search, "My location", ECharts station chart, CSV/JSON/GeoJSON/PNG
+  exports, URL permalink state, keyboard shortcuts with help, light/dark/system
+  theme, simple/expert mode, and loading/empty/stale/partial/error states.
+- Added frontend dependency `echarts` and frontend unit tests for the app shell,
+  state store, permalink serialization, and formatting helpers.
 - Added MVP roadmap and implementation task queue.

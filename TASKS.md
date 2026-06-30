@@ -71,20 +71,28 @@
 
 ## Stage 5 - Frontend
 
-- [ ] Add map shell centered on Poland.
-- [ ] Add layer registry and toggles.
-- [ ] Add legends.
-- [ ] Add station and warning markers/polygons.
-- [ ] Add details panel and mobile bottom sheet.
-- [ ] Add search.
-- [ ] Add "My location".
-- [ ] Add charts.
-- [ ] Add export controls.
-- [ ] Add permalink state.
-- [ ] Add keyboard shortcuts and shortcut help.
-- [ ] Add light/dark/system mode.
-- [ ] Add simple/expert mode.
-- [ ] Add loading, empty, stale, partial, and error states.
+- [x] Add map shell centered on Poland.
+- [x] Add layer registry and toggles.
+- [x] Add legends.
+- [x] Add station and warning markers/polygons. Stations render as coloured
+  markers; warnings render as a filterable list because the backend exposes no
+  area geometry yet (`missing_area_geometry_dataset`). Polygons land when TERYT
+  and basin geometry datasets are cached.
+- [x] Add details panel and mobile bottom sheet.
+- [x] Add search.
+- [x] Add "My location".
+- [x] Add charts. Snapshot cache exposes one timestamp per station, so the chart
+  shows current metric values; multi-frame time series follows archive data.
+- [x] Add export controls (station CSV/JSON, map GeoJSON, current-map PNG).
+- [x] Add permalink state.
+- [x] Add keyboard shortcuts and shortcut help.
+- [x] Add light/dark/system mode.
+- [x] Add simple/expert mode.
+- [x] Add loading, empty, stale, partial, and error states.
+
+Deferred within Stage 5 scope: the bottom timeline/animation control is inert
+until time-aware (archive/radar) data exists, and province/time-range quick
+filters wait for area geometry and archive series.
 
 ## Stage 6 - Quality
 

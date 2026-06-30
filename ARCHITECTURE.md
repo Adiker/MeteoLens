@@ -61,17 +61,28 @@ Planned backend module layout:
 
 ## Frontend Modules
 
-Planned frontend module layout:
+Stage 5 frontend module layout (implemented):
 
-- `src/app`: application shell, routing, providers.
-- `src/map`: MapLibre map, layer registry, legends, selection handling.
-- `src/features/stations`: station lists, details, charts, exports.
-- `src/features/warnings`: warning layers, details, filters.
-- `src/features/location`: "My location" workflow.
-- `src/features/timeline`: time controls and play/pause animation.
-- `src/api`: typed client and TanStack Query hooks.
-- `src/state`: Zustand stores for view and preferences.
-- `src/components`: shared UI components.
+- `src/app`: application shell and providers (`QueryClientProvider`), wiring the
+  theme, permalink, and keyboard-shortcut hooks.
+- `src/map`: MapLibre map (`MapShell`) with the stations GeoJSON source, circle
+  layer coloured by station type, selection highlight, and PNG/flyTo handlers.
+- `src/components`: header/search/export controls, control panel (layer toggles,
+  legends, filters, warning list, source status), details panel (station and
+  warning, simple/expert, mobile bottom sheet), ECharts station chart, shortcut
+  help, attribution bar, and shared primitives.
+- `src/api`: typed client (`client.ts`) and TanStack Query hooks (`queries.ts`).
+- `src/store`: Zustand store for layers, selection, mode, theme, filters, map
+  view, and location.
+- `src/hooks`: theme, permalink sync, and global keyboard shortcuts.
+- `src/lib`: layer registry, formatting helpers, permalink (de)serialization,
+  and the window-event map command bus.
+
+Imperative map commands (search/location fly-to, PNG capture) use a small
+window-event bus (`src/lib/mapBus.ts`) instead of prop-drilling the MapLibre
+instance. The timeline/animation module is deferred until time-aware data
+exists, and warning polygons are deferred until area geometry datasets are
+cached (warnings currently render as a filterable list).
 
 ## Data Ingestion Flow
 
