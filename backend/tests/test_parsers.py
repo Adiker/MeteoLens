@@ -83,6 +83,21 @@ def test_hydro_parser_reports_missing_per_metric_timestamps() -> None:
     assert flow.observed_at is None
 
 
+def test_meteo_parser_reports_missing_per_metric_timestamps() -> None:
+    payload = load_fixture("meteo")
+    payload[0]["opad_10min_data"] = None
+
+    result = parse_source("meteo", payload, source_metadata("meteo"))
+
+    station = result.records[0]
+    assert isinstance(station, Station)
+    assert "opad_10min_data" in station.missing_fields
+    precipitation = next(
+        item for item in station.observations if item.metric == "precipitation_10min"
+    )
+    assert precipitation.observed_at is None
+
+
 def test_warnings_parsers_keep_area_codes() -> None:
     meteo = parse_source(
         "warningsmeteo",

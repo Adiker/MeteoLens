@@ -82,5 +82,5 @@ and must stay test-only.
   backend cache/API.
 - Never turn `null` into `0`.
 - Keep raw source metadata available for expert mode.
-- Use `POST /api/v1/sources/{source_key}/refresh` for manual source refresh
-  during backend development; frontend map/station/warning endpoints are Stage 4.
+- Public refresh endpoints are deferred to Stage 4; Stage 3 cache refresh stays
+  inside backend implementation work.
