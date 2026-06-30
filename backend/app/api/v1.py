@@ -2,7 +2,7 @@ import csv
 from datetime import UTC, datetime
 from io import StringIO
 from math import asin, cos, radians, sin, sqrt
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, NoReturn
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
@@ -385,9 +385,11 @@ def get_location_summary(
     radius_km: Annotated[float, Query(gt=0, le=500)] = 50,
 ) -> LocationSummaryResponse:
     cache = _source_cache()
+    all_stations = _stations_from_cache(cache)
+    all_warnings = _warnings_from_cache(cache)
     stations = [
         station
-        for station in _stations_from_cache(cache)
+        for station in all_stations
         if station.lat is not None and station.lon is not None
     ]
     station_distances = [
@@ -405,11 +407,11 @@ def get_location_summary(
     now = datetime.now(UTC)
     active_warnings = [
         _warning_payload(warning)
-        for warning in _warnings_from_cache(cache)
+        for warning in all_warnings
         if _warning_matches(warning, active_at=now)
     ]
 
-    cached_records = _stations_from_cache(cache) + _warnings_from_cache(cache)
+    cached_records = all_stations + all_warnings
     return LocationSummaryResponse(
         generated_at=now,
         cache=_cache_states(cache, STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS),
@@ -674,7 +676,7 @@ def _raise_not_found_or_empty(
     records: list[Any],
     source_keys: tuple[str, ...],
     record_kind: str,
-) -> None:
+) -> NoReturn:
     if not records:
         raise HTTPException(
             status_code=503,
