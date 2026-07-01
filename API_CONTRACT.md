@@ -233,17 +233,22 @@ Query parameters:
 - `county`: planned Stage 9 filter where reviewed administrative geometry
   exists.
 
+`GET /api/v1/geometry/datasets`
+
+Returns reviewed geometry dataset status from the local `data/geometry/` cache.
+
 `GET /api/v1/warnings/{id}`
 
 Returns warning detail, affected areas, geometry references, source metadata, and
 raw JSON availability.
 
-Warnings currently expose `area_codes` from IMGW TERYT/basin/province metadata
-and `geometry_status: "missing_area_geometry_dataset"` until TERYT and basin
-geometry datasets are added.
+Warnings expose `area_codes` from IMGW TERYT/basin/province metadata. When
+reviewed geometry datasets are cached under `METEOLENS_GEOMETRY_DIR`, map layers
+and warning detail responses include resolved polygon GeoJSON plus
+`unresolved_areas` for codes that cannot be mapped.
 
-Stage 9 should add reviewed geometry references or GeoJSON features for warning
-areas where code mapping is reliable. Responses must continue to expose
+Stage 9 adds reviewed geometry references or GeoJSON features for warning
+areas where code mapping is reliable. Responses continue to expose
 unresolved codes and missing geometry reasons instead of hiding partial data.
 
 ## Location Summary
@@ -264,9 +269,10 @@ location matching is not available until area geometry datasets are cached.
 The response includes `generated_at`, `cache`, and `empty_state` metadata like
 other collection endpoints.
 
-Stage 9 should add spatial warning matching for this endpoint when reviewed
-TERYT or basin geometries exist. The response should distinguish exact polygon
-matches, fallback active-warning summaries, and unresolved geometry.
+Stage 9 adds spatial warning matching for this endpoint when reviewed
+TERYT or basin geometries exist. The response distinguishes exact polygon
+matches (`match_type: "polygon"`), fallback active-warning summaries, and
+unresolved geometry via `notes`.
 
 ## Exports
 

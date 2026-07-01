@@ -6,13 +6,16 @@ import { useEffect, useMemo, useRef } from "react";
 import type { StationFeature } from "../api/client";
 import { useMapLayersQuery } from "../api/queries";
 import { CAPTURE_PNG_EVENT, FLY_TO_EVENT, type FlyToDetail } from "../lib/mapBus";
-import { STATION_LAYERS, STATION_TYPE_COLOR } from "../lib/layers";
+import { LAYERS, STATION_LAYERS, STATION_TYPE_COLOR, WARNING_LAYERS } from "../lib/layers";
 import { decodePermalink } from "../lib/permalink";
 import { useAppStore } from "../store/appStore";
 
 const STATIONS_SOURCE = "stations";
 const STATIONS_LAYER = "stations-circles";
 const SELECTED_LAYER = "stations-selected";
+const WARNINGS_SOURCE = "warnings";
+const WARNINGS_FILL_LAYER = "warnings-fill";
+const WARNINGS_OUTLINE_LAYER = "warnings-outline";
 
 function collection(features: StationFeature[]): GeoJSON.FeatureCollection {
   return { type: "FeatureCollection", features } as unknown as GeoJSON.FeatureCollection;
@@ -63,14 +66,25 @@ export function MapShell() {
   const activeLayers = useAppStore((state) => state.activeLayers);
   const selection = useAppStore((state) => state.selection);
 
-  const activeStationKeys = STATION_LAYERS.filter((l) => activeLayers[l.key]).map((l) => l.key);
-  const mapQuery = useMapLayersQuery(activeStationKeys);
+  const activeMapLayerKeys = LAYERS.filter((layer) => activeLayers[layer.key]).map((layer) => layer.key);
+  const mapQuery = useMapLayersQuery(activeMapLayerKeys);
 
-  const features = useMemo(
-    () => (mapQuery.data?.layers ?? []).flatMap((layer) => layer.geojson.features),
+  const stationFeatures = useMemo(
+    () =>
+      (mapQuery.data?.layers ?? [])
+        .filter((layer) => STATION_LAYERS.some((stationLayer) => stationLayer.key === layer.key))
+        .flatMap((layer) => layer.geojson.features),
     [mapQuery.data],
   );
-  const featuresRef = useRef(features);
+  const warningFeatures = useMemo(
+    () =>
+      (mapQuery.data?.layers ?? [])
+        .filter((layer) => WARNING_LAYERS.some((warningLayer) => warningLayer.key === layer.key))
+        .flatMap((layer) => layer.geojson.features),
+    [mapQuery.data],
+  );
+  const featuresRef = useRef(stationFeatures);
+  const warningFeaturesRef = useRef(warningFeatures);
   const selectionRef = useRef(selection);
 
   // --- Map lifecycle (mount once) -----------------------------------------
@@ -159,6 +173,51 @@ export function MapShell() {
         map.getCanvas().style.cursor = "";
       });
 
+      map.addSource(WARNINGS_SOURCE, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: warningFeaturesRef.current },
+      });
+      map.addLayer({
+        id: WARNINGS_FILL_LAYER,
+        type: "fill",
+        source: WARNINGS_SOURCE,
+        paint: {
+          "fill-color": [
+            "match",
+            ["get", "level"],
+            1,
+            "rgba(250, 204, 21, 0.25)",
+            2,
+            "rgba(249, 115, 22, 0.28)",
+            3,
+            "rgba(220, 38, 38, 0.32)",
+            "rgba(124, 58, 237, 0.25)",
+          ],
+        },
+      });
+      map.addLayer({
+        id: WARNINGS_OUTLINE_LAYER,
+        type: "line",
+        source: WARNINGS_SOURCE,
+        paint: {
+          "line-color": "#7c3aed",
+          "line-width": 1.5,
+        },
+      });
+
+      map.on("click", WARNINGS_FILL_LAYER, (event) => {
+        const warningId = event.features?.[0]?.properties?.warning_id;
+        if (typeof warningId === "string") {
+          select({ kind: "warning", id: warningId });
+        }
+      });
+      map.on("mouseenter", WARNINGS_FILL_LAYER, () => {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", WARNINGS_FILL_LAYER, () => {
+        map.getCanvas().style.cursor = "";
+      });
+
       loadedRef.current = true;
     });
 
@@ -186,14 +245,29 @@ export function MapShell() {
 
   // --- Push station features into the map source --------------------------
   useEffect(() => {
-    featuresRef.current = features;
+    featuresRef.current = stationFeatures;
     const map = mapRef.current;
     if (!map || !loadedRef.current) {
       return;
     }
     const source = map.getSource(STATIONS_SOURCE) as maplibregl.GeoJSONSource | undefined;
-    source?.setData(collection(features));
-  }, [features]);
+    source?.setData(collection(stationFeatures));
+  }, [stationFeatures]);
+
+  useEffect(() => {
+    warningFeaturesRef.current = warningFeatures;
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+    const source = map.getSource(WARNINGS_SOURCE) as maplibregl.GeoJSONSource | undefined;
+    source?.setData({ type: "FeatureCollection", features: warningFeatures });
+    const visibility = warningFeatures.length > 0 ? "visible" : "none";
+    if (map.getLayer(WARNINGS_FILL_LAYER)) {
+      map.setLayoutProperty(WARNINGS_FILL_LAYER, "visibility", visibility);
+      map.setLayoutProperty(WARNINGS_OUTLINE_LAYER, "visibility", visibility);
+    }
+  }, [warningFeatures]);
 
   // --- Reflect selection as a highlight ring ------------------------------
   useEffect(() => {

@@ -22,6 +22,12 @@ export interface Filters {
   warningLevel: number | null;
   /** Free-text phenomenon/event filter. */
   phenomenon: string;
+  /** TERYT voivodeship prefix filter where geometry exists. */
+  province: string;
+  /** TERYT county code filter where geometry exists. */
+  county: string;
+  /** Hydrological basin code filter where geometry exists. */
+  basin: string;
 }
 
 export const POLAND_VIEW: MapView = { lng: 19.1451, lat: 51.9194, zoom: 5.4 };
@@ -63,7 +69,13 @@ function buildActiveLayers(keys: LayerKey[]): Record<LayerKey, boolean> {
   return active;
 }
 
-const DEFAULT_FILTERS: Filters = { warningLevel: null, phenomenon: "" };
+const DEFAULT_FILTERS: Filters = {
+  warningLevel: null,
+  phenomenon: "",
+  province: "",
+  county: "",
+  basin: "",
+};
 
 const THEME_CYCLE: ThemePreference[] = ["system", "light", "dark"];
 

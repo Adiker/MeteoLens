@@ -1,0 +1,44 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "1205",
+        "county_code": "1205",
+        "province_code": "12",
+        "name": "Test county 1205"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[18.5, 50.0], [19.5, 50.0], [19.5, 51.0], [18.5, 51.0], [18.5, 50.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "1207",
+        "county_code": "1207",
+        "province_code": "12",
+        "name": "Test county 1207"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[19.0, 50.2], [20.0, 50.2], [20.0, 51.2], [19.0, 51.2], [19.0, 50.2]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "2461",
+        "county_code": "2461",
+        "province_code": "24",
+        "name": "Test county 2461"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[19.0, 51.0], [20.0, 51.0], [20.0, 52.0], [19.0, 52.0], [19.0, 51.0]]]
+      }
+    }
+  ]
+}

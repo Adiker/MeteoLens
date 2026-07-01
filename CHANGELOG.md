@@ -4,6 +4,9 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 9 geometry pipeline: local geometry manifest/cache, warning polygon
+  map layers, spatial location matching, province/county/basin filters, and
+  geometry dataset status API.
 - Added documentation-only planning for Stages 7-11: public demo/production
   hardening, observation history and real time series, geometry datasets and
   spatial warnings, radar/product/GRIB research with timeline animation, and

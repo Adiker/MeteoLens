@@ -10,6 +10,12 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from app.core.config import get_settings
+from app.geometry.loader import get_geometry_store
+from app.geometry.spatial import (
+    resolve_warning_geometries,
+    warning_matches_spatial_filters,
+    warnings_matching_point,
+)
 from app.imgw.cache import CachedSourcePayload, CacheStatus, SourceCache
 from app.imgw.parsers.utils import SOURCE_TIMEZONE
 from app.imgw.sources import SOURCE_BY_KEY, SOURCE_DEFINITIONS
@@ -163,6 +169,22 @@ class MapLayersResponse(ApiEnvelope):
     layers: list[MapLayerResponse]
 
 
+class GeometryDatasetStatus(BaseModel):
+    key: str
+    title: str
+    source: str
+    license_note: str
+    loaded: bool
+    feature_count: int
+    error: str | None = None
+
+
+class GeometryDatasetsResponse(BaseModel):
+    generated_at: datetime
+    datasets: list[GeometryDatasetStatus]
+    manifest_present: bool
+
+
 @router.get("/sources", response_model=SourcesResponse)
 def list_sources() -> SourcesResponse:
     settings = get_settings()
@@ -188,6 +210,18 @@ def list_sources() -> SourcesResponse:
     return SourcesResponse(retrieved_at=datetime.now(UTC), sources=sources)
 
 
+@router.get("/geometry/datasets", response_model=GeometryDatasetsResponse)
+def list_geometry_datasets() -> GeometryDatasetsResponse:
+    settings = get_settings()
+    store = get_geometry_store()
+    manifest_present = (settings.geometry_dir / "manifest.json").exists()
+    return GeometryDatasetsResponse(
+        generated_at=datetime.now(UTC),
+        datasets=[GeometryDatasetStatus(**item) for item in store.status()],
+        manifest_present=manifest_present,
+    )
+
+
 @router.get("/map/layers", response_model=MapLayersResponse)
 def get_map_layers(
     layers: Annotated[str | None, Query(description="Comma-separated layer keys.")] = None,
@@ -201,6 +235,7 @@ def get_map_layers(
         [source for layer in requested_layers for source in layer["source_keys"]],
     )
     records = _records_from_cache(cache, STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS)
+    geometry_store = get_geometry_store()
     response_layers: list[MapLayerResponse] = []
 
     for layer in requested_layers:
@@ -223,8 +258,15 @@ def get_map_layers(
                     continue
                 features.append(_station_feature(record))
             elif isinstance(record, Warning):
-                non_spatial_records.append(_warning_map_record(record))
-                missing_geometry.append(_missing_warning_geometry(record))
+                geometry = resolve_warning_geometries(record, geometry_store)
+                warning_record = _warning_map_record(record, geometry)
+                non_spatial_records.append(warning_record)
+                if geometry["geojson"]["features"]:
+                    features.extend(geometry["geojson"]["features"])
+                if geometry["unresolved_areas"]:
+                    missing_geometry.extend(
+                        _missing_warning_geometry(record, geometry["unresolved_areas"])
+                    )
 
         response_layers.append(
             MapLayerResponse(
@@ -339,11 +381,14 @@ def list_warnings(
     phenomenon: str | None = None,
     teryt: str | None = None,
     basin: str | None = None,
+    province: str | None = None,
+    county: str | None = None,
 ) -> WarningsResponse:
     cache = _source_cache()
+    geometry_store = get_geometry_store()
     records = _warnings_from_cache(cache)
     warnings = [
-        _warning_payload(warning)
+        _warning_payload(warning, geometry_store)
         for warning in records
         if _warning_matches(
             warning,
@@ -353,6 +398,9 @@ def list_warnings(
             phenomenon=phenomenon,
             teryt=teryt,
             basin=basin,
+            province=province,
+            county=county,
+            geometry_store=geometry_store,
         )
     ]
     return WarningsResponse(
@@ -371,10 +419,12 @@ def list_warnings(
 @router.get("/warnings/{warning_id}", response_model=WarningResponse)
 def get_warning(warning_id: str) -> WarningResponse:
     warning = _get_warning_or_404(warning_id)
+    geometry_store = get_geometry_store()
+    geometry = resolve_warning_geometries(warning, geometry_store)
     return WarningResponse(
         generated_at=datetime.now(UTC),
-        warning=_warning_payload(warning),
-        geometry_status="missing_area_geometry_dataset",
+        warning=_warning_payload(warning, geometry_store),
+        geometry_status=geometry["geometry_status"],
     )
 
 
@@ -406,10 +456,18 @@ def get_location_summary(
     ][:10]
     now = datetime.now(UTC)
     active_warnings = [
-        _warning_payload(warning)
+        warning
         for warning in all_warnings
         if _warning_matches(warning, active_at=now)
     ]
+    geometry_store = get_geometry_store()
+    polygon_matches, fallback_warnings, notes = warnings_matching_point(
+        lat=lat,
+        lon=lon,
+        warnings=active_warnings,
+        store=geometry_store,
+    )
+    warnings = polygon_matches if polygon_matches else fallback_warnings
 
     cached_records = all_stations + all_warnings
     return LocationSummaryResponse(
@@ -418,18 +476,15 @@ def get_location_summary(
         location={"lat": lat, "lon": lon},
         radius_km=radius_km,
         nearest_stations=nearest,
-        warnings=active_warnings,
+        warnings=warnings,
         empty_state=_collection_empty_state(
             cached_records,
-            nearest or active_warnings,
+            nearest or warnings,
             STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS,
             filter_code="no_location_data",
             filter_message="No cached station or warning data matched this location summary.",
         ),
-        notes=[
-            "Warnings are not spatially matched yet because TERYT and basin "
-            "geometry datasets are not cached."
-        ],
+        notes=notes,
     )
 
 
@@ -794,12 +849,28 @@ def _station_feature(station: Station) -> dict[str, Any]:
     }
 
 
-def _warning_map_record(warning: Warning) -> dict[str, Any]:
+def _warning_map_record(warning: Warning, geometry: dict[str, Any]) -> dict[str, Any]:
     return {
-        **_warning_payload(warning),
-        "geometry_status": "missing_area_geometry_dataset",
+        **_warning_payload_from_geometry(warning, geometry),
         "area_codes": [area.code for area in warning.areas],
     }
+
+
+def _warning_payload(warning: Warning, geometry_store=None) -> dict[str, Any]:
+    if geometry_store is None:
+        geometry_store = get_geometry_store()
+    geometry = resolve_warning_geometries(warning, geometry_store)
+    return _warning_payload_from_geometry(warning, geometry)
+
+
+def _warning_payload_from_geometry(warning: Warning, geometry: dict[str, Any]) -> dict[str, Any]:
+    payload = warning.model_dump(mode="json")
+    payload["area_codes"] = [area.code for area in warning.areas]
+    payload["geometry_status"] = geometry["geometry_status"]
+    payload["resolved_areas"] = geometry["resolved_areas"]
+    payload["unresolved_areas"] = geometry["unresolved_areas"]
+    payload["raw_available"] = True
+    return payload
 
 
 def _missing_geometry(station: Station) -> dict[str, Any]:
@@ -813,13 +884,24 @@ def _missing_geometry(station: Station) -> dict[str, Any]:
     }
 
 
-def _missing_warning_geometry(warning: Warning) -> dict[str, Any]:
-    return {
-        "id": warning.id,
-        "source_key": warning.source_key,
-        "reason": "missing_area_geometry_dataset",
-        "area_codes": [area.code for area in warning.areas],
-    }
+def _missing_warning_geometry(
+    warning: Warning,
+    unresolved_areas: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    areas = unresolved_areas or [
+        {"area_type": area.area_type, "code": area.code, "reason": "missing_area_geometry_dataset"}
+        for area in warning.areas
+    ]
+    return [
+        {
+            "id": warning.id,
+            "source_key": warning.source_key,
+            "reason": area.get("reason", "missing_area_geometry_dataset"),
+            "area_type": area.get("area_type"),
+            "area_codes": [area.get("code")],
+        }
+        for area in areas
+    ]
 
 
 def _station_list_item(station: Station) -> StationListItem:
@@ -922,13 +1004,6 @@ def _observation_matches(
     return True
 
 
-def _warning_payload(warning: Warning) -> dict[str, Any]:
-    payload = warning.model_dump(mode="json")
-    payload["area_codes"] = [area.code for area in warning.areas]
-    payload["raw_available"] = True
-    return payload
-
-
 def _warning_matches(
     warning: Warning,
     *,
@@ -938,6 +1013,9 @@ def _warning_matches(
     phenomenon: str | None = None,
     teryt: str | None = None,
     basin: str | None = None,
+    province: str | None = None,
+    county: str | None = None,
+    geometry_store=None,
 ) -> bool:
     if warning_type is not None and warning.warning_type != warning_type:
         return False
@@ -963,6 +1041,16 @@ def _warning_matches(
         area.area_type == "basin" and area.code == basin for area in warning.areas
     ):
         return False
+    if province is not None or county is not None:
+        if geometry_store is None:
+            geometry_store = get_geometry_store()
+        return warning_matches_spatial_filters(
+            warning,
+            geometry_store,
+            province=province,
+            county=county,
+            basin=None,
+        )
     return True
 
 

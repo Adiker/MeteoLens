@@ -104,6 +104,7 @@ export function LocationSummary() {
                       <span className="block truncate">{warning.event}</span>
                       <span className="block text-[11px] text-muted-foreground">
                         Poziom {warningLevelLabel(warning.level)} · do {formatTimestamp(warning.valid_to)}
+                        {warning.match_type === "polygon" ? " · dopasowanie poligonu" : ""}
                       </span>
                     </span>
                   </button>

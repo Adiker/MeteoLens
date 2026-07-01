@@ -1,0 +1,25 @@
+{
+  "datasets": [
+    {
+      "key": "teryt_voivodeships",
+      "title": "Test TERYT voivodeships",
+      "source": "MeteoLens test fixture",
+      "license_note": "Test-only geometry. Not for production.",
+      "file": "teryt_voivodeships.geojson"
+    },
+    {
+      "key": "teryt_counties",
+      "title": "Test TERYT counties",
+      "source": "MeteoLens test fixture",
+      "license_note": "Test-only geometry. Not for production.",
+      "file": "teryt_counties.geojson"
+    },
+    {
+      "key": "hydro_basins",
+      "title": "Test hydro basins",
+      "source": "MeteoLens test fixture",
+      "license_note": "Test-only geometry. Not for production.",
+      "file": "hydro_basins.geojson"
+    }
+  ]
+}

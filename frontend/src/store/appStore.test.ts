@@ -7,7 +7,7 @@ function reset() {
     selection: null,
     mode: "simple",
     theme: "system",
-    filters: { warningLevel: null, phenomenon: "" },
+    filters: { warningLevel: null, phenomenon: "", province: "", county: "", basin: "" },
     mapView: POLAND_VIEW,
   });
   useAppStore.getState().setActiveLayers([
@@ -74,9 +74,21 @@ describe("appStore", () => {
   it("sets and resets filters", () => {
     useAppStore.getState().setFilter("warningLevel", 2);
     useAppStore.getState().setFilter("phenomenon", "Burze");
-    expect(useAppStore.getState().filters).toEqual({ warningLevel: 2, phenomenon: "Burze" });
+    expect(useAppStore.getState().filters).toEqual({
+      warningLevel: 2,
+      phenomenon: "Burze",
+      province: "",
+      county: "",
+      basin: "",
+    });
     useAppStore.getState().resetFilters();
-    expect(useAppStore.getState().filters).toEqual({ warningLevel: null, phenomenon: "" });
+    expect(useAppStore.getState().filters).toEqual({
+      warningLevel: null,
+      phenomenon: "",
+      province: "",
+      county: "",
+      basin: "",
+    });
   });
 
   it("sets the map view and user location", () => {
