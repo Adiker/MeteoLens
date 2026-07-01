@@ -84,14 +84,20 @@ The frontend reads the backend base URL from `VITE_API_BASE_URL` (default
 `http://localhost:8000`). If port 8000 is taken by another app, run the backend
 elsewhere and point the frontend at it: copy `frontend/.env.example` to
 `frontend/.env.local`, set `VITE_API_BASE_URL=http://localhost:<port>`, and
-restart `npm run dev`. With an empty cache the UI shows explicit empty/stale
-states instead of mock data, so populate the backend cache to see live markers.
+restart `npm run dev`. To populate the backend cache with live IMGW data during
+manual backend startup, set `METEOLENS_SYNC_ON_STARTUP=true` before running
+Uvicorn. With an empty cache the UI shows explicit empty/stale states instead of
+mock data.
 
 Run both with Docker Compose:
 
 ```bash
 docker compose up --build
 ```
+
+Docker Compose enables `METEOLENS_SYNC_ON_STARTUP=true`, so the backend fetches
+the configured live IMGW sources and writes the normalized file cache before the
+frontend is marked ready.
 
 Local URLs:
 
@@ -158,9 +164,9 @@ data (see `AGENTS.md`).
   but has nothing time-aware (archive or radar frames) to drive it yet.
 - **Province/time-range quick filters are deferred.** These depend on the same
   area-geometry and archive-series work as the two points above.
-- **No public cache-refresh endpoint.** The cache is populated by backend
-  internals (scheduler/manual trigger), not a user-facing "refresh" API call;
-  this was explicitly deferred from Stage 4 to a later stage.
+- **No public cache-refresh endpoint.** Docker Compose populates the cache at
+  backend startup via `METEOLENS_SYNC_ON_STARTUP=true`; there is still no
+  user-facing "refresh data" API call.
 - **Radar, GRIB, and other `product` API files are not parsed or rendered.**
   Only the product manifest listing is implemented; binary format decoding,
   projections, and tile rendering are post-MVP work (see `TROUBLESHOOTING.md`

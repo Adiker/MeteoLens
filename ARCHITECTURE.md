@@ -138,6 +138,13 @@ Suggested TTL defaults:
 
 Final TTLs must be revisited after observing source behavior.
 
+The current backend includes a startup refresh path controlled by
+`METEOLENS_SYNC_ON_STARTUP`. When enabled, it fetches each configured IMGW JSON
+source, parses it through the source-specific parser layer, and writes the
+normalized file cache used by the public API. Per-source fetch or parser errors
+are stored as cache errors; stale successful payloads are preserved when
+available.
+
 ## Database Schema
 
 MVP SQLite tables should include:

@@ -102,3 +102,5 @@ filters wait for area geometry and archive series.
 - [x] Verify attribution in UI and exports.
 - [x] Verify missing values are not converted to zero.
 - [x] Document known limitations before MVP release.
+- [x] Wire live IMGW startup cache refresh for Docker Compose and add refresh
+  tests.

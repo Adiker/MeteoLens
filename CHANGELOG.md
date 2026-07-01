@@ -48,3 +48,6 @@ All notable changes to MeteoLens will be documented in this file.
   appear in the UI, exports, and PNG captures; explicit tests confirming real
   zero values and missing values are never conflated; and a "Known
   Limitations" section in `README.md`.
+- Added live IMGW startup cache refresh for Docker Compose so a fresh local
+  run populates station and warning layers without a separate manual cache
+  seeding step.
