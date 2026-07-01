@@ -137,10 +137,18 @@ Stage 10 research must classify product IDs before any product layer is exposed:
 - technically risky due to binary format, projection, file size, or cadence,
 - legally risky or requiring current terms review.
 
+Research results (2026-07-01): 10 stable/retrievable IDs (8× COSMO GRIB, composite
+SRI, composite CMAX), 32 listed-but-missing IDs, no distinct MERGE identifier in
+the manifest. Full tables live in
+[`docs/products/PRODUCT_RESEARCH.md`](docs/products/PRODUCT_RESEARCH.md).
+
 Radar-like products such as CAPPI, SRI, and MERGE, and model/GRIB products such
 as COSMO files, remain research targets only. Do not implement binary parsing,
 tile generation, or map rendering until file formats, projection metadata,
 licensing, cache size, retention, and attribution requirements are documented.
+Stage 10 adds manifest classification APIs, cached frame metadata, a map timeline
+descriptor, and a frontend timeline shell — see
+[`docs/products/RASTER_PIPELINE.md`](docs/products/RASTER_PIPELINE.md).
 
 ## Archived Meteorological Warnings
 

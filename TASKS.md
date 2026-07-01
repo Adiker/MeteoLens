@@ -161,19 +161,19 @@ filters wait for area geometry and archive series.
 
 ## Stage 10 - Radar, Product Files, GRIB, And Timeline Animation
 
-- [ ] Research IMGW product API file types and identify high-value products.
-- [ ] Document product IDs that are stable, unstable, missing, or legally or
+- [x] Research IMGW product API file types and identify high-value products.
+- [x] Document product IDs that are stable, unstable, missing, or legally or
   technically risky.
-- [ ] Research radar-like products such as CAPPI, SRI, and MERGE if available
+- [x] Research radar-like products such as CAPPI, SRI, and MERGE if available
   from public sources.
-- [ ] Research GRIB/model files if available from public sources.
-- [ ] Defer binary parsing until formats, projection, licensing, file size, and
+- [x] Research GRIB/model files if available from public sources.
+- [x] Defer binary parsing until formats, projection, licensing, file size, and
   cache strategy are documented.
-- [ ] Design raster/product ingestion pipeline.
-- [ ] Design tile generation or raster rendering strategy for MapLibre.
-- [ ] Add timeline and animation requirements for radar/product frames.
-- [ ] Add cache retention policy for large product files.
-- [ ] Add explicit UI labels for source time, frame time, missing frames, stale
+- [x] Design raster/product ingestion pipeline.
+- [x] Design tile generation or raster rendering strategy for MapLibre.
+- [x] Add timeline and animation requirements for radar/product frames.
+- [x] Add cache retention policy for large product files.
+- [x] Add explicit UI labels for source time, frame time, missing frames, stale
   frames, and processed-data notice.
 
 ## Stage 11 - PWA, Local Alerts, Dashboards, And Power-User Features

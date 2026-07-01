@@ -52,6 +52,24 @@ export function useKeyboardShortcuts(): void {
         return;
       }
 
+      if (store.timeline.focused && store.timeline.activeLayerKey) {
+        if (event.key === " " || event.code === "Space") {
+          event.preventDefault();
+          store.toggleTimelinePlaying();
+          return;
+        }
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          store.stepTimelineFrame(-1);
+          return;
+        }
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          store.stepTimelineFrame(1);
+          return;
+        }
+      }
+
       const layerKey = LAYER_BY_HOTKEY.get(event.key);
       if (layerKey) {
         event.preventDefault();

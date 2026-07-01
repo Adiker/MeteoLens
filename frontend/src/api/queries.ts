@@ -5,7 +5,9 @@ import {
   fetchHealth,
   fetchLocationSummary,
   fetchMapLayers,
+  fetchMapTimeline,
   fetchObservations,
+  fetchProductFrames,
   fetchSources,
   fetchStation,
   fetchStations,
@@ -99,5 +101,22 @@ export function useLocationSummaryQuery(location: { lat: number; lon: number } |
     queryKey: ["location-summary", location],
     queryFn: () => fetchLocationSummary({ lat: location!.lat, lon: location!.lon }),
     enabled: Boolean(location),
+  });
+}
+
+export function useMapTimelineQuery() {
+  return useQuery({
+    queryKey: ["map-timeline"],
+    queryFn: fetchMapTimeline,
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useProductFramesQuery(productId: string | null, limit = 500) {
+  return useQuery({
+    queryKey: ["product-frames", productId, limit],
+    queryFn: () => fetchProductFrames(productId as string, { limit }),
+    enabled: Boolean(productId),
+    staleTime: STALE_TIME,
   });
 }

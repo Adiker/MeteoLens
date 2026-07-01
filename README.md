@@ -179,22 +179,23 @@ data (see `AGENTS.md`).
   cached value per metric, not history — the cache keeps one snapshot per
   station, not an archive. Multi-point charts need the archive/measurement
   endpoints and history persistence planned for Stage 8.
-- **Timeline/animation control is inert.** The bottom timeline UI is scaffolded
-  but has nothing time-aware (archive or radar frames) to drive it yet. Archive
-  timelines belong to Stage 8; radar/product timelines belong to Stage 10.
+- **Timeline/animation for products.** When cached product frame manifests exist,
+  the bottom timeline shows frame metadata with play/step controls and explicit
+  “metadata only / not renderable on map” labels. Binary radar/GRIB rendering on
+  the map is still deferred.
 - **Province/time-range quick filters are deferred.** These depend on the same
   area-geometry and archive-series work planned in Stages 8-9.
 - **No public cache-refresh endpoint.** Docker Compose populates the cache at
   backend startup via `METEOLENS_SYNC_ON_STARTUP=true`; there is still no
   user-facing "refresh data" API call.
-- **Radar, GRIB, and other `product` API files are not parsed or rendered.**
-  Only the product manifest listing is implemented; binary format decoding,
-  projections, and tile rendering are post-MVP work (see `TROUBLESHOOTING.md`
-  → "Radar And GRIB").
-- **Some `product` IDs are listed but not retrievable.** The manifest can
-  reference files that 404 at the detail endpoint; treat this as a source
-  risk, not an application bug. Stage 10 must document stable, unstable,
-  missing, and risky product IDs before adding any working product layer.
+- **Radar, GRIB, and other `product` API files are not parsed or rendered on the
+  map.** Stage 10 documents product IDs, exposes frame metadata APIs, and adds a
+  timeline shell. Binary format decoding, projections, and tile rendering remain
+  post-MVP work (see `docs/products/PRODUCT_RESEARCH.md` and
+  `docs/products/RASTER_PIPELINE.md`).
+- **Some `product` IDs are listed but not retrievable.** Research on 2026-07-01
+  found 32/42 manifest IDs returning 404 at the detail endpoint; see
+  `docs/products/PRODUCT_RESEARCH.md` for the full classification.
 - **E2E tests run against seeded fixtures, not live IMGW-PIB.** `npm run
   test:e2e` seeds the backend cache from `backend/tests/fixtures` so CI does
   not depend on the real endpoint's availability or rate limits — it verifies

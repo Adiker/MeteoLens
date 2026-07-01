@@ -4,6 +4,9 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 10 product/radar research, frame-metadata API, map timeline
+  endpoint, and frontend timeline shell with explicit metadata-only labels.
+  Binary GRIB/radar parsing and map rendering remain deferred.
 - Added Stage 9 geometry pipeline: local geometry manifest/cache, warning polygon
   map layers, spatial location matching, province/county/basin filters, and
   geometry dataset status API.

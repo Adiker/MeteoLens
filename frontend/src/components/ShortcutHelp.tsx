@@ -7,6 +7,8 @@ const SHORTCUTS: Array<{ keys: string; description: string }> = [
   { keys: "/", description: "Przejdź do wyszukiwarki" },
   { keys: "Esc", description: "Zamknij panel / wyczyść zaznaczenie" },
   { keys: "?", description: "Otwórz/zamknij tę pomoc" },
+  { keys: "Space", description: "Odtwórz/pauza osi czasu (gdy ma fokus)" },
+  { keys: "← →", description: "Poprzednia/następna ramka osi czasu (gdy ma fokus)" },
   ...LAYERS.map((layer) => ({ keys: layer.hotkey, description: `Przełącz: ${layer.title}` })),
 ];
 

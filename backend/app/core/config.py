@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     refresh_hydro_seconds: int = Field(default=600, ge=60)
     refresh_meteo_seconds: int = Field(default=600, ge=60)
     refresh_warnings_seconds: int = Field(default=300, ge=60)
+    product_detail_cache_seconds: int = Field(default=3600, ge=300)
+    product_file_retention_hours: int = Field(default=24, ge=1)
+    product_max_cached_files: int = Field(default=500, ge=10)
 
 
 @lru_cache
