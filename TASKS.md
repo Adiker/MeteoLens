@@ -107,22 +107,22 @@ filters wait for area geometry and archive series.
 
 ## Stage 7 - Public Demo And Production Hardening
 
-- [ ] Add production deployment plan.
-- [ ] Add production Docker setup separate from dev Docker setup.
-- [ ] Replace the Vite dev server in production with a static frontend build
+- [x] Add production deployment plan.
+- [x] Add production Docker setup separate from dev Docker setup.
+- [x] Replace the Vite dev server in production with a static frontend build
   served by nginx, Caddy, or an equivalent static server.
-- [ ] Keep the backend production image free of development-only dependencies.
-- [ ] Document reverse proxy and TLS setup.
-- [ ] Add production CORS configuration guidance.
-- [ ] Add restart policies and persistent volumes for small production
+- [x] Keep the backend production image free of development-only dependencies.
+- [x] Document reverse proxy and TLS setup.
+- [x] Add production CORS configuration guidance.
+- [x] Add restart policies and persistent volumes for small production
   deployments.
-- [ ] Add rate-limit, retry, and backoff guidance for IMGW access.
-- [ ] Add logging and monitoring requirements for source fetches, parser
+- [x] Add rate-limit, retry, and backoff guidance for IMGW access.
+- [x] Add logging and monitoring requirements for source fetches, parser
   failures, stale cache, and API errors.
-- [ ] Add public deployment checklist.
-- [ ] Confirm the MIT License is documented in public deployment notes.
-- [ ] Verify current IMGW-PIB terms before public or commercial use.
-- [ ] Capture populated-cache screenshots or demo media for `README.md`.
+- [x] Add public deployment checklist.
+- [x] Confirm the MIT License is documented in public deployment notes.
+- [x] Verify current IMGW-PIB terms before public or commercial use.
+- [x] Capture populated-cache screenshots or demo media for `README.md`.
 
 ## Stage 8 - Observation History And Real Time Series
 

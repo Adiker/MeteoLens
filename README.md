@@ -49,13 +49,14 @@ Implemented now:
 
 Not implemented yet: see [Known Limitations](#known-limitations) below.
 
-Future implementation planning is now split into Stages 7-11:
+Future implementation planning is now split into Stages 8-11:
 
-- Stage 7: public demo and production hardening.
 - Stage 8: observation history and real time series.
 - Stage 9: geometry datasets and spatial warnings.
 - Stage 10: radar/product files, GRIB research, and timeline animation.
 - Stage 11: PWA, local alerts, dashboards, and power-user features.
+
+Stage 7 (production deployment) is implemented — see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Data Sources
 
@@ -116,6 +117,16 @@ Local URLs:
 - Frontend: `http://localhost:5173`
 - Backend healthcheck: `http://localhost:8000/health`
 - Backend source status: `http://localhost:8000/api/v1/sources`
+
+Production smoke test (nginx + runtime backend image):
+
+```bash
+cp deploy/.env.production.example .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml up --build
+```
+
+Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
+[deploy/PRODUCTION_CHECKLIST.md](deploy/PRODUCTION_CHECKLIST.md).
 
 ## Planned Stack
 

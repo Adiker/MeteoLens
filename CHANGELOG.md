@@ -4,6 +4,10 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 7 production deployment: `docker-compose.prod.yml`,
+  production Dockerfiles, nginx static frontend, structured logging, IMGW
+  retry/backoff settings, production CORS guidance, and public deployment
+  checklist (`deploy/PRODUCTION_CHECKLIST.md`).
 - Added documentation-only planning for Stages 7-11: public demo/production
   hardening, observation history and real time series, geometry datasets and
   spatial warnings, radar/product/GRIB research with timeline animation, and
