@@ -104,3 +104,91 @@ filters wait for area geometry and archive series.
 - [x] Document known limitations before MVP release.
 - [x] Wire live IMGW startup cache refresh for Docker Compose and add refresh
   tests.
+
+## Stage 7 - Public Demo And Production Hardening
+
+- [ ] Add production deployment plan.
+- [ ] Add production Docker setup separate from dev Docker setup.
+- [ ] Replace the Vite dev server in production with a static frontend build
+  served by nginx, Caddy, or an equivalent static server.
+- [ ] Keep the backend production image free of development-only dependencies.
+- [ ] Document reverse proxy and TLS setup.
+- [ ] Add production CORS configuration guidance.
+- [ ] Add restart policies and persistent volumes for small production
+  deployments.
+- [ ] Add rate-limit, retry, and backoff guidance for IMGW access.
+- [ ] Add logging and monitoring requirements for source fetches, parser
+  failures, stale cache, and API errors.
+- [ ] Add public deployment checklist.
+- [ ] Decide the project license before public demo promotion.
+- [ ] Verify current IMGW-PIB terms before public or commercial use.
+- [ ] Capture populated-cache screenshots or demo media for `README.md`.
+
+## Stage 8 - Observation History And Real Time Series
+
+- [ ] Persist repeated observations instead of replacing each station with only
+  the latest snapshot.
+- [ ] Design the SQLite observation-history schema with a migration path to
+  PostgreSQL/PostGIS/TimescaleDB.
+- [ ] Add backend API contract for station time series.
+- [ ] Add time-series query parameters for metric, date/time range,
+  aggregation interval, and limit.
+- [ ] Add time-series charts backed by real multi-point data.
+- [ ] Add station comparison.
+- [ ] Add rankings for highest temperature, lowest temperature, strongest wind,
+  highest precipitation, and highest/lowest water level where applicable.
+- [ ] Add export support for selected time ranges.
+- [ ] Add retention policy for the local historical cache.
+- [ ] Preserve source timestamp, retrieval timestamp, data delay, attribution,
+  missing values, and processed-data notice in historical views and exports.
+
+## Stage 9 - Geometry Datasets And Spatial Warnings
+
+- [ ] Research legal/public TERYT administrative boundary datasets.
+- [ ] Research legal/public hydrological basin or catchment geometry datasets.
+- [ ] Research official station metadata or station coordinate lists for
+  synoptic stations.
+- [ ] Add a source/legal review checklist for every external geometry dataset.
+- [ ] Design geometry import and cache pipeline.
+- [ ] Map meteorological warning TERYT codes to polygons.
+- [ ] Map hydrological warning basin or area codes to geometries where possible.
+- [ ] Reconcile synoptic station coordinates from an official or legally cleared
+  station metadata source.
+- [ ] Add warning polygons on the map.
+- [ ] Add spatial matching for "My location" warnings.
+- [ ] Add province, county, and basin filters where geometry exists.
+- [ ] Clearly show missing geometry where mapping cannot be resolved.
+
+## Stage 10 - Radar, Product Files, GRIB, And Timeline Animation
+
+- [ ] Research IMGW product API file types and identify high-value products.
+- [ ] Document product IDs that are stable, unstable, missing, or legally or
+  technically risky.
+- [ ] Research radar-like products such as CAPPI, SRI, and MERGE if available
+  from public sources.
+- [ ] Research GRIB/model files if available from public sources.
+- [ ] Defer binary parsing until formats, projection, licensing, file size, and
+  cache strategy are documented.
+- [ ] Design raster/product ingestion pipeline.
+- [ ] Design tile generation or raster rendering strategy for MapLibre.
+- [ ] Add timeline and animation requirements for radar/product frames.
+- [ ] Add cache retention policy for large product files.
+- [ ] Add explicit UI labels for source time, frame time, missing frames, stale
+  frames, and processed-data notice.
+
+## Stage 11 - PWA, Local Alerts, Dashboards, And Power-User Features
+
+- [ ] Add PWA support planning.
+- [ ] Add saved locations.
+- [ ] Add saved map views.
+- [ ] Add user-defined dashboards.
+- [ ] Add local alert rules based on active warnings, thresholds, stale data,
+  and nearby stations.
+- [ ] Add source availability dashboard.
+- [ ] Add data freshness monitor.
+- [ ] Add advanced expert filters.
+- [ ] Add warning-vs-measurement comparison.
+- [ ] Add trend and anomaly detection ideas.
+- [ ] Add generated public API client task from OpenAPI.
+- [ ] Keep alerting clearly separated from official warning responsibility;
+  MeteoLens must not present itself as an official alerting system.

@@ -145,6 +145,17 @@ normalized file cache used by the public API. Per-source fetch or parser errors
 are stored as cache errors; stale successful payloads are preserved when
 available.
 
+Stage 8 should add an observation-history cache instead of replacing each
+station with only the latest snapshot. Historical rows must keep source
+timestamp, retrieval timestamp, data delay, missing/null state, attribution, and
+processed-data notice metadata. A local retention policy is required before this
+cache is allowed to grow unbounded.
+
+Stage 10 should define a separate cache policy for large product, radar-like,
+and GRIB files. Do not download or retain large binary products until product
+IDs, file formats, projections, licensing, file sizes, and cache eviction rules
+are documented.
+
 ## Database Schema
 
 MVP SQLite tables should include:
@@ -159,8 +170,40 @@ MVP SQLite tables should include:
   optional geometry reference.
 - `exports`: export type, filters, created_at, source attribution metadata.
 
+PostgreSQL/PostGIS and TimescaleDB remain later migration targets for geometry
+and observation history.
+
+Stage 8 observation-history design should refine `observations` so repeated
+fetches become a real time series rather than a single latest value. Required
+query dimensions include station, metric, observed time range, aggregation
+interval, and result limit. The first implementation may stay on SQLite, but
+schema and repository boundaries should leave room for PostgreSQL/PostGIS and
+TimescaleDB.
+
+Stage 9 geometry design should add imported geometry metadata without mixing
+external dataset ingestion into IMGW parsers. Candidate tables include:
+
+- `geometry_sources`: dataset name, provider, license/terms review status,
+  retrieved_at, version, and attribution.
+- `admin_boundaries`: TERYT code, area type, name, geometry reference.
+- `basin_geometries`: basin or catchment code, name, geometry reference.
+- `station_coordinates`: source key, station source ID, coordinate source,
+  reconciliation status, and confidence notes.
+- `warning_geometry_links`: warning area code to geometry reference, including
+  unresolved/missing status.
+
 PostGIS can later replace geometry references with native geometry columns.
-TimescaleDB can later optimize observation history.
+Missing or ambiguous geometry must remain visible in API and UI metadata.
+
+Stage 10 product/raster design may add manifest, frame, and tile metadata after
+source research:
+
+- `product_manifests`: product ID, file list metadata, retrieval status, risk
+  classification, and source timestamps.
+- `product_frames`: product ID, frame time, source time, file reference,
+  projection metadata, parser status, and missing/stale flags.
+- `raster_tiles`: generated tile or rendered raster references, zoom ranges,
+  style metadata, and retention policy.
 
 ## Public API
 
@@ -189,6 +232,22 @@ refreshes:
 - `/api/v1/export/station/{id}.json`
 - `/api/v1/export/map.geojson`
 
+Planned public API changes:
+
+- Stage 8 should expand `/api/v1/stations/{id}/observations` into real
+  time-series queries with `metric`, `from`, `to`, `interval`, and `limit`, and
+  should add station comparison, rankings, and time-range export endpoints after
+  `API_CONTRACT.md` is updated.
+- Stage 9 should expose geometry status for warning areas, support spatial
+  warning matching for `/api/v1/location/summary`, and add administrative or
+  basin filters only for datasets that pass source/legal review.
+- Stage 10 should add product/raster/timeline API contracts only after product
+  file formats, projections, licensing, cache policy, and missing-frame behavior
+  are documented.
+- Stage 11 should add saved views, dashboards, local alert rules, and generated
+  API client planning only after the data ownership and official-warning
+  disclaimer requirements are documented.
+
 ## Map Layers
 
 MVP layers:
@@ -213,6 +272,17 @@ Post-MVP layers:
 - GRIB/model products,
 - heatmaps/interpolations,
 - trend and anomaly layers.
+
+Stage 9 turns warning area codes into polygons only where a legal/public
+geometry dataset exists and the code mapping is reliable. Unresolved TERYT,
+basin, or station-coordinate mappings must be returned as partial data, not
+silently dropped.
+
+Stage 10 raster/product layers should be designed as time-aware layers with
+source time, frame time, missing-frame state, stale-frame state, attribution, and
+processed-data notice visible in the API and UI. MapLibre rendering may use
+pre-generated tiles, GeoTIFF/raster rendering, or another documented strategy
+after source research.
 
 ## Export Pipeline
 
@@ -292,6 +362,21 @@ Stage 2 should introduce Docker Compose with:
 Post-MVP deployment may add PostgreSQL/PostGIS/TimescaleDB and object storage
 for large raw products.
 
+Stage 7 should split local development deployment from production deployment.
+Production should serve the frontend as static built assets through nginx,
+Caddy, or an equivalent server instead of the Vite dev server. The backend image
+should be production-oriented and avoid development-only dependencies.
+
+Stage 7 deployment documentation must cover reverse proxy/TLS, production CORS,
+restart policies, persistent volumes, backup expectations, source fetch
+retry/backoff behavior, and a public deployment checklist. Public or commercial
+deployments remain blocked on verifying current IMGW-PIB terms and choosing a
+project license.
+
+Stage 10 deployment planning must cover large product-file storage, cache
+retention, tile/raster generation storage, and operational limits before any
+radar or GRIB product layer is exposed.
+
 ## Observability
 
 MVP should log:
@@ -305,6 +390,11 @@ MVP should log:
 Later stages can add structured logs, metrics, tracing, and dashboard panels for
 source availability.
 
+Stage 7 should define production logging and monitoring requirements for source
+fetches, parser failures, stale cache, and API errors. Stage 11 may build a
+user-facing source availability dashboard and data freshness monitor from the
+same underlying metadata.
+
 ## Extension Points
 
 - Additional public data sources after legal review.
@@ -312,3 +402,5 @@ source availability.
 - GRIB/model products through dedicated parsers and tiling/rendering pipeline.
 - Local alerting and PWA.
 - PDF report generation.
+- Saved locations, saved views, and user dashboards.
+- Generated public API client from OpenAPI after the API stabilizes.

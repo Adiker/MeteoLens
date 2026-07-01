@@ -62,6 +62,56 @@ Docker healthcheck should call `/health`.
 - Keep source attribution visible in public deployments.
 - Verify current IMGW-PIB terms before public or commercial use.
 
+## Stage 7 Production Target
+
+Stage 7 should create a production deployment path separate from the local
+development Docker Compose setup.
+
+Required production changes:
+
+- build the frontend with Vite and serve static assets through nginx, Caddy, or
+  an equivalent static server,
+- do not run the Vite dev server in production,
+- build the backend image without development-only dependencies,
+- configure a reverse proxy with TLS termination,
+- document production CORS origins instead of using permissive local defaults,
+- add restart policies for backend and frontend services,
+- mount persistent volumes for SQLite/cache data and any manually reviewed
+  geometry datasets,
+- document backup expectations for database, cache metadata, and reviewed
+  external datasets,
+- document rate-limit, retry, and backoff expectations for IMGW access,
+- keep stale cache and source failures visible instead of masking them.
+
+Stage 7 public deployment checklist:
+
+- current IMGW-PIB terms verified for the intended public or commercial use,
+- project license selected and documented,
+- attribution visible in UI, exports, screenshots, and README,
+- processed-data notice visible wherever data is normalized, aggregated,
+  converted, or otherwise transformed,
+- production CORS origins set,
+- reverse proxy and TLS configured,
+- persistent volumes configured and tested,
+- restart policies configured,
+- `/health` and `/api/v1/sources` monitored,
+- source fetch, parser failure, stale cache, and API error logs reviewed,
+- README screenshots captured from a populated real cache,
+- known limitations remain visible.
+
+## Stage 10 Product-File Deployment Notes
+
+Large product, radar-like, and GRIB files are not production-ready. Before any
+product layer is deployed, Stage 10 must document:
+
+- expected file sizes and retention policy,
+- storage location for raw products and generated tiles/rasters,
+- cache eviction behavior,
+- source retry/backoff behavior for large downloads,
+- projection and rendering requirements,
+- missing-frame and stale-frame behavior,
+- legal/source review outcome for each product family.
+
 ## Observability
 
 Minimum logs:
@@ -79,3 +129,7 @@ Later:
 - structured JSON logs,
 - source freshness dashboard,
 - alerting for repeated source failures.
+
+Stage 7 should define the minimum production log fields for source key, URL,
+status, retrieval timestamp, parser version, parser errors, cache freshness, API
+error code, and request ID where available.

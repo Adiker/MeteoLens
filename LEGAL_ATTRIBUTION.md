@@ -71,6 +71,15 @@ or specialized uses. MeteoLens must not claim that public or commercial use is
 always automatically cleared. Documentation and deployment notes should tell
 operators to verify current terms before public or commercial deployment.
 
+Stage 7 public demo work must include:
+
+- verification of the current IMGW-PIB terms for the intended deployment,
+- a project license decision,
+- confirmation that README screenshots and demo media carry attribution when
+  shared publicly,
+- deployment notes that do not claim production or commercial clearance without
+  review.
+
 ## Data Quality And Responsibility
 
 MeteoLens must communicate that:
@@ -80,6 +89,28 @@ MeteoLens must communicate that:
 - some source data may be unverified,
 - derived values are computed by MeteoLens, not directly issued by IMGW-PIB,
 - users should not treat MeteoLens as an official warning system.
+
+Stage 11 local alerts must keep this responsibility boundary visible. Local
+rules based on nearby stations, thresholds, stale data, or active warnings are
+MeteoLens convenience features, not official warning issuance.
+
+## External Dataset Review
+
+Stage 9 geometry datasets and Stage 10 product/raster datasets must pass
+source/legal review before implementation. Each reviewed dataset should record:
+
+- provider and canonical source URL,
+- license or terms URL,
+- attribution text,
+- public-use and commercial-use status,
+- allowed processing, caching, redistribution, and screenshot/export use,
+- update cadence and version,
+- known limitations or unresolved usage questions.
+
+Do not add unofficial or legally unclear geometry, radar, product, GRIB, or
+station-coordinate sources as implemented sources. If a source is technically
+useful but unclear, mark it as requiring legal/source review in
+`DATA_SOURCES.md`.
 
 ## Implementation Requirements
 
@@ -97,4 +128,3 @@ MeteoLens must communicate that:
 - Which product/radar/model files are high-value open data and which require
   additional terms review?
 - What exact project license will be used?
-

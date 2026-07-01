@@ -129,6 +129,19 @@ Statuses:
 - Status: `implemented` for the manifest parser; `risky` for individual
   GRIB/radar file parsing and rendering.
 
+Stage 10 research must classify product IDs before any product layer is exposed:
+
+- stable and retrievable,
+- listed but temporarily unavailable,
+- listed but missing at the detail endpoint,
+- technically risky due to binary format, projection, file size, or cadence,
+- legally risky or requiring current terms review.
+
+Radar-like products such as CAPPI, SRI, and MERGE, and model/GRIB products such
+as COSMO files, remain research targets only. Do not implement binary parsing,
+tile generation, or map rendering until file formats, projection metadata,
+licensing, cache size, retention, and attribution requirements are documented.
+
 ## Archived Meteorological Warnings
 
 - Name: archived meteorological warnings.
@@ -181,6 +194,12 @@ Statuses:
 - Status: `planned` for post-MVP, with station metadata potentially useful for
   MVP synop geometry.
 
+Stage 8 should use repeated current-source fetches and/or legally usable archive
+files to build real observation history. Historical ingestion must preserve
+observed timestamp, retrieval timestamp, data delay, missing/null values, source
+attribution, and processed-data notices. Retention policy must be documented
+before local caches grow without bounds.
+
 ## External Geometry Dependencies
 
 MeteoLens needs public geometry datasets to render some IMGW data:
@@ -191,3 +210,19 @@ MeteoLens needs public geometry datasets to render some IMGW data:
 
 These datasets must be documented here before implementation and must pass the
 same legal/attribution review as IMGW data.
+
+Stage 9 source research must document candidate datasets with:
+
+- provider and canonical URL,
+- dataset version or publication date,
+- license/terms and attribution text,
+- whether public and commercial use are allowed,
+- update cadence and expected cache/refresh process,
+- geometry format and coordinate reference system,
+- code system and mapping key, such as TERYT, basin code, or station ID,
+- known gaps and unresolved mapping behavior,
+- implementation status: `planned`, `implemented`, `risky`, or `blocked`.
+
+No unofficial or legally unclear geometry dataset should be treated as an
+implemented source. If a warning area or station cannot be resolved to reviewed
+geometry, API and UI metadata must show the missing mapping explicitly.

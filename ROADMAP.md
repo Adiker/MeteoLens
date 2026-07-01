@@ -20,34 +20,48 @@
 - Data timestamps, retrieval timestamps, delay, missing-field display, and
   source attribution.
 
+Stages 0-6 cover the MVP foundation, usable map UI, and quality/test hardening.
+The known limitations documented in `README.md` are accepted MVP gaps and feed
+the future stages below.
+
 ## v2
 
-- Archive observation browsing.
-- Station comparison.
-- Rankings for temperature, precipitation, wind, and water level.
-- Warning history and warning-change timeline.
-- Better TERYT/basin geometry coverage.
-- Export polish and PDF reports.
-- PWA support.
+- Stage 7 - Public demo and production hardening: production Docker setup,
+  static frontend serving, reverse proxy/TLS notes, production CORS guidance,
+  restart policies, persistence, IMGW retry/backoff guidance, observability,
+  public deployment checklist, project license decision, IMGW terms
+  verification, and README demo screenshots.
+- Stage 8 - Observation history and real time series: historical observation
+  persistence, time-series API, date/metric/aggregation filters, charts backed
+  by real multi-point data, station comparison, rankings, time-range exports,
+  and historical cache retention.
+- Stage 9 - Geometry datasets and spatial warnings: legal/source-reviewed
+  TERYT boundaries, basin/catchment geometries, official station coordinate
+  reconciliation, warning polygons, location-based warning matching, and
+  province/county/basin filters where geometry is available.
 
 ## v3
 
-- Radar product research and rendering pipeline.
-- GRIB/model layer research and rendering pipeline.
-- Heatmaps and explicitly labelled interpolation.
-- Local alerts.
-- Trend detection.
-- Warning-vs-measurement comparison.
+- Stage 10 - Radar, product files, GRIB, and timeline animation: IMGW product
+  file research, stable/risky product ID documentation, radar-like and GRIB
+  source review, raster/product ingestion design, MapLibre rendering strategy,
+  timeline animation requirements, and large-file cache retention. Binary
+  parsing and rendering remain deferred until format, projection, licensing,
+  file-size, and cache strategy are documented.
+- Stage 11 - PWA, local alerts, dashboards, and power-user features: PWA
+  planning, saved locations, saved map views, user dashboards, local alert
+  rules, source availability/freshness dashboards, advanced expert filters,
+  warning-vs-measurement comparison, trend/anomaly ideas, and generated API
+  client planning. Local alerts must remain clearly separate from official
+  warning responsibility.
 
 ## Backlog Ideas
 
-- User-defined dashboards.
-- Saved map views.
-- Advanced expert filters.
-- Source availability dashboard.
-- Data freshness monitor.
+- PDF reports.
+- Heatmaps and explicitly labelled interpolation.
 - Station metadata browser.
-- Public API client generation from OpenAPI.
+- Warning history and warning-change timeline.
+- Additional public data sources after source/legal review.
 
 ## Product Decisions
 
@@ -58,4 +72,5 @@
   and tile workflows, and scalable GeoJSON handling.
 - Use ECharts for dense time-series charts.
 - Keep radar, GRIB, and archive analytics outside MVP.
-
+- Do not treat mock data as a product feature.
+- Do not present MeteoLens local alerts as official alerts.
