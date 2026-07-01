@@ -17,6 +17,7 @@ backend/.e2e-cache/
 
 # Local runtime
 .env
+.env.production
 data/cache/
 data/*.sqlite
 data/*.sqlite3
@@ -25,4 +26,3 @@ data/*.sqlite3
 .DS_Store
 .idea/
 .vscode/
-

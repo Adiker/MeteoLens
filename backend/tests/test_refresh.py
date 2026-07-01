@@ -86,8 +86,8 @@ async def test_refresh_source_records_error_without_masking_it(tmp_path) -> None
 def test_app_lifespan_runs_startup_refresh_when_enabled(monkeypatch, tmp_path) -> None:
     calls = []
 
-    async def fake_refresh_sources(*, base_url: str, cache_dir):
-        calls.append((base_url, cache_dir))
+    async def fake_refresh_sources(*, base_url: str, cache_dir, **kwargs):
+        calls.append((base_url, cache_dir, kwargs))
         return []
 
     apply_test_settings(
@@ -104,4 +104,6 @@ def test_app_lifespan_runs_startup_refresh_when_enabled(monkeypatch, tmp_path) -
     with TestClient(app) as client:
         assert client.get("/health").status_code == 200
 
-    assert calls == [("https://example.test/", tmp_path)]
+    assert calls[0][0] == "https://example.test/"
+    assert calls[0][1] == tmp_path
+    assert calls[0][2]["timeout_seconds"] == 20.0
