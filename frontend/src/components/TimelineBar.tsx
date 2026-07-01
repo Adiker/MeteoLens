@@ -7,6 +7,7 @@ import { cn } from "../lib/utils";
 import { useAppStore, type TimelineSpeed } from "../store/appStore";
 
 const SPEED_OPTIONS: TimelineSpeed[] = [0.5, 1, 2, 4];
+const FRAME_PAGE_SIZE = 500;
 
 export function TimelineBar() {
   const timeline = useAppStore((state) => state.timeline);
@@ -23,7 +24,7 @@ export function TimelineBar() {
 
   useEffect(() => {
     if (layers.length === 0) {
-      if (timeline.activeLayerKey) {
+      if (!timelineQuery.isLoading && timeline.activeLayerKey) {
         setTimelineLayer(null);
       }
       return;
@@ -31,19 +32,31 @@ export function TimelineBar() {
     if (!timeline.activeLayerKey || !layers.some((layer) => layer.key === timeline.activeLayerKey)) {
       setTimelineLayer(layers[0].key);
     }
-  }, [layers, setTimelineLayer, timeline.activeLayerKey]);
+  }, [layers, setTimelineLayer, timeline.activeLayerKey, timelineQuery.isLoading]);
 
-  const framesQuery = useProductFramesQuery(activeLayer?.product_id ?? null);
+  const provisionalFrameCount = activeLayer?.frame_count ?? 0;
+  const provisionalClampedIndex = Math.min(
+    timeline.frameIndex,
+    Math.max(provisionalFrameCount - 1, 0),
+  );
+  const framePageOffset =
+    Math.floor(provisionalClampedIndex / FRAME_PAGE_SIZE) * FRAME_PAGE_SIZE;
+  const framesQuery = useProductFramesQuery(
+    activeLayer?.product_id ?? null,
+    FRAME_PAGE_SIZE,
+    framePageOffset,
+  );
   const frames = framesQuery.data?.frames ?? [];
-  const frameCount = framesQuery.data?.frame_count ?? 0;
+  const frameCount = framesQuery.data?.frame_count ?? provisionalFrameCount;
   const clampedIndex = Math.min(timeline.frameIndex, Math.max(frameCount - 1, 0));
-  const currentFrame = frames[clampedIndex] ?? null;
+  const currentPageOffset = framesQuery.data?.offset ?? framePageOffset;
+  const currentFrame = frames[clampedIndex - currentPageOffset] ?? null;
 
   useEffect(() => {
-    if (clampedIndex !== timeline.frameIndex) {
+    if (activeLayer && frameCount > 0 && clampedIndex !== timeline.frameIndex) {
       setTimelineFrameIndex(clampedIndex);
     }
-  }, [clampedIndex, setTimelineFrameIndex, timeline.frameIndex]);
+  }, [activeLayer, clampedIndex, frameCount, setTimelineFrameIndex, timeline.frameIndex]);
 
   useEffect(() => {
     if (!timeline.playing || frameCount <= 1) {

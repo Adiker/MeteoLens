@@ -439,10 +439,18 @@ def get_map_layers(
                 features.append(_station_feature(record))
             elif isinstance(record, Warning):
                 geometry = resolve_warning_geometries(record, geometry_store)
-                warning_record = _warning_map_record(record, geometry)
-                non_spatial_records.append(warning_record)
-                if geometry["geojson"]["features"]:
-                    features.extend(geometry["geojson"]["features"])
+                warning_features = geometry["geojson"]["features"]
+                if bbox_values is not None:
+                    warning_features = [
+                        feature
+                        for feature in warning_features
+                        if _feature_intersects_bbox(feature, bbox_values)
+                    ]
+                if warning_features or geometry["unresolved_areas"] or bbox_values is None:
+                    warning_record = _warning_map_record(record, geometry)
+                    non_spatial_records.append(warning_record)
+                if warning_features:
+                    features.extend(warning_features)
                 if geometry["unresolved_areas"]:
                     missing_geometry.extend(
                         _missing_warning_geometry(record, geometry["unresolved_areas"])
@@ -988,6 +996,42 @@ def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
 def _inside_bbox(lon: float, lat: float, bbox: tuple[float, float, float, float]) -> bool:
     min_lon, min_lat, max_lon, max_lat = bbox
     return min_lon <= lon <= max_lon and min_lat <= lat <= max_lat
+
+
+def _feature_intersects_bbox(
+    feature: dict[str, Any],
+    bbox: tuple[float, float, float, float],
+) -> bool:
+    geometry = feature.get("geometry")
+    if not isinstance(geometry, dict):
+        return False
+    points = list(_iter_coordinate_pairs(geometry.get("coordinates")))
+    if not points:
+        return False
+    feature_min_lon = min(lon for lon, _lat in points)
+    feature_min_lat = min(lat for _lon, lat in points)
+    feature_max_lon = max(lon for lon, _lat in points)
+    feature_max_lat = max(lat for _lon, lat in points)
+    min_lon, min_lat, max_lon, max_lat = bbox
+    return (
+        feature_min_lon <= max_lon
+        and feature_max_lon >= min_lon
+        and feature_min_lat <= max_lat
+        and feature_max_lat >= min_lat
+    )
+
+
+def _iter_coordinate_pairs(value: Any):
+    if not isinstance(value, list | tuple):
+        return
+    if len(value) >= 2 and isinstance(value[0], int | float) and isinstance(
+        value[1],
+        int | float,
+    ):
+        yield float(value[0]), float(value[1])
+        return
+    for item in value:
+        yield from _iter_coordinate_pairs(item)
 
 
 def _records_for_layer(

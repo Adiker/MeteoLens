@@ -11,11 +11,11 @@ const baseState: PermalinkState = {
   filters: {
     warningLevel: 2,
     phenomenon: "burze",
-    province: "",
-    county: "",
-    basin: "",
-    maxDataDelayMinutes: null,
-    onlyStaleCache: false,
+    province: "12",
+    county: "1205",
+    basin: "B1",
+    maxDataDelayMinutes: 45,
+    onlyStaleCache: true,
   },
 };
 

@@ -114,10 +114,10 @@ export function useMapTimelineQuery() {
   });
 }
 
-export function useProductFramesQuery(productId: string | null, limit = 500) {
+export function useProductFramesQuery(productId: string | null, limit = 500, offset = 0) {
   return useQuery({
-    queryKey: ["product-frames", productId, limit],
-    queryFn: () => fetchProductFrames(productId as string, { limit }),
+    queryKey: ["product-frames", productId, limit, offset],
+    queryFn: () => fetchProductFrames(productId as string, { limit, offset }),
     enabled: Boolean(productId),
     staleTime: STALE_TIME,
   });
