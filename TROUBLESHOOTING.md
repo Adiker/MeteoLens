@@ -12,6 +12,11 @@ Actions:
 
 - Check the IMGW endpoint directly.
 - Check backend logs for status code, timeout, and retrieval timestamp.
+- Confirm `METEOLENS_SYNC_ON_STARTUP=true` is set when the cache should be
+  populated at backend startup.
+- Check `GET /api/v1/sources`; `empty` means the source has not been cached,
+  `error` means the last fetch failed, and `stale` can still serve the previous
+  successful payload.
 - Keep stale data visibly labelled if serving stale cache is enabled.
 
 ## Port Already In Use
@@ -92,4 +97,3 @@ implemented.
 
 If an export or UI view lacks attribution, treat it as a release blocker. Check
 shared attribution components and export metadata builders.
-

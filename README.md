@@ -1,8 +1,11 @@
 # MeteoLens
 
-MeteoLens is a planned web application for visualising public IMGW-PIB weather
-and hydrological data for Poland. The project is currently in **Stages 0-1:
-research and documentation**. Application code starts in Stage 2.
+MeteoLens is a web application for visualising public IMGW-PIB weather and
+hydrological data for Poland. Stages 0-5 (research, documentation, backend
+API, IMGW integration, and the frontend map UI) are implemented; **Stage 6
+(quality: test coverage, attribution/data-integrity verification, and known
+limitations)** is in progress. See [TASKS.md](TASKS.md) for the full staged
+backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -40,12 +43,7 @@ Implemented now:
 - IMGW-PIB HTTP client, parser layer, normalized models, file cache, and parser
   tests for current synop/hydro/meteo/warning endpoints plus product manifests.
 
-Not implemented yet:
-
-- Warning area polygons (waiting on TERYT/basin geometry datasets; warnings
-  currently render as a filterable list).
-- Timeline/animation over archive or radar data.
-- Automatic public cache refresh (cache is populated by backend internals).
+Not implemented yet: see [Known Limitations](#known-limitations) below.
 
 ## Data Sources
 
@@ -86,14 +84,20 @@ The frontend reads the backend base URL from `VITE_API_BASE_URL` (default
 `http://localhost:8000`). If port 8000 is taken by another app, run the backend
 elsewhere and point the frontend at it: copy `frontend/.env.example` to
 `frontend/.env.local`, set `VITE_API_BASE_URL=http://localhost:<port>`, and
-restart `npm run dev`. With an empty cache the UI shows explicit empty/stale
-states instead of mock data, so populate the backend cache to see live markers.
+restart `npm run dev`. To populate the backend cache with live IMGW data during
+manual backend startup, set `METEOLENS_SYNC_ON_STARTUP=true` before running
+Uvicorn. With an empty cache the UI shows explicit empty/stale states instead of
+mock data.
 
 Run both with Docker Compose:
 
 ```bash
 docker compose up --build
 ```
+
+Docker Compose enables `METEOLENS_SYNC_ON_STARTUP=true`, so the backend fetches
+the configured live IMGW sources and writes the normalized file cache before the
+frontend is marked ready.
 
 Local URLs:
 
@@ -136,20 +140,54 @@ processed.
 
 See [LEGAL_ATTRIBUTION.md](LEGAL_ATTRIBUTION.md).
 
+## Known Limitations
+
+These are known, accepted gaps ahead of an MVP release — not bugs to silently
+work around. Each one is either a documented backend constraint or an
+intentional scope deferral; do not paper over them with mock/interpolated
+data (see `AGENTS.md`).
+
+- **No warning area polygons.** Meteorological/hydrological warnings carry
+  TERYT codes and basin/province names but no geometry, so warnings render as
+  a filterable list instead of map polygons
+  (`missing_area_geometry_dataset`). Landing this needs a TERYT/basin geometry
+  dataset; see `DATA_SOURCES.md`.
+- **Synoptic stations have no coordinates.** `api/data/synop` does not return
+  `lat/lon`, so synop stations appear in lists/details but are excluded from
+  map markers (`missing_lat_lon`) until an official station coordinate
+  dataset is added.
+- **No time series, only a snapshot.** The station chart shows the latest
+  cached value per metric, not history — the cache keeps one snapshot per
+  station, not an archive. Multi-point charts need the archive/measurement
+  endpoints (Stage 0 research already scoped these; not yet implemented).
+- **Timeline/animation control is inert.** The bottom timeline UI is scaffolded
+  but has nothing time-aware (archive or radar frames) to drive it yet.
+- **Province/time-range quick filters are deferred.** These depend on the same
+  area-geometry and archive-series work as the two points above.
+- **No public cache-refresh endpoint.** Docker Compose populates the cache at
+  backend startup via `METEOLENS_SYNC_ON_STARTUP=true`; there is still no
+  user-facing "refresh data" API call.
+- **Radar, GRIB, and other `product` API files are not parsed or rendered.**
+  Only the product manifest listing is implemented; binary format decoding,
+  projections, and tile rendering are post-MVP work (see `TROUBLESHOOTING.md`
+  → "Radar And GRIB").
+- **Some `product` IDs are listed but not retrievable.** The manifest can
+  reference files that 404 at the detail endpoint; treat this as a source
+  risk, not an application bug.
+- **E2E tests run against seeded fixtures, not live IMGW-PIB.** `npm run
+  test:e2e` seeds the backend cache from `backend/tests/fixtures` so CI does
+  not depend on the real endpoint's availability or rate limits — it verifies
+  the app's own request/response handling, not IMGW-PIB's live behavior.
+- **No production security/licensing review.** Attribution and processed-data
+  notices are implemented and tested, but deployers must still verify current
+  IMGW-PIB terms before public or commercial use (see
+  `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use").
+
 ## Troubleshooting
 
-Known early risks:
-
-- Some endpoint fields can be `null`; MeteoLens must show missing data instead
-  of replacing it with zero.
-- `api/data/synop` does not include coordinates in the current response, so the
-  map layer needs a separate official station list or must mark geometry as
-  unavailable.
-- Some product IDs listed by the product API may not be retrievable through the
-  detail endpoint.
-- Radar and GRIB products need separate research and parsers.
-
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+For scoped gaps in the current release, see [Known Limitations](#known-limitations)
+above. For runtime problems (port conflicts, CORS, source errors), see
+[TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ## Development Checks
 
@@ -168,4 +206,13 @@ cd frontend
 npm run lint
 npm test
 npm run build
+```
+
+End-to-end (Playwright, drives a real backend + frontend against seeded
+fixture data instead of live IMGW-PIB):
+
+```bash
+cd frontend
+npx playwright install chromium  # first run only
+npm run test:e2e
 ```

@@ -1,3 +1,4 @@
+import csv
 from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
@@ -195,8 +196,254 @@ def test_station_exports_include_attribution_and_missing_fields(monkeypatch, tmp
     assert "None" not in csv_response.text.splitlines()[1]
     assert json_response.status_code == 200
     payload = json_response.json()
+    assert payload["attribution"] == "Źródło danych: IMGW-PIB."
     assert payload["processed_notice"] == "Dane IMGW-PIB zostały przetworzone przez MeteoLens."
     assert payload["station"]["id"] == "hydro:151140030"
+
+
+def test_station_csv_export_distinguishes_real_zero_from_missing(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("synop",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    client = TestClient(app)
+
+    zero_response = client.get("/api/v1/export/station/synop:12295.csv")
+    missing_response = client.get("/api/v1/export/station/synop:12550.csv")
+
+    assert zero_response.status_code == 200
+    zero_rows = {row["metric"]: row for row in csv.DictReader(zero_response.text.splitlines())}
+    # suma_opadu ("0") is a genuine zero measurement — never blank it out.
+    assert zero_rows["precipitation_sum"]["value"] == "0.0"
+    assert zero_rows["precipitation_sum"]["missing"] == "False"
+
+    assert missing_response.status_code == 200
+    missing_rows = {
+        row["metric"]: row for row in csv.DictReader(missing_response.text.splitlines())
+    }
+    # cisnienie is null in this row — it must stay an explicit empty cell,
+    # never a "0" that would misrepresent a real reading.
+    assert missing_rows["pressure"]["value"] == ""
+    assert missing_rows["pressure"]["missing"] == "True"
+
+
+def test_map_layers_rejects_unsupported_layer_key(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/map/layers?layers=not_a_real_layer")
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error"]["code"] == "unsupported_layer"
+
+
+def test_map_layers_rejects_invalid_bbox_format(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/map/layers?bbox=not,a,bbox")
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error"]["code"] == "invalid_filter"
+
+
+def test_map_layers_rejects_bbox_with_min_above_max(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/map/layers?bbox=20,50,10,55")
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["error"]["code"] == "invalid_filter"
+
+
+def test_map_layers_bbox_excludes_stations_outside_area(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get(
+        "/api/v1/map/layers?layers=hydro_stations&bbox=0,0,1,1"
+    )
+
+    assert response.status_code == 200
+    layer = response.json()["layers"][0]
+    assert layer["geojson"]["features"] == []
+
+
+def test_map_layers_report_cache_empty_when_no_data_cached(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/map/layers?layers=hydro_stations")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["empty_state"]["code"] == "cache_empty"
+
+
+def test_stations_bbox_and_query_filters_exclude_non_matches(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    bbox_miss = TestClient(app).get("/api/v1/stations?type=hydro&bbox=0,0,1,1")
+    query_miss = TestClient(app).get("/api/v1/stations?type=hydro&q=NoSuchStation")
+    bbox_hit = TestClient(app).get("/api/v1/stations?type=hydro&bbox=10,50,20,55")
+
+    assert bbox_miss.json()["stations"] == []
+    assert query_miss.json()["stations"] == []
+    assert bbox_hit.json()["stations"][0]["id"] == "hydro:151140030"
+
+
+def test_stations_bbox_filter_excludes_stations_without_coordinates(
+    monkeypatch, tmp_path
+) -> None:
+    _seed_cache(tmp_path, ("synop",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/stations?type=synop&bbox=10,50,20,55")
+
+    assert response.json()["stations"] == []
+
+
+def test_observations_missing_timestamp_excluded_by_time_range_filter(
+    monkeypatch, tmp_path
+) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get(
+        "/api/v1/stations/hydro:151140030/observations"
+        "?metric=water_temperature&from=2026-06-30T00:00:00"
+    )
+
+    assert response.json()["observations"] == []
+
+
+def test_station_not_found_returns_404_when_cache_has_other_stations(
+    monkeypatch, tmp_path
+) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/stations/hydro:does-not-exist")
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["error"]["code"] == "not_found"
+
+
+def test_station_returns_503_when_cache_is_completely_empty(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/stations/hydro:151140030")
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["error"]["code"] == "cache_empty"
+
+
+def test_warning_not_found_returns_404_when_cache_has_other_warnings(
+    monkeypatch, tmp_path
+) -> None:
+    _seed_cache(tmp_path, ("warningsmeteo",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/warnings/warningsmeteo:does-not-exist")
+
+    assert response.status_code == 404
+
+
+def test_warning_returns_503_when_cache_is_completely_empty(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/warnings/warningsmeteo:does-not-exist")
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["error"]["code"] == "cache_empty"
+
+
+def test_observations_filters_by_metric_and_time_range(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    wrong_metric = TestClient(app).get(
+        "/api/v1/stations/hydro:151140030/observations?metric=flow"
+        "&from=2026-06-30T05:00:00&to=2026-06-30T09:00:00"
+    )
+    before_range = TestClient(app).get(
+        "/api/v1/stations/hydro:151140030/observations?metric=water_level"
+        "&from=2026-06-30T08:00:00"
+    )
+    after_range = TestClient(app).get(
+        "/api/v1/stations/hydro:151140030/observations?metric=water_level"
+        "&to=2026-06-30T06:00:00"
+    )
+    exact_match = TestClient(app).get(
+        "/api/v1/stations/hydro:151140030/observations?metric=water_level"
+        "&from=2026-06-30T07:00:00&to=2026-06-30T07:00:00"
+    )
+
+    assert wrong_metric.json()["observations"] == []
+    assert before_range.json()["observations"] == []
+    assert after_range.json()["observations"] == []
+    assert len(exact_match.json()["observations"]) == 1
+
+
+def test_warnings_filters_exclude_by_level_phenomenon_basin_and_active_at(
+    monkeypatch, tmp_path
+) -> None:
+    _seed_cache(tmp_path, ("warningsmeteo", "warningshydro"))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    client = TestClient(app)
+    level_miss = client.get("/api/v1/warnings?type=meteo&level=1")
+    phenomenon_miss = client.get("/api/v1/warnings?phenomenon=Powodz")
+    teryt_miss = client.get("/api/v1/warnings?teryt=9999")
+    basin_miss = client.get("/api/v1/warnings?basin=NOT_A_BASIN")
+    before_valid_from = client.get(
+        "/api/v1/warnings?type=meteo&active_at=2026-06-30T10:00:00"
+    )
+    after_valid_to = client.get(
+        "/api/v1/warnings?type=meteo&active_at=2026-06-30T23:00:00"
+    )
+    active_hit = client.get(
+        "/api/v1/warnings?type=meteo&active_at=2026-06-30T15:00:00&phenomenon=Burze"
+        "&teryt=1205&level=2"
+    )
+    basin_hit = client.get("/api/v1/warnings?basin=Z_P_WP_1856")
+
+    assert level_miss.json()["warnings"] == []
+    assert phenomenon_miss.json()["warnings"] == []
+    assert teryt_miss.json()["warnings"] == []
+    assert basin_miss.json()["warnings"] == []
+    assert before_valid_from.json()["warnings"] == []
+    assert after_valid_to.json()["warnings"] == []
+    assert len(active_hit.json()["warnings"]) == 1
+    assert len(basin_hit.json()["warnings"]) == 1
+
+
+def test_cache_read_error_returns_503_cache_invalid(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("hydro",))
+    (tmp_path / "hydro.json").write_text("not-json", encoding="utf-8")
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/stations?type=hydro")
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["error"]["code"] == "cache_invalid"
+
+
+def test_cache_with_malformed_normalized_record_returns_503_cache_invalid(
+    monkeypatch, tmp_path
+) -> None:
+    cache = _seed_cache(tmp_path, ("hydro",))
+    payload = cache.read("hydro")
+    cache.write_success(
+        source_key="hydro",
+        url=payload.url,
+        retrieved_at=payload.retrieved_at,
+        raw_payload=payload.raw_payload,
+        normalized_payload=[{"kind": "station", "not": "a valid station"}],
+        parser_warnings=[],
+    )
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/stations?type=hydro")
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["error"]["code"] == "cache_invalid"
 
 
 def test_map_geojson_export_includes_non_spatial_warning_records(monkeypatch, tmp_path) -> None:
@@ -210,4 +457,5 @@ def test_map_geojson_export_includes_non_spatial_warning_records(monkeypatch, tm
     assert payload["type"] == "FeatureCollection"
     assert payload["features"][0]["id"] == "hydro:151140030"
     assert payload["non_spatial_records"][0]["id"] == "warningsmeteo:Sk20260630043222424"
+    assert payload["attribution"] == "Źródło danych: IMGW-PIB."
     assert payload["processed_notice"] == "Dane IMGW-PIB zostały przetworzone przez MeteoLens."

@@ -55,4 +55,46 @@ describe("appStore", () => {
     store.clearSelection();
     expect(useAppStore.getState().selection).toBeNull();
   });
+
+  it("sets a single layer's active state directly", () => {
+    useAppStore.getState().setLayerActive("hydro_stations", false);
+    expect(useAppStore.getState().activeLayers.hydro_stations).toBe(false);
+    useAppStore.getState().setLayerActive("hydro_stations", true);
+    expect(useAppStore.getState().activeLayers.hydro_stations).toBe(true);
+  });
+
+  it("toggles simple/expert mode", () => {
+    expect(useAppStore.getState().mode).toBe("simple");
+    useAppStore.getState().toggleMode();
+    expect(useAppStore.getState().mode).toBe("expert");
+    useAppStore.getState().toggleMode();
+    expect(useAppStore.getState().mode).toBe("simple");
+  });
+
+  it("sets and resets filters", () => {
+    useAppStore.getState().setFilter("warningLevel", 2);
+    useAppStore.getState().setFilter("phenomenon", "Burze");
+    expect(useAppStore.getState().filters).toEqual({ warningLevel: 2, phenomenon: "Burze" });
+    useAppStore.getState().resetFilters();
+    expect(useAppStore.getState().filters).toEqual({ warningLevel: null, phenomenon: "" });
+  });
+
+  it("sets the map view and user location", () => {
+    useAppStore.getState().setMapView({ lng: 20, lat: 50, zoom: 8 });
+    expect(useAppStore.getState().mapView).toEqual({ lng: 20, lat: 50, zoom: 8 });
+    useAppStore.getState().setUserLocation({ lat: 50, lon: 20 });
+    expect(useAppStore.getState().userLocation).toEqual({ lat: 50, lon: 20 });
+    useAppStore.getState().setUserLocation(null);
+    expect(useAppStore.getState().userLocation).toBeNull();
+  });
+
+  it("controls the control-panel and shortcut-help open state", () => {
+    useAppStore.getState().setControlPanelOpen(false);
+    expect(useAppStore.getState().controlPanelOpen).toBe(false);
+    useAppStore.getState().toggleControlPanel();
+    expect(useAppStore.getState().controlPanelOpen).toBe(true);
+
+    useAppStore.getState().setShortcutHelpOpen(true);
+    expect(useAppStore.getState().shortcutHelpOpen).toBe(true);
+  });
 });

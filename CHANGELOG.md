@@ -38,3 +38,16 @@ All notable changes to MeteoLens will be documented in this file.
   PNG exports, surface non-empty cache errors instead of masking them, and render
   source timestamps in Polish (`Europe/Warsaw`) time.
 - Added MVP roadmap and implementation task queue.
+- Added Stage 6 quality work: backend parser/API edge-case tests (malformed
+  payloads, bbox/date-range filters, cache-invalid handling) raising backend
+  coverage to 99%; frontend component tests for `DetailsPanel`, `StationChart`,
+  `ExportMenu`, `SearchBox`, `HeaderBar`, `ShortcutHelp`, `LocationSummary`,
+  keyboard shortcuts, and the app store; a Playwright E2E suite
+  (`frontend/e2e/`, wired into CI) seeded from the backend's own parser
+  fixtures; explicit tests confirming attribution/processed-data notices
+  appear in the UI, exports, and PNG captures; explicit tests confirming real
+  zero values and missing values are never conflated; and a "Known
+  Limitations" section in `README.md`.
+- Added live IMGW startup cache refresh for Docker Compose so a fresh local
+  run populates station and warning layers without a separate manual cache
+  seeding step.

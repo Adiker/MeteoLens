@@ -72,8 +72,9 @@ and parser status will be wired during Stage 3.
 Stage 3 implementation returns parser status and file-cache status for the
 current IMGW sources.
 
-Public refresh endpoints are not exposed in Stage 4. Cache refresh remains an
-internal backend concern so public API consumers cannot mutate cache state.
+Public refresh endpoints are not exposed. Cache refresh remains an internal
+backend concern so public API consumers cannot mutate cache state; deployments
+can enable startup refresh with `METEOLENS_SYNC_ON_STARTUP=true`.
 
 ## Map Layers
 
