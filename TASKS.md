@@ -96,9 +96,9 @@ filters wait for area geometry and archive series.
 
 ## Stage 6 - Quality
 
-- [ ] Add backend parser/API test coverage.
-- [ ] Add frontend component tests.
-- [ ] Add basic E2E tests.
-- [ ] Verify attribution in UI and exports.
-- [ ] Verify missing values are not converted to zero.
-- [ ] Document known limitations before MVP release.
+- [x] Add backend parser/API test coverage.
+- [x] Add frontend component tests.
+- [x] Add basic E2E tests.
+- [x] Verify attribution in UI and exports.
+- [x] Verify missing values are not converted to zero.
+- [x] Document known limitations before MVP release.

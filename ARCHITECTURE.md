@@ -258,6 +258,19 @@ Stage 4-5:
 Stage 4 adds backend API and export tests using normalized cache records seeded
 from real-shape IMGW fixtures.
 
+Stage 6:
+
+- backend parser/API edge-case tests (malformed payloads, bbox/date-range
+  filters, cache_invalid handling) — see `backend/tests/`,
+- frontend component tests for `DetailsPanel`, `StationChart`, `ExportMenu`,
+  `SearchBox`, `HeaderBar`, `ShortcutHelp`, `LocationSummary`, keyboard
+  shortcuts, and the app store,
+- E2E tests (`frontend/e2e/`, run via `npm run test:e2e`) using Playwright.
+  `playwright.config.ts` starts the real backend and frontend dev servers; the
+  backend cache is seeded from `backend/tests/fixtures` by
+  `backend/tests/e2e_seed_cache.py` so the suite exercises real API responses
+  without calling out to IMGW-PIB. Wired into CI as the `e2e` job.
+
 ## Deployment
 
 Stage 2 should introduce Docker Compose with:

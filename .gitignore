@@ -5,11 +5,15 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+.coverage
 
 # Node
 node_modules/
 dist/
 coverage/
+test-results/
+playwright-report/
+backend/.e2e-cache/
 
 # Local runtime
 .env

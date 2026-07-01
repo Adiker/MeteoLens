@@ -32,6 +32,37 @@ def test_source_cache_reports_errors(tmp_path) -> None:
     assert status.error == "timeout"
 
 
+def test_source_cache_status_reports_invalid_for_corrupt_file(tmp_path) -> None:
+    cache = SourceCache(tmp_path)
+    (tmp_path / "synop.json").write_text("not-json", encoding="utf-8")
+
+    status = cache.status("synop", ttl_seconds=600)
+
+    assert status.status == "invalid"
+    assert status.error is not None
+
+
+def test_write_error_ignores_corrupt_existing_cache_file(tmp_path) -> None:
+    cache = SourceCache(tmp_path)
+    (tmp_path / "synop.json").write_text("not-json", encoding="utf-8")
+
+    cache.write_error(source_key="synop", error="timeout")
+
+    payload = json.loads((tmp_path / "synop.json").read_text(encoding="utf-8"))
+    assert payload["error"] == "timeout"
+    assert payload["raw_payload"] is None
+
+
+def test_write_error_twice_without_success_keeps_error_only(tmp_path) -> None:
+    cache = SourceCache(tmp_path)
+    cache.write_error(source_key="synop", error="first timeout")
+    cache.write_error(source_key="synop", error="second timeout")
+
+    status = cache.status("synop", ttl_seconds=600)
+    assert status.status == "error"
+    assert status.error == "second timeout"
+
+
 def test_source_cache_preserves_last_success_on_error(tmp_path) -> None:
     cache = SourceCache(tmp_path)
     retrieved_at = datetime.now(UTC)

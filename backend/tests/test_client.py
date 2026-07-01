@@ -55,6 +55,44 @@ async def test_imgw_client_retries_transport_errors() -> None:
 
 
 @pytest.mark.asyncio
+async def test_imgw_client_raises_on_invalid_json_body() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"not-json", request=request)
+
+    client = ImgwClient(
+        base_url="https://example.test",
+        max_retries=0,
+        retry_delay_seconds=0,
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(ImgwClientError):
+        await client.fetch_json(SOURCE_BY_KEY["synop"])
+
+
+@pytest.mark.asyncio
+async def test_imgw_client_raises_after_exhausting_transport_error_retries() -> None:
+    calls = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        raise httpx.ConnectError("connection reset", request=request)
+
+    client = ImgwClient(
+        base_url="https://example.test",
+        max_retries=1,
+        retry_delay_seconds=0,
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(ImgwClientError):
+        await client.fetch_json(SOURCE_BY_KEY["synop"])
+
+    assert calls == 2
+
+
+@pytest.mark.asyncio
 async def test_imgw_client_does_not_retry_4xx_responses() -> None:
     calls = 0
 
