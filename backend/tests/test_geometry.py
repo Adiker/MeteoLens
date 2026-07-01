@@ -3,7 +3,8 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
-from app.geometry.loader import reset_geometry_store
+from app.geometry.loader import GeometryFeature, reset_geometry_store
+from app.geometry.spatial import point_in_geometry
 from app.main import app
 from tests.settings_helpers import apply_test_settings
 from tests.test_frontend_api import _seed_cache
@@ -48,6 +49,22 @@ def test_map_layers_include_warning_polygons_when_geometry_exists(monkeypatch, t
     assert layer["geojson"]["features"][0]["geometry"]["type"] == "Polygon"
 
 
+def test_map_layers_bbox_excludes_warning_polygons_outside_view(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(tmp_path, monkeypatch)
+    _seed_cache(tmp_path, ("warningsmeteo",))
+
+    response = TestClient(app).get(
+        "/api/v1/map/layers?layers=warnings_meteo&bbox=0,0,1,1"
+    )
+
+    assert response.status_code == 200
+    layer = response.json()["layers"][0]
+    assert layer["geojson"]["features"] == []
+    assert layer["records"] == []
+
+
 def test_warnings_support_county_filter(monkeypatch, tmp_path) -> None:
     _prepare(tmp_path, monkeypatch)
     _seed_cache(tmp_path, ("warningsmeteo",))
@@ -70,3 +87,21 @@ def test_location_summary_polygon_matches_point(monkeypatch, tmp_path) -> None:
     payload = response.json()
     assert payload["warnings"]
     assert payload["warnings"][0]["match_type"] == "polygon"
+
+
+def test_point_in_geometry_excludes_polygon_holes() -> None:
+    feature = GeometryFeature(
+        id="test",
+        code="test",
+        label=None,
+        geometry_type="Polygon",
+        coordinates=[
+            [[0, 0], [4, 0], [4, 4], [0, 4], [0, 0]],
+            [[1, 1], [3, 1], [3, 3], [1, 3], [1, 1]],
+        ],
+        source_file="test.geojson",
+        dataset_key="test",
+    )
+
+    assert point_in_geometry(0.5, 0.5, feature) is True
+    assert point_in_geometry(2.0, 2.0, feature) is False

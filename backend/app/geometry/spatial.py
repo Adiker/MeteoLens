@@ -9,6 +9,8 @@ from app.normalization.models import Warning, WarningArea
 
 
 def _point_in_ring(lon: float, lat: float, ring: list[list[float]]) -> bool:
+    if len(ring) < 3:
+        return False
     inside = False
     j = len(ring) - 1
     for i, vertex in enumerate(ring):
@@ -23,13 +25,19 @@ def _point_in_ring(lon: float, lat: float, ring: list[list[float]]) -> bool:
     return inside
 
 
+def _point_in_polygon(lon: float, lat: float, polygon: list[list[list[float]]]) -> bool:
+    if not polygon or not _point_in_ring(lon, lat, polygon[0]):
+        return False
+    return not any(_point_in_ring(lon, lat, hole) for hole in polygon[1:])
+
+
 def point_in_geometry(lon: float, lat: float, feature: GeometryFeature) -> bool:
     geometry_type = feature.geometry_type
     coordinates = feature.coordinates
     if geometry_type == "Polygon" and coordinates:
-        return _point_in_ring(lon, lat, coordinates[0])
+        return _point_in_polygon(lon, lat, coordinates)
     if geometry_type == "MultiPolygon" and coordinates:
-        return any(_point_in_ring(lon, lat, polygon[0]) for polygon in coordinates)
+        return any(_point_in_polygon(lon, lat, polygon) for polygon in coordinates)
     return False
 
 
