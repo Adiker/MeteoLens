@@ -5,7 +5,8 @@ from fastapi.testclient import TestClient
 
 import app.services.observation_history as history_service
 from app.core.config import Settings
-from app.db.engine import init_db, reset_engine_cache
+from app.db.engine import get_engine, init_db, reset_engine_cache
+from app.db.repository import ObservationRepository
 from app.imgw.cache import SourceCache
 from app.imgw.parsers import parse_source
 from app.main import app
@@ -51,6 +52,38 @@ def _seed_station_cache(cache: SourceCache, source_key: str = "hydro") -> Statio
     return station
 
 
+def _insert_history_row(
+    *,
+    station_id: str,
+    metric: str,
+    value: float,
+    observed_at: datetime,
+    station_name: str = "Test station",
+    station_type: str = "hydro",
+) -> None:
+    get_engine().execute(
+        """
+        INSERT INTO observation_history (
+            station_id, station_name, source_key, station_type,
+            metric, value, unit, observed_at, retrieved_at, missing, raw_field
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+        """,
+        (
+            station_id,
+            station_name,
+            "hydro",
+            station_type,
+            metric,
+            value,
+            "cm",
+            observed_at.isoformat(),
+            datetime(2026, 6, 30, 9, 0, tzinfo=UTC).isoformat(),
+            metric,
+        ),
+    )
+    get_engine().commit()
+
+
 def test_observations_endpoint_returns_history_when_available(monkeypatch, tmp_path) -> None:
     _prepare(tmp_path, monkeypatch)
     station = _seed_station_cache(SourceCache(_settings(tmp_path).cache_dir))
@@ -80,6 +113,80 @@ def test_rankings_returns_highest_water_level(monkeypatch, tmp_path) -> None:
     assert payload["rankings"]
     assert payload["rankings"][0]["metric"] == "water_level"
     assert payload["processed_notice"]
+
+
+def test_query_observations_without_from_returns_newest_limited_rows(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(tmp_path, monkeypatch)
+    repository = ObservationRepository()
+    for hour, value in ((6, 1.0), (7, 2.0), (8, 3.0)):
+        _insert_history_row(
+            station_id="hydro:test",
+            metric="water_level",
+            value=value,
+            observed_at=datetime(2026, 6, 30, hour, tzinfo=UTC),
+        )
+
+    records = repository.query_observations(station_id="hydro:test", limit=2)
+
+    assert [record["value"] for record in records] == [2.0, 3.0]
+
+
+def test_aggregated_observations_keep_metrics_in_separate_buckets(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(tmp_path, monkeypatch)
+    repository = ObservationRepository()
+    for minute, water_level, flow in ((1, 10.0, 100.0), (5, 14.0, 110.0)):
+        observed_at = datetime(2026, 6, 30, 7, minute, tzinfo=UTC)
+        _insert_history_row(
+            station_id="hydro:test",
+            metric="water_level",
+            value=water_level,
+            observed_at=observed_at,
+        )
+        _insert_history_row(
+            station_id="hydro:test",
+            metric="flow",
+            value=flow,
+            observed_at=observed_at,
+        )
+
+    records = repository.query_observations(
+        station_id="hydro:test",
+        interval="1h",
+    )
+
+    values_by_metric = {record["metric"]: record["value"] for record in records}
+    assert values_by_metric == {"flow": 105.0, "water_level": 12.0}
+
+
+def test_rankings_precipitation_alias_matches_persisted_metric_keys(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(tmp_path, monkeypatch)
+    repository = ObservationRepository()
+    _insert_history_row(
+        station_id="meteo:a",
+        station_name="A",
+        station_type="meteo",
+        metric="precipitation_sum",
+        value=5.0,
+        observed_at=datetime(2026, 6, 30, 7, tzinfo=UTC),
+    )
+    _insert_history_row(
+        station_id="meteo:b",
+        station_name="B",
+        station_type="meteo",
+        metric="precipitation_10min",
+        value=7.0,
+        observed_at=datetime(2026, 6, 30, 7, tzinfo=UTC),
+    )
+
+    records = repository.rankings(metric="precipitation", direction="highest")
+
+    assert [record["station_id"] for record in records] == ["meteo:b", "meteo:a"]
 
 
 def test_compare_requires_known_station_ids(monkeypatch, tmp_path) -> None:

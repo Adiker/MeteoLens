@@ -12,9 +12,9 @@ from app.normalization.models import Station
 Interval = Literal["raw", "10m", "1h", "1d"]
 
 RANKING_METRICS: dict[str, tuple[str, ...]] = {
-    "temperature": ("temperature", "temperatura", "temperatura_powietrza"),
-    "wind_speed": ("wind_speed", "predkosc_wiatru", "wiatr"),
-    "precipitation": ("precipitation", "suma_opadu", "opad"),
+    "temperature": ("temperature",),
+    "wind_speed": ("wind_speed",),
+    "precipitation": ("precipitation_sum", "precipitation_10min"),
     "water_level": ("water_level", "stan_wody"),
 }
 
@@ -107,6 +107,8 @@ class ObservationRepository:
             params.append(_iso(observed_to))
 
         where = " AND ".join(clauses)
+        newest_first = observed_from is None
+        order_direction = "DESC" if newest_first else "ASC"
         connection = get_engine()
         rows = connection.execute(
             f"""
@@ -115,13 +117,15 @@ class ObservationRepository:
                    missing, raw_field
             FROM observation_history
             WHERE {where}
-            ORDER BY observed_at ASC
+            ORDER BY observed_at {order_direction}
             LIMIT ?
             """,
             (*params, limit * 10 if interval != "raw" else limit),
         ).fetchall()
 
         records = [_row_to_observation(row) for row in rows]
+        if newest_first:
+            records.reverse()
         if interval == "raw":
             return records[-limit:]
         return _aggregate_observations(records, interval=interval, limit=limit)
@@ -242,14 +246,14 @@ def _aggregate_observations(
     interval: Interval,
     limit: int,
 ) -> list[dict[str, Any]]:
-    buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    buckets: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         observed_at = _parse_iso(record["observed_at"])
-        buckets[_bucket_key(observed_at, interval)].append(record)
+        buckets[(_bucket_key(observed_at, interval), record["metric"])].append(record)
 
     aggregated: list[dict[str, Any]] = []
-    for bucket_key in sorted(buckets):
-        points = buckets[bucket_key]
+    for bucket_key, _metric in sorted(buckets):
+        points = buckets[(bucket_key, _metric)]
         values = [point["value"] for point in points if point["value"] is not None]
         if not values:
             continue
