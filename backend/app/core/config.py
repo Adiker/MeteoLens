@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     refresh_hydro_seconds: int = Field(default=600, ge=60)
     refresh_meteo_seconds: int = Field(default=600, ge=60)
     refresh_warnings_seconds: int = Field(default=300, ge=60)
+    imgw_timeout_seconds: float = Field(default=20.0, gt=0)
+    imgw_max_retries: int = Field(default=2, ge=0)
+    imgw_retry_delay_seconds: float = Field(default=0.25, ge=0)
+
+    @property
+    def frontend_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
 
 
 @lru_cache

@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - deploy/.env.production.example
+    environment:
+      METEOLENS_ENV: production
+      METEOLENS_DATABASE_URL: sqlite:////data/meteolens.sqlite3
+      METEOLENS_CACHE_DIR: /data/cache
+      METEOLENS_SYNC_ON_STARTUP: "true"
+    volumes:
+      - meteolens-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2).read()",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ""
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "${PUBLIC_HTTP_PORT:-8080}:80"
+
+volumes:
+  meteolens-data:
