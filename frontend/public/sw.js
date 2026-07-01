@@ -25,6 +25,21 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/")) {
     return;
   }
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, copy.clone());
+            cache.put("/index.html", copy);
+          });
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match("/index.html"))),
+    );
+    return;
+  }
   event.respondWith(
     caches.match(request).then((cached) =>
       cached ||

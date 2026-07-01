@@ -39,7 +39,7 @@ async function renderMapShell() {
   );
 }
 
-describe("MapShell PNG export", () => {
+describe("MapShell", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.stubGlobal(
@@ -89,5 +89,28 @@ describe("MapShell PNG export", () => {
     const [text] = fillText.mock.calls[0];
     expect(text).toContain("Źródło danych: IMGW-PIB.");
     expect(text).toContain("Dane przetworzone przez MeteoLens");
+  });
+
+  it("filters station features above the expert delay threshold", async () => {
+    const { filterStationFeaturesByDelay } = await import("./stationFilters");
+    const fresh = {
+      id: "fresh",
+      properties: { data_delay_seconds: 30 * 60 },
+    };
+    const delayed = {
+      id: "delayed",
+      properties: { data_delay_seconds: 120 * 60 },
+    };
+    const unknown = {
+      id: "unknown",
+      properties: { data_delay_seconds: null },
+    };
+
+    const features = [fresh, delayed, unknown] as Parameters<typeof filterStationFeaturesByDelay>[0];
+
+    expect(filterStationFeaturesByDelay(features, 60).map((feature) => feature.id)).toEqual([
+      "fresh",
+      "unknown",
+    ]);
   });
 });

@@ -9,6 +9,7 @@ import { CAPTURE_PNG_EVENT, FLY_TO_EVENT, type FlyToDetail } from "../lib/mapBus
 import { LAYERS, STATION_LAYERS, STATION_TYPE_COLOR, WARNING_LAYERS } from "../lib/layers";
 import { decodePermalink } from "../lib/permalink";
 import { useAppStore } from "../store/appStore";
+import { filterStationFeaturesByDelay } from "./stationFilters";
 
 const STATIONS_SOURCE = "stations";
 const STATIONS_LAYER = "stations-circles";
@@ -65,16 +66,20 @@ export function MapShell() {
 
   const activeLayers = useAppStore((state) => state.activeLayers);
   const selection = useAppStore((state) => state.selection);
+  const maxDataDelayMinutes = useAppStore((state) => state.filters.maxDataDelayMinutes);
 
   const activeMapLayerKeys = LAYERS.filter((layer) => activeLayers[layer.key]).map((layer) => layer.key);
   const mapQuery = useMapLayersQuery(activeMapLayerKeys);
 
   const stationFeatures = useMemo(
     () =>
-      (mapQuery.data?.layers ?? [])
-        .filter((layer) => STATION_LAYERS.some((stationLayer) => stationLayer.key === layer.key))
-        .flatMap((layer) => layer.geojson.features),
-    [mapQuery.data],
+      filterStationFeaturesByDelay(
+        (mapQuery.data?.layers ?? [])
+          .filter((layer) => STATION_LAYERS.some((stationLayer) => stationLayer.key === layer.key))
+          .flatMap((layer) => layer.geojson.features),
+        maxDataDelayMinutes,
+      ),
+    [mapQuery.data, maxDataDelayMinutes],
   );
   const warningFeatures = useMemo(
     () =>
