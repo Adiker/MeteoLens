@@ -12,7 +12,7 @@ from app.products.frames import build_frame_records
 def list_products(settings: Settings) -> dict[str, Any]:
     cache = SourceCache(settings.cache_dir)
     cached = cache.read("product")
-    retrieved_at = cached.retrieved_at if cached else datetime.now(UTC)
+    retrieved_at = cached.retrieved_at if cached else None
     manifests = _manifest_records(cached)
     products: list[dict[str, Any]] = []
     for manifest in manifests:
@@ -29,6 +29,7 @@ def list_products(settings: Settings) -> dict[str, Any]:
                 "format_notes": classification.format_notes,
                 "research_date": RESEARCH_DATE,
                 "notes": classification.notes,
+                "missing_fields": manifest.missing_fields,
                 "source": manifest.source.model_dump(mode="json"),
             }
         )

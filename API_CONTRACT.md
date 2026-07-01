@@ -325,7 +325,9 @@ Returns IMGW product manifest entries enriched with research classification:
 
 - `category`, `availability`, `rendering_status`, `high_value`, `format_notes`
 - `research_date` (currently `2026-07-01`)
+- `missing_fields` (source fields IMGW omitted, e.g. `id`/`url`/`opis`)
 - per-product `source` metadata and attribution/processed notice at collection level
+- `retrieved_at` is `null` when the product manifest cache is empty (never synthesized)
 
 ### `GET /api/v1/products/{product_id}/frames`
 

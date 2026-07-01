@@ -234,6 +234,7 @@ export interface ProductRecord {
   format_notes: string;
   research_date: string;
   notes?: string | null;
+  missing_fields: string[];
   source: SourceMetadata;
 }
 
