@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     version: str = "0.1.0"
     imgw_base_url: AnyUrl = "https://danepubliczne.imgw.pl"
     frontend_origin: str = "http://localhost:5173"
-    database_url: str = "sqlite:///data/meteolens.sqlite3"
+    database_url: str = "sqlite:///../data/meteolens.sqlite3"
     cache_dir: Path = Path("../data/cache")
     log_level: str = "INFO"
     sync_on_startup: bool = False
@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     refresh_hydro_seconds: int = Field(default=600, ge=60)
     refresh_meteo_seconds: int = Field(default=600, ge=60)
     refresh_warnings_seconds: int = Field(default=300, ge=60)
+    observation_retention_days: int = Field(default=30, ge=1)
 
 
 @lru_cache

@@ -4,7 +4,9 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
-- Added documentation-only planning for Stages 7-11: public demo/production
+- Added Stage 8 observation history: SQLite persistence on IMGW refresh,
+  time-series/compare/rankings API endpoints, range exports, retention policy,
+  and frontend time-series chart mode.
   hardening, observation history and real time series, geometry datasets and
   spatial warnings, radar/product/GRIB research with timeline animation, and
   PWA/local-alert/dashboard power-user features.
