@@ -113,4 +113,16 @@ describe("MapShell", () => {
       "unknown",
     ]);
   });
+
+  it("filters station features to stale-cache sources when the expert toggle is on", async () => {
+    const { filterStationFeaturesByStaleCache } = await import("./stationFilters");
+    const synop = { id: "synop-1", properties: { source_key: "synop" } };
+    const hydro = { id: "hydro-1", properties: { source_key: "hydro" } };
+    const features = [synop, hydro] as Parameters<typeof filterStationFeaturesByStaleCache>[0];
+
+    expect(filterStationFeaturesByStaleCache(features, false, ["synop"])).toEqual(features);
+    expect(
+      filterStationFeaturesByStaleCache(features, true, ["synop"]).map((feature) => feature.id),
+    ).toEqual(["synop-1"]);
+  });
 });

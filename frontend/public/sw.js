@@ -22,7 +22,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   const url = new URL(request.url);
-  if (url.pathname.startsWith("/api/")) {
+  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) {
+    // Only cache same-origin shell/build assets; leave map tiles and other
+    // third-party or API requests to the network so Cache Storage doesn't
+    // fill up with tiles and stale cross-origin responses aren't served.
     return;
   }
   if (request.mode === "navigate") {

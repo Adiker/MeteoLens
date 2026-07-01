@@ -55,7 +55,7 @@ function ExpertFilters() {
           checked={filters.onlyStaleCache}
           onChange={(event) => setFilter("onlyStaleCache", event.target.checked)}
         />
-        Podświetl tylko warstwy z przestarzałym cache
+        Pokaż tylko stacje ze źródeł z przestarzałym cache
       </label>
     </section>
   );
