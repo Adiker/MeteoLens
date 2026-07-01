@@ -102,6 +102,11 @@ MVP quick filters:
 
 Filters must be reflected in permalink state.
 
+Stage 8 should add metric, date/time range, aggregation interval, and station
+comparison filters for time-series views. Stage 9 should add province, county,
+and basin filters only where reviewed geometry exists. Stage 11 should add
+advanced expert filters without hiding missing values or stale-source states.
+
 ## Timeline And Animation
 
 Timeline appears only for time-aware data. MVP can support current/latest data
@@ -114,6 +119,20 @@ Controls:
 - speed selector,
 - current timestamp label,
 - stale/missing frame indication.
+
+Stage 8 should enable the timeline for historical observation series where real
+multi-point data exists. Stage 10 should extend the same control pattern to
+radar/product frames only after source files, projections, cache policy, and
+rendering strategy are documented.
+
+Timeline labels must distinguish:
+
+- source time,
+- frame or observation time,
+- retrieval time,
+- stale frames,
+- missing frames,
+- processed-data notice.
 
 ## Permalinks
 
@@ -158,6 +177,16 @@ Use explicit states:
 
 Do not hide source failures behind an empty map.
 
+Future stages must add explicit states for:
+
+- unresolved TERYT or basin geometry,
+- unresolved synoptic station coordinates,
+- no observations in selected time range,
+- product file unavailable,
+- product frame missing,
+- stale product frame,
+- local alert rule disabled because data is stale or incomplete.
+
 ## Visual Style
 
 - Clear, dense, readable operational UI.
@@ -174,6 +203,10 @@ Do not hide source failures behind an empty map.
 - Source line in every detail panel.
 - Source metadata in export dialogs.
 - Processed-data notice near derived or normalized data.
+
+Stage 11 local alerts must include a clear responsibility boundary: MeteoLens
+may notify about local rules and nearby data, but it must not present itself as
+an official warning system.
 
 ## Stage 5 Implementation Status
 
@@ -193,3 +226,20 @@ target spec above, driven by current backend data:
   layer toggles; warning legend entries note the missing geometry.
 - The PNG export captures the current MapLibre canvas; CSV/JSON/GeoJSON exports
   are backend downloads.
+
+## Planned Future UX
+
+- Stage 7 should add production/demo readiness tasks around README screenshots
+  and public deployment documentation, but it should not change the app into a
+  marketing landing page.
+- Stage 8 should replace snapshot-only charts with real time-series charts,
+  station comparison, rankings, and time-range exports.
+- Stage 9 should render warning polygons and location-specific warning matching
+  only where reviewed geometry and reliable code mapping exist; unresolved
+  geometry remains visible as partial data.
+- Stage 10 should add radar/product timeline animation only after real product
+  ingestion and rendering are designed and implemented.
+- Stage 11 should add saved locations, saved views, dashboards, local alert
+  rules, source availability/freshness views, advanced expert filters,
+  warning-vs-measurement comparison, and trend/anomaly exploration as
+  operational tools, not decorative panels.

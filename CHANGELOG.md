@@ -4,6 +4,10 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added documentation-only planning for Stages 7-11: public demo/production
+  hardening, observation history and real time series, geometry datasets and
+  spatial warnings, radar/product/GRIB research with timeline animation, and
+  PWA/local-alert/dashboard power-user features.
 - Added initial project research and documentation for Stages 0-1.
 - Added Stage 2 application skeleton: FastAPI backend, React/Vite frontend,
   MapLibre map shell, Docker Compose, `.env.example`, CI, and basic tests.

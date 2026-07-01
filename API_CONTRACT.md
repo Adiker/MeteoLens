@@ -173,12 +173,48 @@ Query parameters:
 - `metric`: optional metric key.
 - `from`: optional ISO timestamp.
 - `to`: optional ISO timestamp.
+- `interval`: planned Stage 8 aggregation interval such as `raw`, `10m`,
+  `1h`, or `1d`.
+- `limit`: planned Stage 8 maximum number of returned points.
 
-Returns time-series values for charts and exports.
+Returns observation values for charts and exports. The current implementation is
+backed by the latest normalized cache snapshot, so it can return current values
+but not a historical multi-point series. Stage 8 should turn this endpoint into
+a real time-series API backed by persisted observation history.
 
 Each observation preserves `null` values and includes `missing`,
 `raw_field`, `observed_at`, `retrieved_at`-derived `data_delay_seconds`, and
 unit metadata where available.
+
+Planned Stage 8 endpoints:
+
+- `GET /api/v1/stations/compare`
+- `GET /api/v1/rankings`
+- `GET /api/v1/export/station/{id}/observations.csv`
+- `GET /api/v1/export/station/{id}/observations.json`
+
+Planned station comparison parameters:
+
+- `station_ids`: comma-separated stable station IDs.
+- `metric`: required metric key.
+- `from`: optional ISO timestamp.
+- `to`: optional ISO timestamp.
+- `interval`: optional aggregation interval.
+- `limit`: optional point limit.
+
+Planned ranking parameters:
+
+- `metric`: one of supported ranking metrics, for example temperature,
+  wind speed, precipitation, or water level.
+- `direction`: `highest` or `lowest` where applicable.
+- `from`: optional ISO timestamp.
+- `to`: optional ISO timestamp.
+- `station_type`: optional station type filter.
+- `limit`: optional result limit.
+
+Stage 8 ranking responses must preserve source metadata, missing-field metadata,
+and processed-data notices. Ranking logic must not replace missing values with
+zero.
 
 ## Warnings
 
@@ -192,6 +228,10 @@ Query parameters:
 - `phenomenon`: optional text/enum filter.
 - `teryt`: optional administrative area code.
 - `basin`: optional hydrological basin code.
+- `province`: planned Stage 9 filter where reviewed administrative geometry
+  exists.
+- `county`: planned Stage 9 filter where reviewed administrative geometry
+  exists.
 
 `GET /api/v1/warnings/{id}`
 
@@ -201,6 +241,10 @@ raw JSON availability.
 Warnings currently expose `area_codes` from IMGW TERYT/basin/province metadata
 and `geometry_status: "missing_area_geometry_dataset"` until TERYT and basin
 geometry datasets are added.
+
+Stage 9 should add reviewed geometry references or GeoJSON features for warning
+areas where code mapping is reliable. Responses must continue to expose
+unresolved codes and missing geometry reasons instead of hiding partial data.
 
 ## Location Summary
 
@@ -219,6 +263,10 @@ location matching is not available until area geometry datasets are cached.
 
 The response includes `generated_at`, `cache`, and `empty_state` metadata like
 other collection endpoints.
+
+Stage 9 should add spatial warning matching for this endpoint when reviewed
+TERYT or basin geometries exist. The response should distinguish exact polygon
+matches, fallback active-warning summaries, and unresolved geometry.
 
 ## Exports
 
@@ -260,6 +308,30 @@ Map GeoJSON includes point station features plus foreign members for
 Returns raw source payload slices when available. This endpoint is for expert
 mode and debugging, not for primary UI rendering.
 
+## Planned Product And Timeline APIs
+
+Stage 10 should add product/raster/timeline endpoints only after IMGW product
+file formats, projections, licensing, file sizes, and cache strategy are
+documented. Planned contracts may include:
+
+- `GET /api/v1/products`
+- `GET /api/v1/products/{id}/frames`
+- `GET /api/v1/map/timeline`
+- `GET /api/v1/tiles/{product_id}/{z}/{x}/{y}`
+
+Product and frame responses must label source time, frame time, missing frames,
+stale frames, parser/rendering status, attribution, and processed-data notice.
+Stable, unstable, missing, or risky product IDs must be visible in source
+metadata.
+
+## Planned Power-User APIs
+
+Stage 11 may add endpoints for saved locations, saved map views, dashboards,
+local alert rules, source availability, data freshness, warning-vs-measurement
+comparison, and a generated public API client. Local alert endpoints must state
+that MeteoLens is not an official alerting system and must not obscure IMGW-PIB
+warning responsibility.
+
 ## Error Shape
 
 ```json
@@ -284,6 +356,10 @@ Planned error codes:
 - `not_found`,
 - `unsupported_layer`,
 - `invalid_filter`.
+- `geometry_unavailable`,
+- `product_unavailable`,
+- `frame_missing`,
+- `alert_rule_invalid`.
 
 Empty-state codes for collection responses:
 

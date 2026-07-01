@@ -49,6 +49,14 @@ Implemented now:
 
 Not implemented yet: see [Known Limitations](#known-limitations) below.
 
+Future implementation planning is now split into Stages 7-11:
+
+- Stage 7: public demo and production hardening.
+- Stage 8: observation history and real time series.
+- Stage 9: geometry datasets and spatial warnings.
+- Stage 10: radar/product files, GRIB research, and timeline animation.
+- Stage 11: PWA, local alerts, dashboards, and power-user features.
+
 ## Data Sources
 
 Primary source: IMGW-PIB public data service at
@@ -120,8 +128,8 @@ Local URLs:
 ## Screenshots And Mockups
 
 The Stage 5 map-first UI is implemented; screenshot assets under `docs/` are not
-captured yet and should be added from a populated cache. The target layout is
-specified in [UI_UX.md](UI_UX.md).
+captured yet and should be added from a populated cache during Stage 7. The
+target layout is specified in [UI_UX.md](UI_UX.md).
 
 ## Planned Exports
 
@@ -161,19 +169,21 @@ data (see `AGENTS.md`).
   TERYT codes and basin/province names but no geometry, so warnings render as
   a filterable list instead of map polygons
   (`missing_area_geometry_dataset`). Landing this needs a TERYT/basin geometry
-  dataset; see `DATA_SOURCES.md`.
+  dataset; planned for Stage 9 after source/legal review. See
+  `DATA_SOURCES.md`.
 - **Synoptic stations have no coordinates.** `api/data/synop` does not return
   `lat/lon`, so synop stations appear in lists/details but are excluded from
   map markers (`missing_lat_lon`) until an official station coordinate
-  dataset is added.
+  dataset is added. This is part of the Stage 9 geometry/source review.
 - **No time series, only a snapshot.** The station chart shows the latest
   cached value per metric, not history — the cache keeps one snapshot per
   station, not an archive. Multi-point charts need the archive/measurement
-  endpoints (Stage 0 research already scoped these; not yet implemented).
+  endpoints and history persistence planned for Stage 8.
 - **Timeline/animation control is inert.** The bottom timeline UI is scaffolded
-  but has nothing time-aware (archive or radar frames) to drive it yet.
+  but has nothing time-aware (archive or radar frames) to drive it yet. Archive
+  timelines belong to Stage 8; radar/product timelines belong to Stage 10.
 - **Province/time-range quick filters are deferred.** These depend on the same
-  area-geometry and archive-series work as the two points above.
+  area-geometry and archive-series work planned in Stages 8-9.
 - **No public cache-refresh endpoint.** Docker Compose populates the cache at
   backend startup via `METEOLENS_SYNC_ON_STARTUP=true`; there is still no
   user-facing "refresh data" API call.
@@ -183,7 +193,8 @@ data (see `AGENTS.md`).
   → "Radar And GRIB").
 - **Some `product` IDs are listed but not retrievable.** The manifest can
   reference files that 404 at the detail endpoint; treat this as a source
-  risk, not an application bug.
+  risk, not an application bug. Stage 10 must document stable, unstable,
+  missing, and risky product IDs before adding any working product layer.
 - **E2E tests run against seeded fixtures, not live IMGW-PIB.** `npm run
   test:e2e` seeds the backend cache from `backend/tests/fixtures` so CI does
   not depend on the real endpoint's availability or rate limits — it verifies
@@ -191,7 +202,9 @@ data (see `AGENTS.md`).
 - **No production security/source-terms review.** Attribution and processed-data
   notices are implemented and tested, but deployers must still verify current
   IMGW-PIB terms before public or commercial use (see
-  `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use").
+  `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use"). Stage 7 tracks the
+  public-demo deployment checklist, production hardening, and MIT License
+  documentation for deployment notes.
 
 ## Troubleshooting
 
