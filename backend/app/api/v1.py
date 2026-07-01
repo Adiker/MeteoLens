@@ -234,7 +234,12 @@ def get_map_layers(
         cache,
         [source for layer in requested_layers for source in layer["source_keys"]],
     )
-    records = _records_from_cache(cache, STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS)
+    now = datetime.now(UTC)
+    records = [
+        record
+        for record in _records_from_cache(cache, STATION_SOURCE_KEYS + WARNING_SOURCE_KEYS)
+        if not isinstance(record, Warning) or _warning_matches(record, active_at=now)
+    ]
     geometry_store = get_geometry_store()
     response_layers: list[MapLayerResponse] = []
 
@@ -475,7 +480,15 @@ def get_location_summary(
         warnings=active_warnings,
         store=geometry_store,
     )
-    warnings = polygon_matches if polygon_matches else fallback_warnings
+    if polygon_matches:
+        # Keep polygon matches, plus any active warning whose geometry could not be
+        # fully resolved — we can't rule those out for this location. Warnings with
+        # fully resolved geometry that simply didn't match are correctly dropped.
+        warnings = polygon_matches + [
+            warning for warning in fallback_warnings if warning["geometry_status"] != "resolved"
+        ]
+    else:
+        warnings = fallback_warnings
 
     cached_records = all_stations + all_warnings
     return LocationSummaryResponse(

@@ -1,11 +1,15 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
-from app.geometry.loader import GeometryFeature, reset_geometry_store
-from app.geometry.spatial import point_in_geometry
+from app.geometry.loader import GeometryFeature, get_geometry_store, reset_geometry_store
+from app.geometry.spatial import find_area_geometry, point_in_geometry
+from app.imgw.cache import SourceCache
+from app.imgw.parsers import parse_source
 from app.main import app
+from app.normalization.models import SourceMetadata, WarningArea
 from tests.settings_helpers import apply_test_settings
 from tests.test_frontend_api import _seed_cache
 
@@ -87,6 +91,117 @@ def test_location_summary_polygon_matches_point(monkeypatch, tmp_path) -> None:
     payload = response.json()
     assert payload["warnings"]
     assert payload["warnings"][0]["match_type"] == "polygon"
+
+
+def test_map_layers_exclude_expired_warnings(monkeypatch, tmp_path) -> None:
+    _prepare(tmp_path, monkeypatch)
+    cache = SourceCache(tmp_path)
+    metadata = SourceMetadata(
+        source_key="warningsmeteo",
+        url="https://danepubliczne.imgw.pl/api/data/warningsmeteo",
+        retrieved_at=datetime(2020, 1, 2, 0, 0, tzinfo=UTC),
+    )
+    expired_payload = [
+        {
+            "id": "expired-1",
+            "nazwa_zdarzenia": "Burze",
+            "stopien": "2",
+            "prawdopodobienstwo": "70",
+            "obowiazuje_do": "2020-01-01 23:59:59",
+            "obowiazuje_od": "2020-01-01 00:00:00",
+            "opublikowano": "2020-01-01 00:00:00",
+            "tresc": "Prognozowane są burze.",
+            "komentarz": "Brak.",
+            "biuro": "Centralne Biuro Prognoz Meteorologicznych w Warszawie",
+            "teryt": ["1205"],
+        }
+    ]
+    parse_result = parse_source("warningsmeteo", expired_payload, metadata)
+    cache.write_success(
+        source_key="warningsmeteo",
+        url=metadata.url,
+        retrieved_at=metadata.retrieved_at,
+        raw_payload=expired_payload,
+        normalized_payload=[record.model_dump(mode="json") for record in parse_result.records],
+        parser_warnings=parse_result.warnings,
+    )
+
+    response = TestClient(app).get("/api/v1/map/layers?layers=warnings_meteo")
+
+    assert response.status_code == 200
+    layer = response.json()["layers"][0]
+    assert layer["geojson"]["features"] == []
+    assert layer["records"] == []
+
+
+def test_find_area_geometry_keeps_missing_county_unresolved(monkeypatch, tmp_path) -> None:
+    _prepare(tmp_path, monkeypatch)
+    store = get_geometry_store()
+
+    # "1299" is not in the county dataset; only its two-digit prefix ("12") is a
+    # real voivodeship. It must stay unresolved rather than expanding to the
+    # whole voivodeship geometry.
+    missing_county = find_area_geometry(store, WarningArea(area_type="teryt", code="1299"))
+    assert missing_county is None
+
+    real_voivodeship = find_area_geometry(store, WarningArea(area_type="teryt", code="12"))
+    assert real_voivodeship is not None
+    assert real_voivodeship.dataset_key == "teryt_voivodeships"
+
+
+def test_location_summary_keeps_unresolved_fallback_alongside_polygon_match(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(tmp_path, monkeypatch)
+    cache = _seed_cache(tmp_path, ("warningsmeteo",))
+    metadata = SourceMetadata(
+        source_key="warningshydro",
+        url="https://danepubliczne.imgw.pl/api/data/warningshydro",
+        retrieved_at=datetime(2026, 6, 30, 7, 30, tzinfo=UTC),
+    )
+    # A hydro warning whose basin has no matching geometry in the store, so it
+    # can never be a polygon match and must fall back with geometry_status
+    # other than "resolved".
+    unresolved_payload = [
+        {
+            "numer": "hydro-warning-1",
+            "zdarzenie": "Wezbranie",
+            "stopień": "1",
+            "prawdopodobienstwo": "60",
+            "data_od": "2026-06-30 00:00:00",
+            "data_do": "2099-12-31 23:59:59",
+            "opublikowano": "2026-06-30 00:00:00",
+            "biuro": "Biuro Prognoz Hydrologicznych",
+            "komentarz": "Brak.",
+            "obszary": [
+                {
+                    "wojewodztwo": None,
+                    "opis": "Zlewnia testowa",
+                    "kod_zlewni": ["no-such-basin"],
+                }
+            ],
+        }
+    ]
+    parse_result = parse_source("warningshydro", unresolved_payload, metadata)
+    cache.write_success(
+        source_key="warningshydro",
+        url=metadata.url,
+        retrieved_at=metadata.retrieved_at,
+        raw_payload=unresolved_payload,
+        normalized_payload=[record.model_dump(mode="json") for record in parse_result.records],
+        parser_warnings=parse_result.warnings,
+    )
+
+    response = TestClient(app).get(
+        "/api/v1/location/summary?lat=50.5&lon=19.0&radius_km=50"
+    )
+
+    assert response.status_code == 200
+    warnings = response.json()["warnings"]
+    match_types = {warning["id"]: warning.get("match_type") for warning in warnings}
+    assert match_types.get("warningsmeteo:Sk20260630043222424") == "polygon"
+    assert "warningshydro:hydro-warning-1" in match_types
+    assert match_types["warningshydro:hydro-warning-1"] != "polygon"
 
 
 def test_point_in_geometry_excludes_polygon_holes() -> None:
