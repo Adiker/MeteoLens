@@ -107,9 +107,9 @@ export function decodePermalink(search: string): Partial<PermalinkState> {
 
   const warningLevel = params.get("wl");
   const phenomenon = params.get("ph");
-  const province = params.get("pv");
-  const county = params.get("cy");
-  const basin = params.get("bs");
+  const province = params.get("pv") ?? params.get("pr");
+  const county = params.get("cy") ?? params.get("co");
+  const basin = params.get("bs") ?? params.get("ba");
   const maxDelay = params.get("md");
   const onlyStale = params.get("osc");
   if (

@@ -48,4 +48,12 @@ describe("permalink", () => {
       id: "meteo:123",
     });
   });
+
+  it("accepts legacy spatial filter aliases", () => {
+    expect(decodePermalink("pr=12&co=1205&ba=B1").filters).toMatchObject({
+      province: "12",
+      county: "1205",
+      basin: "B1",
+    });
+  });
 });

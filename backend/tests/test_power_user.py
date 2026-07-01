@@ -57,6 +57,25 @@ def test_freshness_endpoint_reports_source_status(seeded_cache) -> None:
     assert hydro["record_count"] == 1
 
 
+def test_freshness_counts_stale_cache_with_fetch_error_as_degraded(
+    tmp_path, monkeypatch
+) -> None:
+    cache = SourceCache(tmp_path)
+    _write_cached_source(cache, "hydro")
+    cache.write_error(source_key="hydro", error="upstream timeout")
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/status/freshness")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["overall_status"] == "degraded"
+    assert any("fetch errors" in note for note in payload["notes"])
+    hydro = next(item for item in payload["sources"] if item["source_key"] == "hydro")
+    assert hydro["cache_status"] == "stale"
+    assert hydro["error"] == "upstream timeout"
+
+
 def test_compare_warning_station_returns_observations_and_warnings(seeded_cache) -> None:
     response = TestClient(app).get("/api/v1/compare/warning-station/hydro:151140030")
     assert response.status_code == 200

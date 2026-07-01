@@ -28,7 +28,7 @@ def build_freshness_report(settings: Settings) -> dict[str, Any]:
             empty_count += 1
         elif status.status in {"stale", "invalid"}:
             stale_count += 1
-        elif status.status == "error":
+        if status.status == "error" or status.error:
             error_count += 1
 
         sources.append(
