@@ -4,7 +4,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.prod
     env_file:
-      - deploy/.env.production.example
+      - .env.production
     environment:
       METEOLENS_ENV: production
       METEOLENS_DATABASE_URL: sqlite:////data/meteolens.sqlite3
