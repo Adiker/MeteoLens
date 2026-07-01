@@ -120,7 +120,7 @@ filters wait for area geometry and archive series.
 - [ ] Add logging and monitoring requirements for source fetches, parser
   failures, stale cache, and API errors.
 - [ ] Add public deployment checklist.
-- [ ] Decide the project license before public demo promotion.
+- [ ] Confirm the MIT License is documented in public deployment notes.
 - [ ] Verify current IMGW-PIB terms before public or commercial use.
 - [ ] Capture populated-cache screenshots or demo media for `README.md`.
 

@@ -86,7 +86,7 @@ Required production changes:
 Stage 7 public deployment checklist:
 
 - current IMGW-PIB terms verified for the intended public or commercial use,
-- project license selected and documented,
+- MIT License documented in public deployment notes,
 - attribution visible in UI, exports, screenshots, and README,
 - processed-data notice visible wherever data is normalized, aggregated,
   converted, or otherwise transformed,

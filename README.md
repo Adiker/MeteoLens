@@ -152,6 +152,12 @@ processed.
 
 See [LEGAL_ATTRIBUTION.md](LEGAL_ATTRIBUTION.md).
 
+## License
+
+MeteoLens code and documentation are released under the
+[MIT License](LICENSE). Source weather and hydrological data remains governed
+by the applicable IMGW-PIB terms and any other source-specific terms.
+
 ## Known Limitations
 
 These are known, accepted gaps ahead of an MVP release — not bugs to silently
@@ -193,12 +199,12 @@ data (see `AGENTS.md`).
   test:e2e` seeds the backend cache from `backend/tests/fixtures` so CI does
   not depend on the real endpoint's availability or rate limits — it verifies
   the app's own request/response handling, not IMGW-PIB's live behavior.
-- **No production security/licensing review.** Attribution and processed-data
+- **No production security/source-terms review.** Attribution and processed-data
   notices are implemented and tested, but deployers must still verify current
   IMGW-PIB terms before public or commercial use (see
   `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use"). Stage 7 tracks the
-  public-demo deployment checklist, production hardening, and project license
-  decision.
+  public-demo deployment checklist, production hardening, and MIT License
+  documentation for deployment notes.
 
 ## Troubleshooting
 

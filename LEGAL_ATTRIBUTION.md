@@ -8,6 +8,15 @@ Research date: 2026-06-29.
 Source terms reviewed:
 [https://danepubliczne.imgw.pl/pl/regulations](https://danepubliczne.imgw.pl/pl/regulations).
 
+## Project License
+
+MeteoLens code and documentation are released under the MIT License. See
+[`LICENSE`](LICENSE).
+
+This project license does not grant additional rights to IMGW-PIB data or any
+other third-party datasets. Source data remains governed by the applicable
+source terms, attribution requirements, and deployment-use restrictions.
+
 ## Source
 
 Data source: Instytut Meteorologii i Gospodarki Wodnej - Panstwowy Instytut
@@ -74,7 +83,7 @@ operators to verify current terms before public or commercial deployment.
 Stage 7 public demo work must include:
 
 - verification of the current IMGW-PIB terms for the intended deployment,
-- a project license decision,
+- confirmation that the MIT License is documented in public deployment notes,
 - confirmation that README screenshots and demo media carry attribution when
   shared publicly,
 - deployment notes that do not claim production or commercial clearance without
@@ -123,8 +132,7 @@ useful but unclear, mark it as requiring legal/source review in
 ## Open Legal Questions
 
 - Which external geometry datasets will be used for TERYT and basin polygons?
-- Are any selected external datasets compatible with the intended project
-  license and deployment model?
+- Are any selected external datasets compatible with the MIT License and the
+  intended deployment model?
 - Which product/radar/model files are high-value open data and which require
   additional terms review?
-- What exact project license will be used?

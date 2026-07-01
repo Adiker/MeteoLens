@@ -29,8 +29,8 @@ the future stages below.
 - Stage 7 - Public demo and production hardening: production Docker setup,
   static frontend serving, reverse proxy/TLS notes, production CORS guidance,
   restart policies, persistence, IMGW retry/backoff guidance, observability,
-  public deployment checklist, project license decision, IMGW terms
-  verification, and README demo screenshots.
+  public deployment checklist, MIT License documentation in deployment notes,
+  IMGW terms verification, and README demo screenshots.
 - Stage 8 - Observation history and real time series: historical observation
   persistence, time-series API, date/metric/aggregation filters, charts backed
   by real multi-point data, station comparison, rankings, time-range exports,
