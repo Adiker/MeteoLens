@@ -1,11 +1,9 @@
 # MeteoLens
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-5 (research, documentation, backend
-API, IMGW integration, and the frontend map UI) are implemented; **Stage 6
-(quality: test coverage, attribution/data-integrity verification, and known
-limitations)** is in progress. See [TASKS.md](TASKS.md) for the full staged
-backlog.
+hydrological data for Poland. Stages 0-6 (research, documentation, backend
+API, IMGW integration, the frontend map UI, and quality/test hardening) are
+implemented. See [TASKS.md](TASKS.md) for the full staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -39,9 +37,15 @@ Implemented now:
   ECharts station chart, CSV/JSON/GeoJSON/PNG exports, URL permalinks, keyboard
   shortcuts, light/dark/system theme, simple/expert mode, and explicit
   loading/empty/stale/partial/error states.
-- Docker Compose, `.env.example`, basic CI, lint, and tests.
+- Docker Compose, `.env.example`, CI (backend, frontend, and E2E jobs), lint,
+  and tests.
 - IMGW-PIB HTTP client, parser layer, normalized models, file cache, and parser
   tests for current synop/hydro/meteo/warning endpoints plus product manifests.
+- Live IMGW startup cache refresh (`METEOLENS_SYNC_ON_STARTUP`), enabled by
+  default in Docker Compose, with its own refresh tests.
+- Stage 6 quality work: expanded backend/frontend test coverage, a Playwright
+  E2E suite, and verified attribution/missing-value handling (see
+  [Known Limitations](#known-limitations)).
 
 Not implemented yet: see [Known Limitations](#known-limitations) below.
 
