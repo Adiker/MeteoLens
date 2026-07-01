@@ -30,6 +30,7 @@ from app.normalization.models import (
 )
 from app.products.catalog import list_products, product_detail
 from app.products.timeline import build_map_timeline
+from app.services.freshness import ALERTING_DISCLAIMER, build_freshness_report
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
 NORMALIZED_RECORD_ADAPTER = TypeAdapter(NormalizedRecord)
@@ -245,6 +246,44 @@ class MapTimelineResponse(BaseModel):
     empty_state: EmptyState | None = None
 
 
+class SourceFreshnessItem(BaseModel):
+    source_key: str
+    title: str
+    cache_status: str
+    last_success_at: datetime | None = None
+    age_seconds: int | None = None
+    record_count: int | None = None
+    parser_warnings: list[str] = Field(default_factory=list)
+    error: str | None = None
+    ttl_seconds: int
+    stale: bool
+    parser_status: str
+    notes: str | None = None
+
+
+class FreshnessResponse(BaseModel):
+    generated_at: datetime
+    overall_status: str
+    sources: list[SourceFreshnessItem]
+    notes: list[str] = Field(default_factory=list)
+    attribution: str
+    processed_notice: str
+    alerting_disclaimer: str
+
+
+class WarningStationComparisonResponse(BaseModel):
+    generated_at: datetime
+    station_id: str
+    station: dict[str, Any]
+    observations: list[dict[str, Any]]
+    warnings: list[dict[str, Any]]
+    notes: list[str] = Field(default_factory=list)
+    alerting_disclaimer: str
+    attribution: str
+    processed_notice: str
+    empty_state: EmptyState | None = None
+
+
 @router.get("/sources", response_model=SourcesResponse)
 def list_sources() -> SourcesResponse:
     settings = get_settings()
@@ -302,6 +341,65 @@ def get_product_frames(
 def get_map_timeline() -> MapTimelineResponse:
     payload = build_map_timeline(get_settings())
     return MapTimelineResponse(**payload)
+
+
+@router.get("/status/freshness", response_model=FreshnessResponse)
+def get_freshness_status() -> FreshnessResponse:
+    payload = build_freshness_report(get_settings())
+    return FreshnessResponse(**payload)
+
+
+@router.get(
+    "/compare/warning-station/{station_id}",
+    response_model=WarningStationComparisonResponse,
+)
+def compare_warning_station(station_id: str) -> WarningStationComparisonResponse:
+    station = _get_station_or_404(station_id)
+    cache = _source_cache()
+    all_warnings = _warnings_from_cache(cache)
+    now = datetime.now(UTC)
+    active_warnings = [
+        warning for warning in all_warnings if _warning_matches(warning, active_at=now)
+    ]
+    notes: list[str] = []
+    warnings: list[dict[str, Any]] = []
+    if station.lat is not None and station.lon is not None:
+        geometry_store = get_geometry_store()
+        polygon_matches, fallback_warnings, match_notes = warnings_matching_point(
+            lat=station.lat,
+            lon=station.lon,
+            warnings=active_warnings,
+            store=geometry_store,
+        )
+        warnings = polygon_matches if polygon_matches else fallback_warnings
+        notes.extend(match_notes)
+    else:
+        notes.append(
+            "Station has no coordinates; spatial warning comparison is unavailable."
+        )
+
+    observations = [
+        _observation_payload(observation, station.source.retrieved_at)
+        for observation in station.observations
+    ]
+    return WarningStationComparisonResponse(
+        generated_at=now,
+        station_id=station.id,
+        station=station.model_dump(mode="json"),
+        observations=observations,
+        warnings=warnings,
+        notes=notes,
+        alerting_disclaimer=ALERTING_DISCLAIMER,
+        attribution=ATTRIBUTION,
+        processed_notice=PROCESSED_NOTICE,
+        empty_state=None
+        if observations or warnings
+        else EmptyState(
+            code="no_matching_records",
+            message="No observations or active warnings matched this station.",
+            source_keys=[station.source_key, "warningsmeteo", "warningshydro"],
+        ),
+    )
 
 
 @router.get("/map/layers", response_model=MapLayersResponse)

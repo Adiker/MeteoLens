@@ -8,7 +8,15 @@ const baseState: PermalinkState = {
   selection: { kind: "station", id: "synop:12375" },
   mode: "expert",
   theme: "dark",
-  filters: { warningLevel: 2, phenomenon: "burze" },
+  filters: {
+    warningLevel: 2,
+    phenomenon: "burze",
+    province: "",
+    county: "",
+    basin: "",
+    maxDataDelayMinutes: null,
+    onlyStaleCache: false,
+  },
 };
 
 describe("permalink", () => {
@@ -19,7 +27,7 @@ describe("permalink", () => {
     expect(decoded.selection).toEqual({ kind: "station", id: "synop:12375" });
     expect(decoded.mode).toBe("expert");
     expect(decoded.theme).toBe("dark");
-    expect(decoded.filters).toEqual({ warningLevel: 2, phenomenon: "burze" });
+    expect(decoded.filters).toEqual(baseState.filters);
   });
 
   it("omits theme from the URL when it is system default", () => {

@@ -8,6 +8,8 @@ import {
   fetchMapTimeline,
   fetchObservations,
   fetchProductFrames,
+  fetchFreshnessStatus,
+  fetchWarningStationComparison,
   fetchSources,
   fetchStation,
   fetchStations,
@@ -117,6 +119,23 @@ export function useProductFramesQuery(productId: string | null, limit = 500) {
     queryKey: ["product-frames", productId, limit],
     queryFn: () => fetchProductFrames(productId as string, { limit }),
     enabled: Boolean(productId),
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useFreshnessQuery() {
+  return useQuery({
+    queryKey: ["freshness"],
+    queryFn: fetchFreshnessStatus,
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useWarningComparisonQuery(stationId: string | null) {
+  return useQuery({
+    queryKey: ["warning-comparison", stationId],
+    queryFn: () => fetchWarningStationComparison(stationId as string),
+    enabled: Boolean(stationId),
     staleTime: STALE_TIME,
   });
 }

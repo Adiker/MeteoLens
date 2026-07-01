@@ -429,6 +429,54 @@ export function fetchMapTimeline() {
   return getJson<MapTimelineResponse>("/api/v1/map/timeline");
 }
 
+export interface SourceFreshnessItem {
+  source_key: string;
+  title: string;
+  cache_status: string;
+  last_success_at: string | null;
+  age_seconds: number | null;
+  record_count: number | null;
+  parser_warnings: string[];
+  error: string | null;
+  ttl_seconds: number;
+  stale: boolean;
+  parser_status: string;
+  notes?: string | null;
+}
+
+export interface FreshnessResponse {
+  generated_at: string;
+  overall_status: string;
+  sources: SourceFreshnessItem[];
+  notes: string[];
+  attribution: string;
+  processed_notice: string;
+  alerting_disclaimer: string;
+}
+
+export interface WarningStationComparisonResponse {
+  generated_at: string;
+  station_id: string;
+  station: Record<string, unknown>;
+  observations: Observation[];
+  warnings: WarningRecord[];
+  notes: string[];
+  alerting_disclaimer: string;
+  attribution: string;
+  processed_notice: string;
+  empty_state: EmptyState | null;
+}
+
+export function fetchFreshnessStatus() {
+  return getJson<FreshnessResponse>("/api/v1/status/freshness");
+}
+
+export function fetchWarningStationComparison(stationId: string) {
+  return getJson<WarningStationComparisonResponse>(
+    `/api/v1/compare/warning-station/${encodeURIComponent(stationId)}`,
+  );
+}
+
 // Export URLs are direct download links (anchor href), not fetched JSON.
 export function stationCsvUrl(id: string): string {
   return `${API_BASE_URL}/api/v1/export/station/${encodeURIComponent(id)}.csv`;

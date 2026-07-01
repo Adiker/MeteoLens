@@ -4,6 +4,7 @@ import { AttributionBar } from "../components/AttributionBar";
 import { ControlPanel } from "../components/ControlPanel";
 import { DetailsPanel } from "../components/DetailsPanel";
 import { HeaderBar } from "../components/HeaderBar";
+import { PowerUserPanel } from "../components/PowerUserPanel";
 import { ShortcutHelp } from "../components/ShortcutHelp";
 import { TimelineBar } from "../components/TimelineBar";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
@@ -27,6 +28,7 @@ function AppShell() {
         <MapShell />
         <ControlPanel />
         <DetailsPanel />
+        <PowerUserPanel />
         <ShortcutHelp />
       </section>
       <TimelineBar />

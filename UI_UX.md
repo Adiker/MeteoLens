@@ -240,7 +240,7 @@ target spec above, driven by current backend data:
   geometry remains visible as partial data.
 - Stage 10 adds a product timeline shell driven by frame metadata APIs. Radar/GRIB
   map layers and tile rendering remain future work once binary ingestion exists.
-- Stage 11 should add saved locations, saved views, dashboards, local alert
-  rules, source availability/freshness views, advanced expert filters,
-  warning-vs-measurement comparison, and trend/anomaly exploration as
-  operational tools, not decorative panels.
+- Stage 11 adds saved locations/views (browser-local), dashboard widget toggles,
+  local alert rules with an official-warning disclaimer, freshness monitor,
+  warning-vs-station comparison, expert filters, and a minimal PWA shell. Trend/
+  anomaly automation and generated API clients remain documented future work.

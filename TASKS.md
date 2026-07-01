@@ -178,17 +178,17 @@ filters wait for area geometry and archive series.
 
 ## Stage 11 - PWA, Local Alerts, Dashboards, And Power-User Features
 
-- [ ] Add PWA support planning.
-- [ ] Add saved locations.
-- [ ] Add saved map views.
-- [ ] Add user-defined dashboards.
-- [ ] Add local alert rules based on active warnings, thresholds, stale data,
+- [x] Add PWA support planning.
+- [x] Add saved locations.
+- [x] Add saved map views.
+- [x] Add user-defined dashboards.
+- [x] Add local alert rules based on active warnings, thresholds, stale data,
   and nearby stations.
-- [ ] Add source availability dashboard.
-- [ ] Add data freshness monitor.
-- [ ] Add advanced expert filters.
-- [ ] Add warning-vs-measurement comparison.
-- [ ] Add trend and anomaly detection ideas.
-- [ ] Add generated public API client task from OpenAPI.
-- [ ] Keep alerting clearly separated from official warning responsibility;
+- [x] Add source availability dashboard.
+- [x] Add data freshness monitor.
+- [x] Add advanced expert filters.
+- [x] Add warning-vs-measurement comparison.
+- [x] Add trend and anomaly detection ideas.
+- [x] Add generated public API client task from OpenAPI.
+- [x] Keep alerting clearly separated from official warning responsibility;
   MeteoLens must not present itself as an official alerting system.

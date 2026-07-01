@@ -1,4 +1,4 @@
-import { Crosshair, Keyboard, Monitor, Moon, PanelLeft, SunMedium, Telescope } from "lucide-react";
+import { Crosshair, Gauge, Keyboard, Monitor, Moon, PanelLeft, SunMedium, Telescope } from "lucide-react";
 import { useState } from "react";
 
 import { flyTo } from "../lib/mapBus";
@@ -27,6 +27,8 @@ export function HeaderBar() {
   const toggleControlPanel = useAppStore((state) => state.toggleControlPanel);
   const setShortcutHelpOpen = useAppStore((state) => state.setShortcutHelpOpen);
   const setUserLocation = useAppStore((state) => state.setUserLocation);
+  const togglePowerPanel = useAppStore((state) => state.togglePowerPanel);
+  const powerPanelOpen = useAppStore((state) => state.powerPanelOpen);
   const [locating, setLocating] = useState(false);
   const ThemeIcon = THEME_ICON[theme];
 
@@ -92,6 +94,17 @@ export function HeaderBar() {
         >
           <Telescope aria-hidden className="size-4" />
         </button>
+        {mode === "expert" && (
+          <button
+            type="button"
+            className={cn(iconButtonClass, powerPanelOpen && "border-primary text-primary")}
+            aria-label="Panel narzędzi zaawansowanych"
+            aria-pressed={powerPanelOpen}
+            onClick={togglePowerPanel}
+          >
+            <Gauge aria-hidden className="size-4" />
+          </button>
+        )}
         <button
           type="button"
           className={iconButtonClass}
