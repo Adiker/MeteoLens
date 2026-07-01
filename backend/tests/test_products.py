@@ -78,6 +78,8 @@ def test_product_frames_endpoint_returns_parsed_frame_metadata(seeded_products) 
     payload = response.json()
     assert payload["frame_count"] == 4
     assert payload["rendering_status"] == "parser_not_implemented"
+    assert payload["source"]["url"].endswith("/api/data/product/id/COMPO_SRI.comp.sri")
+    assert payload["source"]["retrieved_at"] == "2026-06-30T08:00:00Z"
     assert payload["frames"][0]["frame_time"] == "2026-06-28T03:30:00+00:00"
     assert payload["frames"][-1]["frame_kind"] == "preview"
 

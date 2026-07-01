@@ -103,7 +103,7 @@ def product_detail(
         "rendering_status": classification.rendering_status,
         "format_notes": classification.format_notes,
         "research_date": RESEARCH_DATE,
-        "source": source.model_dump(mode="json"),
+        "source": _detail_source(cached_detail).model_dump(mode="json"),
         "retrieved_at": cached_detail.retrieved_at,
         "frames": page,
         "frame_count": len(all_frames),
@@ -122,6 +122,14 @@ def product_detail(
         },
         "error": cached_detail.error,
     }
+
+
+def _detail_source(cached_detail) -> SourceMetadata:
+    return SourceMetadata(
+        source_key="product",
+        url=cached_detail.url,
+        retrieved_at=cached_detail.retrieved_at,
+    )
 
 
 def _manifest_records(cached) -> list[ProductManifest]:
