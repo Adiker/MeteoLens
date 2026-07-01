@@ -7,19 +7,24 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from app.db.engine import get_engine, init_db
+from app.imgw.parsers.utils import SOURCE_TIMEZONE
 from app.normalization.models import Station
 
 Interval = Literal["raw", "10m", "1h", "1d"]
 
 RANKING_METRICS: dict[str, tuple[str, ...]] = {
-    "temperature": ("temperature",),
-    "wind_speed": ("wind_speed",),
+    "temperature": ("temperature", "air_temperature", "ground_temperature"),
+    "wind_speed": ("wind_speed", "wind_average_speed", "wind_max_speed", "wind_gust_10min"),
     "precipitation": ("precipitation_sum", "precipitation_10min"),
-    "water_level": ("water_level", "stan_wody"),
+    "water_level": ("water_level",),
 }
 
 
 def _iso(dt: datetime) -> str:
+    # Naive datetimes (e.g. unqualified `from`/`to` query params) are IMGW
+    # local time, matching the snapshot query path's _normalize_query_datetime.
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=SOURCE_TIMEZONE)
     return dt.astimezone(UTC).isoformat()
 
 
@@ -193,10 +198,19 @@ class ObservationRepository:
 
         best_by_station: dict[str, dict[str, Any]] = {}
         for row in rows:
-            station_id = row["station_id"]
-            if station_id in best_by_station:
+            observation = _row_to_observation(row)
+            station_id = observation["station_id"]
+            existing = best_by_station.get(station_id)
+            if existing is None:
+                best_by_station[station_id] = observation
                 continue
-            best_by_station[station_id] = _row_to_observation(row)
+            is_better = (
+                observation["value"] > existing["value"]
+                if direction == "highest"
+                else observation["value"] < existing["value"]
+            )
+            if is_better:
+                best_by_station[station_id] = observation
 
         ranked = sorted(
             best_by_station.values(),

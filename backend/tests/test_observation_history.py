@@ -189,6 +189,83 @@ def test_rankings_precipitation_alias_matches_persisted_metric_keys(
     assert [record["station_id"] for record in records] == ["meteo:b", "meteo:a"]
 
 
+def test_rankings_pick_best_value_in_range_not_newest_sample(monkeypatch, tmp_path) -> None:
+    _prepare(tmp_path, monkeypatch)
+    repository = ObservationRepository()
+    _insert_history_row(
+        station_id="hydro:peak",
+        station_name="Peak",
+        metric="water_level",
+        value=100.0,
+        observed_at=datetime(2026, 6, 30, 6, tzinfo=UTC),
+    )
+    _insert_history_row(
+        station_id="hydro:peak",
+        station_name="Peak",
+        metric="water_level",
+        value=40.0,
+        observed_at=datetime(2026, 6, 30, 8, tzinfo=UTC),
+    )
+    _insert_history_row(
+        station_id="hydro:steady",
+        station_name="Steady",
+        metric="water_level",
+        value=60.0,
+        observed_at=datetime(2026, 6, 30, 8, tzinfo=UTC),
+    )
+
+    records = repository.rankings(metric="water_level", direction="highest")
+
+    assert [record["station_id"] for record in records] == ["hydro:peak", "hydro:steady"]
+    assert records[0]["value"] == 100.0
+
+
+def test_rankings_temperature_alias_matches_meteo_metric_keys(monkeypatch, tmp_path) -> None:
+    _prepare(tmp_path, monkeypatch)
+    repository = ObservationRepository()
+    _insert_history_row(
+        station_id="meteo:a",
+        station_name="A",
+        station_type="meteo",
+        metric="air_temperature",
+        value=21.0,
+        observed_at=datetime(2026, 6, 30, 7, tzinfo=UTC),
+    )
+    _insert_history_row(
+        station_id="synop:b",
+        station_name="B",
+        station_type="synop",
+        metric="temperature",
+        value=15.0,
+        observed_at=datetime(2026, 6, 30, 7, tzinfo=UTC),
+    )
+
+    records = repository.rankings(metric="temperature", direction="highest")
+
+    assert [record["station_id"] for record in records] == ["meteo:a", "synop:b"]
+
+
+def test_query_observations_naive_from_is_treated_as_imgw_local_time(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(tmp_path, monkeypatch)
+    repository = ObservationRepository()
+    # 05:00Z is the UTC instant for 07:00 Europe/Warsaw (summer, UTC+2).
+    _insert_history_row(
+        station_id="hydro:test",
+        metric="water_level",
+        value=9.0,
+        observed_at=datetime(2026, 6, 30, 5, 0, tzinfo=UTC),
+    )
+
+    records = repository.query_observations(
+        station_id="hydro:test",
+        observed_from=datetime(2026, 6, 30, 7, 0),
+    )
+
+    assert [record["value"] for record in records] == [9.0]
+
+
 def test_compare_requires_known_station_ids(monkeypatch, tmp_path) -> None:
     _prepare(tmp_path, monkeypatch)
     station = _seed_station_cache(SourceCache(_settings(tmp_path).cache_dir))
