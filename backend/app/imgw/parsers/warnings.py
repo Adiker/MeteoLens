@@ -89,7 +89,15 @@ def parse_warnings_hydro(payload: Any, source: SourceMetadata) -> tuple[list[War
             warnings.append(f"Hydro warning row {index} is not an object.")
             continue
 
-        source_id = str(row.get("numer") or f"row-{index}")
+        numer = row.get("numer")
+        source_id = str(numer or f"row-{index}")
+        published_raw = row.get("opublikowano")
+        # IMGW recycles `numer` values over time, so the raw numer alone is not
+        # a stable unique key; fold in the publish timestamp to disambiguate.
+        if numer and published_raw not in (None, ""):
+            warning_id = f"warningshydro:{source_id}:{published_raw}"
+        else:
+            warning_id = f"warningshydro:{source_id}"
         areas: list[WarningArea] = []
         source_areas = _list_field(
             row,
@@ -132,7 +140,7 @@ def parse_warnings_hydro(payload: Any, source: SourceMetadata) -> tuple[list[War
 
         records.append(
             Warning(
-                id=f"warningshydro:{source_id}",
+                id=warning_id,
                 source_id=source_id,
                 source_key="warningshydro",
                 warning_type="hydro",

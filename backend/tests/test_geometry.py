@@ -200,8 +200,9 @@ def test_location_summary_keeps_unresolved_fallback_alongside_polygon_match(
     warnings = response.json()["warnings"]
     match_types = {warning["id"]: warning.get("match_type") for warning in warnings}
     assert match_types.get("warningsmeteo:Sk20260630043222424") == "polygon"
-    assert "warningshydro:hydro-warning-1" in match_types
-    assert match_types["warningshydro:hydro-warning-1"] != "polygon"
+    hydro_id = "warningshydro:hydro-warning-1:2026-06-30 00:00:00"
+    assert hydro_id in match_types
+    assert match_types[hydro_id] != "polygon"
 
 
 def test_point_in_geometry_excludes_polygon_holes() -> None:

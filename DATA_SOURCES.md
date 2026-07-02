@@ -104,6 +104,9 @@ Statuses:
 - Update frequency: event-driven; poll every 5 minutes in MVP.
 - Stability: good candidate for MVP details; map polygons need more research.
 - Limitations: level can be special, e.g. `-1` for hydrological drought.
+  `numer` values are recycled over time, so `numer` alone is not a stable
+  unique key; the parser folds `opublikowano` into the normalized warning id
+  to keep ids unique.
 - Cache: 5-minute MVP TTL.
 - Parser: `warningshydro`.
 - Normalized model: `Warning`, `WarningArea`.
