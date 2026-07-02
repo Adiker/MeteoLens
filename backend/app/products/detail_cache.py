@@ -4,6 +4,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from app.imgw.cache import write_text_atomic
+
 
 class ProductDetailCacheEntry(BaseModel):
     product_id: str
@@ -37,7 +39,7 @@ class ProductDetailCache:
             files=files,
             error=None,
         )
-        self._path_for(product_id).write_text(payload.model_dump_json(indent=2), encoding="utf-8")
+        write_text_atomic(self._path_for(product_id), payload.model_dump_json(indent=2))
 
     def write_error(self, *, product_id: str, url: str, error: str) -> None:
         payload = ProductDetailCacheEntry(
@@ -47,7 +49,7 @@ class ProductDetailCache:
             files=[],
             error=error,
         )
-        self._path_for(product_id).write_text(payload.model_dump_json(indent=2), encoding="utf-8")
+        write_text_atomic(self._path_for(product_id), payload.model_dump_json(indent=2))
 
     def read(self, product_id: str) -> ProductDetailCacheEntry | None:
         cache_file = self._path_for(product_id)

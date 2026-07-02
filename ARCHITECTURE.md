@@ -127,6 +127,9 @@ MVP cache stores:
 - parser warnings/errors,
 - last successful refresh.
 
+Cache files are written atomically (temp file + rename), so API readers never
+observe truncated JSON while a startup or scheduled refresh rewrites a source.
+
 Suggested TTL defaults:
 
 - synop: 10 minutes,
