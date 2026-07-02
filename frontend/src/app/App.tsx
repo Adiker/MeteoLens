@@ -5,6 +5,7 @@ import { ControlPanel } from "../components/ControlPanel";
 import { DetailsPanel } from "../components/DetailsPanel";
 import { HeaderBar } from "../components/HeaderBar";
 import { ShortcutHelp } from "../components/ShortcutHelp";
+import { TimelineBar } from "../components/TimelineBar";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { usePermalink } from "../hooks/usePermalink";
 import { useTheme } from "../hooks/useTheme";
@@ -28,6 +29,7 @@ function AppShell() {
         <DetailsPanel />
         <ShortcutHelp />
       </section>
+      <TimelineBar />
       <AttributionBar />
     </main>
   );

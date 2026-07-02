@@ -227,6 +227,93 @@ export interface LocationSummaryResponse extends ApiEnvelope {
 }
 
 // ---------------------------------------------------------------------------
+// Products & timeline
+// ---------------------------------------------------------------------------
+
+export interface ProductRecord {
+  id: string;
+  description: string;
+  manifest_url: string;
+  category: string;
+  availability: string;
+  rendering_status: string;
+  high_value: boolean;
+  format_notes: string;
+  research_date: string;
+  notes?: string | null;
+  missing_fields: string[];
+  source: SourceMetadata;
+}
+
+export interface ProductsResponse {
+  generated_at: string;
+  retrieved_at: string | null;
+  research_date: string;
+  attribution: string;
+  processed_notice: string;
+  products: ProductRecord[];
+  empty_state: EmptyState | null;
+}
+
+export interface ProductFrame {
+  index: number;
+  file: string;
+  url: string;
+  frame_time: string | null;
+  frame_kind: string;
+  rendering_status: string;
+  missing: boolean;
+}
+
+export interface ProductFramesResponse {
+  generated_at: string;
+  product_id: string;
+  description: string;
+  category: string;
+  availability: string;
+  rendering_status: string;
+  format_notes: string;
+  research_date: string;
+  source: SourceMetadata;
+  retrieved_at: string | null;
+  frames: ProductFrame[];
+  frame_count: number;
+  limit: number;
+  offset: number;
+  missing_frames: number;
+  stale: boolean;
+  attribution: string;
+  processed_notice: string;
+  empty_state: EmptyState | null;
+  error?: string | null;
+}
+
+export interface TimelineLayer {
+  key: string;
+  product_id: string;
+  title: string;
+  kind: string;
+  category: string;
+  rendering_status: string;
+  frame_count: number;
+  missing_frames: number;
+  frames_renderable: boolean;
+  source_time: string | null;
+  first_frame_time: string | null;
+  last_frame_time: string | null;
+  stale: boolean;
+  attribution: string;
+  processed_notice: string;
+  notes: string[];
+}
+
+export interface MapTimelineResponse {
+  generated_at: string;
+  layers: TimelineLayer[];
+  empty_state: EmptyState | null;
+}
+
+// ---------------------------------------------------------------------------
 // Fetch helpers
 // ---------------------------------------------------------------------------
 
@@ -359,6 +446,23 @@ export function fetchWarning(id: string) {
 
 export function fetchLocationSummary(params: { lat: number; lon: number; radius_km?: number }) {
   return getJson<LocationSummaryResponse>(`/api/v1/location/summary${query(params)}`);
+}
+
+export function fetchProducts() {
+  return getJson<ProductsResponse>("/api/v1/products");
+}
+
+export function fetchProductFrames(
+  productId: string,
+  params: { limit?: number; offset?: number } = {},
+) {
+  return getJson<ProductFramesResponse>(
+    `/api/v1/products/${encodeURIComponent(productId)}/frames${query(params)}`,
+  );
+}
+
+export function fetchMapTimeline() {
+  return getJson<MapTimelineResponse>("/api/v1/map/timeline");
 }
 
 // Export URLs are direct download links (anchor href), not fetched JSON.

@@ -28,6 +28,8 @@ from app.normalization.models import (
     Station,
     Warning,
 )
+from app.products.catalog import list_products, product_detail
+from app.products.timeline import build_map_timeline
 from app.services import observation_history as history_service
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
@@ -207,6 +209,64 @@ class GeometryDatasetsResponse(BaseModel):
     manifest_present: bool
 
 
+class ProductsResponse(BaseModel):
+    generated_at: datetime
+    retrieved_at: datetime | None = None
+    research_date: str
+    attribution: str
+    processed_notice: str
+    products: list[dict[str, Any]]
+    empty_state: EmptyState | None = None
+
+
+class ProductFramesResponse(BaseModel):
+    generated_at: datetime
+    product_id: str
+    description: str
+    category: str
+    availability: str
+    rendering_status: str
+    format_notes: str
+    research_date: str
+    source: SourceMetadata
+    retrieved_at: datetime | None = None
+    frames: list[dict[str, Any]]
+    frame_count: int
+    limit: int
+    offset: int
+    missing_frames: int
+    stale: bool
+    attribution: str
+    processed_notice: str
+    empty_state: EmptyState | None = None
+    error: str | None = None
+
+
+class TimelineLayer(BaseModel):
+    key: str
+    product_id: str
+    title: str
+    kind: str
+    category: str
+    rendering_status: str
+    frame_count: int
+    missing_frames: int
+    frames_renderable: bool
+    source_time: datetime | None = None
+    first_frame_time: str | None = None
+    last_frame_time: str | None = None
+    stale: bool
+    attribution: str
+    processed_notice: str
+    notes: list[str] = Field(default_factory=list)
+
+
+class MapTimelineResponse(BaseModel):
+    generated_at: datetime
+    layers: list[TimelineLayer]
+    empty_state: EmptyState | None = None
+
+
 @router.get("/sources", response_model=SourcesResponse)
 def list_sources() -> SourcesResponse:
     settings = get_settings()
@@ -242,6 +302,28 @@ def list_geometry_datasets() -> GeometryDatasetsResponse:
         datasets=[GeometryDatasetStatus(**item) for item in store.status()],
         manifest_present=manifest_present,
     )
+
+
+@router.get("/products", response_model=ProductsResponse)
+def get_products() -> ProductsResponse:
+    payload = list_products(get_settings())
+    return ProductsResponse(**payload)
+
+
+@router.get("/products/{product_id}/frames", response_model=ProductFramesResponse)
+def get_product_frames(
+    product_id: str,
+    limit: Annotated[int, Query(ge=1, le=500)] = 120,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> ProductFramesResponse:
+    payload = product_detail(get_settings(), product_id, limit=limit, offset=offset)
+    return ProductFramesResponse(**payload)
+
+
+@router.get("/map/timeline", response_model=MapTimelineResponse)
+def get_map_timeline() -> MapTimelineResponse:
+    payload = build_map_timeline(get_settings())
+    return MapTimelineResponse(**payload)
 
 
 @router.get("/map/layers", response_model=MapLayersResponse)

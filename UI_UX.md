@@ -121,9 +121,10 @@ Controls:
 - stale/missing frame indication.
 
 Stage 8 should enable the timeline for historical observation series where real
-multi-point data exists. Stage 10 should extend the same control pattern to
-radar/product frames only after source files, projections, cache policy, and
-rendering strategy are documented.
+multi-point data exists. Stage 10 extends the same control pattern to radar/product
+frames using cached manifest metadata. The timeline appears when
+`/api/v1/map/timeline` returns layers. Map rendering stays disabled until binary
+parsers and a raster strategy are implemented; the UI must label metadata-only mode.
 
 Timeline labels must distinguish:
 
@@ -237,8 +238,8 @@ target spec above, driven by current backend data:
 - Stage 9 should render warning polygons and location-specific warning matching
   only where reviewed geometry and reliable code mapping exist; unresolved
   geometry remains visible as partial data.
-- Stage 10 should add radar/product timeline animation only after real product
-  ingestion and rendering are designed and implemented.
+- Stage 10 adds a product timeline shell driven by frame metadata APIs. Radar/GRIB
+  map layers and tile rendering remain future work once binary ingestion exists.
 - Stage 11 should add saved locations, saved views, dashboards, local alert
   rules, source availability/freshness views, advanced expert filters,
   warning-vs-measurement comparison, and trend/anomaly exploration as

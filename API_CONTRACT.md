@@ -315,21 +315,50 @@ Map GeoJSON includes point station features plus foreign members for
 Returns raw source payload slices when available. This endpoint is for expert
 mode and debugging, not for primary UI rendering.
 
-## Planned Product And Timeline APIs
+## Product And Timeline APIs
 
-Stage 10 should add product/raster/timeline endpoints only after IMGW product
-file formats, projections, licensing, file sizes, and cache strategy are
-documented. Planned contracts may include:
+Stage 10 exposes product classification and frame metadata only. Binary download,
+parsing, and tile rendering remain deferred.
 
-- `GET /api/v1/products`
-- `GET /api/v1/products/{id}/frames`
-- `GET /api/v1/map/timeline`
+### `GET /api/v1/products`
+
+Returns IMGW product manifest entries enriched with research classification:
+
+- `category`, `availability`, `rendering_status`, `high_value`, `format_notes`
+- `research_date` (currently `2026-07-01`)
+- `missing_fields` (source fields IMGW omitted, e.g. `id`/`url`/`opis`)
+- per-product `source` metadata and attribution/processed notice at collection level
+- `retrieved_at` is `null` when the product manifest cache is empty (never synthesized)
+
+### `GET /api/v1/products/{product_id}/frames`
+
+Query parameters: `limit` (1-500, default 120), `offset` (default 0).
+
+Returns cached product detail manifest slices with parsed frame metadata:
+
+- `frame_time`, `frame_kind`, `missing`, `rendering_status`
+- aggregate `frame_count`, `missing_frames`, `stale`, `retrieved_at`
+- `empty_state.code` may be `cache_empty`, `product_unavailable`, or `frame_missing`
+
+### `GET /api/v1/map/timeline`
+
+Returns time-aware layers derived from cached product detail manifests. Each layer
+includes:
+
+- `first_frame_time`, `last_frame_time`, `source_time`
+- `frames_renderable` (currently always `false`)
+- `stale`, `missing_frames`, attribution, processed notice, and explanatory `notes`
+
+### Planned tile endpoint
+
+Binary rendering is not implemented. A future contract may add:
+
 - `GET /api/v1/tiles/{product_id}/{z}/{x}/{y}`
 
 Product and frame responses must label source time, frame time, missing frames,
 stale frames, parser/rendering status, attribution, and processed-data notice.
 Stable, unstable, missing, or risky product IDs must be visible in source
-metadata.
+metadata. See [`docs/products/PRODUCT_RESEARCH.md`](docs/products/PRODUCT_RESEARCH.md).
 
 ## Planned Power-User APIs
 

@@ -30,6 +30,16 @@ export interface Filters {
   basin: string;
 }
 
+export type TimelineSpeed = 0.5 | 1 | 2 | 4;
+
+export interface TimelineState {
+  activeLayerKey: string | null;
+  frameIndex: number;
+  playing: boolean;
+  speed: TimelineSpeed;
+  focused: boolean;
+}
+
 export const POLAND_VIEW: MapView = { lng: 19.1451, lat: 51.9194, zoom: 5.4 };
 
 export interface AppState {
@@ -42,6 +52,7 @@ export interface AppState {
   userLocation: { lat: number; lon: number } | null;
   controlPanelOpen: boolean;
   shortcutHelpOpen: boolean;
+  timeline: TimelineState;
 
   toggleLayer: (key: LayerKey) => void;
   setLayerActive: (key: LayerKey, active: boolean) => void;
@@ -59,6 +70,13 @@ export interface AppState {
   setControlPanelOpen: (open: boolean) => void;
   toggleControlPanel: () => void;
   setShortcutHelpOpen: (open: boolean) => void;
+  setTimelineLayer: (layerKey: string | null) => void;
+  setTimelineFrameIndex: (index: number) => void;
+  setTimelinePlaying: (playing: boolean) => void;
+  toggleTimelinePlaying: () => void;
+  setTimelineSpeed: (speed: TimelineSpeed) => void;
+  stepTimelineFrame: (delta: number) => void;
+  setTimelineFocused: (focused: boolean) => void;
 }
 
 function buildActiveLayers(keys: LayerKey[]): Record<LayerKey, boolean> {
@@ -79,6 +97,14 @@ const DEFAULT_FILTERS: Filters = {
 
 const THEME_CYCLE: ThemePreference[] = ["system", "light", "dark"];
 
+const DEFAULT_TIMELINE: TimelineState = {
+  activeLayerKey: null,
+  frameIndex: 0,
+  playing: false,
+  speed: 1,
+  focused: false,
+};
+
 export const useAppStore = create<AppState>((set) => ({
   activeLayers: buildActiveLayers(DEFAULT_ACTIVE_LAYERS),
   selection: null,
@@ -90,6 +116,7 @@ export const useAppStore = create<AppState>((set) => ({
   userLocation: null,
   controlPanelOpen: true,
   shortcutHelpOpen: false,
+  timeline: DEFAULT_TIMELINE,
 
   toggleLayer: (key) =>
     set((state) => ({ activeLayers: { ...state.activeLayers, [key]: !state.activeLayers[key] } })),
@@ -112,6 +139,26 @@ export const useAppStore = create<AppState>((set) => ({
   setControlPanelOpen: (open) => set({ controlPanelOpen: open }),
   toggleControlPanel: () => set((state) => ({ controlPanelOpen: !state.controlPanelOpen })),
   setShortcutHelpOpen: (open) => set({ shortcutHelpOpen: open }),
+  setTimelineLayer: (layerKey) =>
+    set((state) => ({
+      timeline: { ...state.timeline, activeLayerKey: layerKey, frameIndex: 0, playing: false },
+    })),
+  setTimelineFrameIndex: (index) =>
+    set((state) => ({ timeline: { ...state.timeline, frameIndex: Math.max(0, index) } })),
+  setTimelinePlaying: (playing) =>
+    set((state) => ({ timeline: { ...state.timeline, playing } })),
+  toggleTimelinePlaying: () =>
+    set((state) => ({ timeline: { ...state.timeline, playing: !state.timeline.playing } })),
+  setTimelineSpeed: (speed) => set((state) => ({ timeline: { ...state.timeline, speed } })),
+  stepTimelineFrame: (delta) =>
+    set((state) => ({
+      timeline: {
+        ...state.timeline,
+        frameIndex: Math.max(0, state.timeline.frameIndex + delta),
+      },
+    })),
+  setTimelineFocused: (focused) =>
+    set((state) => ({ timeline: { ...state.timeline, focused } })),
 }));
 
 export function activeLayerKeys(active: Record<LayerKey, boolean>): LayerKey[] {

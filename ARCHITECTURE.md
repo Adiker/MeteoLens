@@ -151,10 +151,11 @@ timestamp, retrieval timestamp, data delay, missing/null state, attribution, and
 processed-data notice metadata. A local retention policy is required before this
 cache is allowed to grow unbounded.
 
-Stage 10 should define a separate cache policy for large product, radar-like,
-and GRIB files. Do not download or retain large binary products until product
+Stage 10 defines a separate cache policy for large product, radar-like,
+and GRIB files. Detail manifest cache lives under `cache/product_details/`.
+Binary download directories and tile output remain unimplemented until product
 IDs, file formats, projections, licensing, file sizes, and cache eviction rules
-are documented.
+are documented in `docs/products/RASTER_PIPELINE.md`.
 
 ## Database Schema
 
