@@ -1,14 +1,16 @@
 # MeteoLens
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-6 (research, documentation, backend
-API, IMGW integration, the frontend map UI, and quality/test hardening) are
-implemented. See [TASKS.md](TASKS.md) for the full staged backlog.
+hydrological data for Poland. Stages 0-11 (research, documentation, backend
+API, IMGW integration, the frontend map UI, quality/test hardening, production
+deployment, observation history, geometry datasets, product timeline, and
+PWA/power-user features) are implemented. See [TASKS.md](TASKS.md) for the
+full staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
 
-## What It Will Do
+## What It Does
 
 - Show Poland as the main interactive map view.
 - Display layers for synoptic stations, hydrological stations, meteorological
@@ -48,18 +50,33 @@ Implemented now:
 - Stage 6 quality work: expanded backend/frontend test coverage, a Playwright
   E2E suite, and verified attribution/missing-value handling (see
   [Known Limitations](#known-limitations)).
+- Stage 7 production deployment: nginx + runtime images, production Compose
+  file, and hardening checklist — see [DEPLOYMENT.md](DEPLOYMENT.md).
+- Stage 8 observation history: SQLite history persisted on each successful
+  IMGW refresh with configurable retention
+  (`METEOLENS_OBSERVATION_RETENTION_DAYS`), a time-series API with metric,
+  time-range, `interval`, and `limit` parameters plus `series_kind`
+  snapshot-fallback metadata, station comparison and rankings endpoints,
+  time-range exports, and a station chart that renders real multi-point line
+  series when history exists.
+- Stage 9 geometry and spatial warnings: a manifest-driven local geometry
+  cache (`data/geometry/`, `METEOLENS_GEOMETRY_DIR`,
+  `/api/v1/geometry/datasets`), TERYT/basin code-to-polygon mapping for
+  warning map layers and warning details, polygon-based "My location" warning
+  matching, and province/county/basin warning filters with explicit
+  unresolved-geometry metadata (see `docs/geometry/GEOMETRY_SOURCES.md`).
+- Stage 10 product timeline: IMGW product ID research
+  (`docs/products/PRODUCT_RESEARCH.md`), product catalog and frame metadata
+  APIs (`/api/v1/products`, `/api/v1/products/{id}/frames`,
+  `/api/v1/map/timeline`), and a frontend timeline bar with play/step
+  controls and explicit metadata-only / not-renderable labels.
+- Stage 11 PWA and power-user features: cache freshness and
+  warning-vs-station comparison endpoints, an expert-mode power-user panel
+  (saved locations, saved map views, dashboard widgets, local alert rules,
+  freshness monitor, advanced filters — all browser-local storage), and a
+  minimal installable PWA shell.
 
-Not implemented yet: see [Known Limitations](#known-limitations) below.
-
-Future implementation planning is now split into Stages 8-11:
-
-- Stage 8: observation history and real time series.
-- Stage 9: geometry datasets and spatial warnings.
-- Stage 10: radar/product files, GRIB research, and timeline animation.
-- Stage 11: PWA shell, saved views/locations, local alert rules, freshness monitor,
-  warning-vs-measurement comparison, and expert tooling.
-
-Stage 7 (production deployment) is implemented — see [DEPLOYMENT.md](DEPLOYMENT.md).
+Remaining gaps: see [Known Limitations](#known-limitations) below.
 
 ## Data Sources
 
@@ -133,7 +150,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up --build
 Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 [deploy/PRODUCTION_CHECKLIST.md](deploy/PRODUCTION_CHECKLIST.md).
 
-## Planned Stack
+## Stack
 
 - Frontend: React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre GL,
   Apache ECharts, TanStack Query, Zustand.
@@ -143,17 +160,18 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 
 ## Screenshots And Mockups
 
-The Stage 5 map-first UI is implemented; screenshot assets under `docs/` are not
-captured yet and should be added from a populated cache during Stage 7. The
-target layout is specified in [UI_UX.md](UI_UX.md).
+The map-first UI is implemented; screenshot assets under `docs/screenshots/`
+are not captured yet — follow the capture instructions in
+[docs/screenshots/README.md](docs/screenshots/README.md) against a populated
+live cache. The target layout is specified in [UI_UX.md](UI_UX.md).
 
-## Planned Exports
+## Exports
 
-- CSV for selected station data.
+- CSV for selected station data, including selected time ranges.
 - JSON for selected station or object details.
 - GeoJSON for visible map objects.
 - PNG for the current map view.
-- PDF reports after MVP.
+- PDF reports remain planned for after MVP.
 
 Every export must include IMGW-PIB attribution and, when applicable, a processed
 data notice.
@@ -181,26 +199,34 @@ work around. Each one is either a documented backend constraint or an
 intentional scope deferral; do not paper over them with mock/interpolated
 data (see `AGENTS.md`).
 
-- **No warning area polygons.** Meteorological/hydrological warnings carry
-  TERYT codes and basin/province names but no geometry, so warnings render as
-  a filterable list instead of map polygons
-  (`missing_area_geometry_dataset`). Landing this needs a TERYT/basin geometry
-  dataset; planned for Stage 9 after source/legal review. See
-  `DATA_SOURCES.md`.
+- **Warning polygons need locally installed geometry datasets.** The Stage 9
+  geometry pipeline (manifest, loader, polygon mapping, spatial matching,
+  province/county/basin filters) is implemented, but the repository ships an
+  empty `data/geometry/manifest.json` — every candidate TERYT/basin dataset
+  is still `planned` pending source/legal review. Until reviewed GeoJSON is
+  placed under `data/geometry/`, warnings render as a filterable list and
+  report `missing_area_geometry_dataset`. See
+  `docs/geometry/GEOMETRY_SOURCES.md`.
 - **Synoptic stations have no coordinates.** `api/data/synop` does not return
   `lat/lon`, so synop stations appear in lists/details but are excluded from
-  map markers (`missing_lat_lon`) until an official station coordinate
-  dataset is added. This is part of the Stage 9 geometry/source review.
-- **No time series, only a snapshot.** The station chart shows the latest
-  cached value per metric, not history — the cache keeps one snapshot per
-  station, not an archive. Multi-point charts need the archive/measurement
-  endpoints and history persistence planned for Stage 8.
+  map markers (`missing_lat_lon`). The `synop_stations` coordinate
+  reconciliation dataset is designed but still `planned` in
+  `docs/geometry/GEOMETRY_SOURCES.md`, pending an officially cleared station
+  metadata source.
+- **Observation history starts empty and is local-only.** Time series are
+  persisted to SQLite from this deployment's own IMGW refreshes; there is no
+  backfill from the IMGW measurement archives. Fresh deployments serve
+  single-point snapshots (`series_kind: "snapshot"`) until enough refresh
+  cycles accumulate, and retention is capped by
+  `METEOLENS_OBSERVATION_RETENTION_DAYS`.
 - **Timeline/animation for products.** When cached product frame manifests exist,
   the bottom timeline shows frame metadata with play/step controls and explicit
   “metadata only / not renderable on map” labels. Binary radar/GRIB rendering on
   the map is still deferred.
-- **Province/time-range quick filters are deferred.** These depend on the same
-  area-geometry and archive-series work planned in Stages 8-9.
+- **Province/county/basin filters only work with installed geometry.** The
+  warning area filters shipped in Stage 9 resolve against the local geometry
+  cache, so they return no matches until reviewed datasets are installed (see
+  the warning-polygon limitation above).
 - **No public cache-refresh endpoint.** Docker Compose populates the cache at
   backend startup via `METEOLENS_SYNC_ON_STARTUP=true` and keeps it fresh with
   the periodic scheduler (`METEOLENS_REFRESH_ENABLED=true`); there is still no
@@ -222,11 +248,11 @@ data (see `AGENTS.md`).
   (browser-local storage). MeteoLens is not an official alerting system.
 - **Minimal PWA shell.** Manifest and service worker cache static assets only; IMGW
   data still requires a live backend connection.
-  notices are implemented and tested, but deployers must still verify current
-  IMGW-PIB terms before public or commercial use (see
-  `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use"). Stage 7 tracks the
-  public-demo deployment checklist, production hardening, and MIT License
-  documentation for deployment notes.
+- **Source-terms verification stays with the deployer.** Attribution and
+  processed-data notices are implemented and tested, but deployers must still
+  verify current IMGW-PIB terms before public or commercial use (see
+  `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use" and
+  [deploy/PRODUCTION_CHECKLIST.md](deploy/PRODUCTION_CHECKLIST.md)).
 
 ## Troubleshooting
 
