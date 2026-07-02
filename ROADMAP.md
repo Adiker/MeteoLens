@@ -30,7 +30,7 @@ the future stages below.
   static frontend serving, reverse proxy/TLS notes, production CORS guidance,
   restart policies, persistence, IMGW retry/backoff guidance, observability,
   public deployment checklist, MIT License documentation in deployment notes,
-  IMGW terms verification, and README demo screenshots.
+  IMGW terms verification, and documented screenshot capture requirements.
 - Stage 8 - Observation history and real time series: historical observation
   persistence, time-series API, date/metric/aggregation filters, charts backed
   by real multi-point data, station comparison, rankings, time-range exports,
@@ -54,6 +54,41 @@ the future stages below.
   warning-vs-measurement comparison, trend/anomaly ideas, and generated API
   client planning. Local alerts must remain clearly separate from official
   warning responsibility.
+
+## v4
+
+Stages 12-14 are the next practical path from implemented map shell to a more
+honest public alpha: first prove the current app can be smoke-tested and shown
+with real data, then add reviewed geometry data, then render one product layer
+only after source, format, legal, and cache constraints are clear.
+
+- Stage 12 - Public alpha release polish: run and document local and production
+  smoke tests, capture populated-cache screenshots from real IMGW-backed data,
+  add a clear alpha status and `v0.1.0-alpha` checklist, align release docs, and
+  keep missing geometry, stale cache, and non-renderable products visible.
+- Stage 13 - Reviewed geometry dataset MVP: choose legally reviewed public
+  geometry and station-coordinate sources, document licensing and redistribution
+  implications, validate GeoJSON and identifier coverage, test geometry
+  fallbacks, and render warning polygons only for reviewed datasets.
+- Stage 14 - Radar/product rendering MVP: choose one realistic product path,
+  refresh and retain selected frame manifests/renderable files, expose
+  renderable-layer descriptors only when frames can actually render, and keep
+  metadata-only timeline states labelled as not renderable.
+
+## v5
+
+Stages 15-16 deepen the data product after alpha basics are honest: archive
+backfill makes charts useful on fresh deployments, and API/SDK/export work makes
+the system easier to integrate without reading backend code.
+
+- Stage 15 - Historical archive backfill: research current IMGW archive formats,
+  document legal notes, add an opt-in bounded and resumable server-side import
+  path for at least one clear source, preserve timestamps/nulls/attribution, and
+  label imported history separately from live refresh history.
+- Stage 16 - Public API, SDK, and power-user exports: stabilize the public API
+  surface, prepare a generated TypeScript client, add example scripts for common
+  workflows, improve station/warning/map exports, and document versioning,
+  backwards compatibility, rate limits, and responsible use.
 
 ## Backlog Ideas
 

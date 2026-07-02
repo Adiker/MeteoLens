@@ -73,4 +73,21 @@ mandatory guardrails for AI agents and automation working in this repository.
 - Stage 4 may add public backend API endpoints.
 - Stage 5 may add the usable frontend.
 - Stage 6 is quality, test expansion, and known-limitations cleanup.
-
+- Stage 7 may harden production deployment and public-demo operations.
+- Stage 8 may add local observation history and real time-series behavior.
+- Stage 9 may add geometry pipelines and spatial warning behavior, but only for
+  reviewed geometry data.
+- Stage 10 may add product/radar research, metadata APIs, and timeline shells;
+  rendering requires documented format, projection, licensing, and cache policy.
+- Stage 11 may add PWA, local-only power-user tools, dashboards, and alert rules
+  that stay separate from official IMGW warning responsibility.
+- Stage 12 is release-polish documentation and smoke testing only unless a small
+  consistency fix is needed.
+- Stage 13 may import and render reviewed geometry datasets only after source
+  and legal review is documented.
+- Stage 14 may render a product layer only when the selected product path is
+  legally usable and technically documented.
+- Stage 15 may add opt-in archive backfill only through bounded, rate-limited
+  server-side imports.
+- Stage 16 may stabilize public API docs, generated clients, examples, and
+  exports while preserving attribution and processed-data notices.

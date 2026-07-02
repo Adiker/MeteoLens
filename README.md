@@ -5,7 +5,7 @@ hydrological data for Poland. Stages 0-11 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
 deployment, observation history, geometry datasets, product timeline, and
 PWA/power-user features) are implemented. See [TASKS.md](TASKS.md) for the
-full staged backlog.
+full staged backlog. Stages 12-16 are planned next and are not implemented yet.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -75,6 +75,23 @@ Implemented now:
   (saved locations, saved map views, dashboard widgets, local alert rules,
   freshness monitor, advanced filters — all browser-local storage), and a
   minimal installable PWA shell.
+
+Planned next:
+
+- Stage 12 public alpha release polish: reproducible local and production smoke
+  tests, populated-cache screenshots from real IMGW-backed data, README alpha
+  status, a `v0.1.0-alpha` checklist, and documentation consistency fixes.
+- Stage 13 reviewed geometry dataset MVP: legally reviewed administrative,
+  basin, and station-coordinate datasets with validation, tests, and explicit
+  unresolved-geometry states.
+- Stage 14 radar/product rendering MVP: one realistic renderable product layer
+  path, retention limits, renderable-layer API metadata, and timeline playback
+  that never labels metadata-only frames as rendered data.
+- Stage 15 historical archive backfill: opt-in, bounded, rate-limited archive
+  import for at least one legally and technically clear IMGW observation source.
+- Stage 16 public API, SDK, and power-user exports: stabilized API docs,
+  TypeScript client preparation, example scripts, stronger exports, and
+  responsible-use/versioning notes.
 
 Remaining gaps: see [Known Limitations](#known-limitations) below.
 
@@ -163,7 +180,9 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 The map-first UI is implemented; screenshot assets under `docs/screenshots/`
 are not captured yet — follow the capture instructions in
 [docs/screenshots/README.md](docs/screenshots/README.md) against a populated
-live cache. The target layout is specified in [UI_UX.md](UI_UX.md).
+live cache. Public-alpha screenshots and README references are planned in
+Stage 12 and must use real IMGW-backed data, not fixtures. The target layout is
+specified in [UI_UX.md](UI_UX.md).
 
 ## Exports
 
