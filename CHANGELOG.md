@@ -4,6 +4,10 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 11 power-user tooling: local saved locations/views, dashboard
+  widget layout, local alert rules with official-warning disclaimer, freshness
+  monitor API, warning-vs-station comparison, expert filters, minimal PWA shell,
+  and planning docs for trends and OpenAPI client generation.
 - Added Stage 10 product/radar research, frame-metadata API, map timeline
   endpoint, and frontend timeline shell with explicit metadata-only labels.
   Binary GRIB/radar parsing and map rendering remain deferred.

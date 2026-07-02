@@ -360,13 +360,40 @@ stale frames, parser/rendering status, attribution, and processed-data notice.
 Stable, unstable, missing, or risky product IDs must be visible in source
 metadata. See [`docs/products/PRODUCT_RESEARCH.md`](docs/products/PRODUCT_RESEARCH.md).
 
+## Power-User And Freshness APIs
+
+Stage 11 adds operational dashboards and comparison helpers. Saved locations,
+views, dashboards, and local alert rules remain browser-local unless a future
+authenticated backend is introduced.
+
+### `GET /api/v1/status/freshness`
+
+Returns aggregate cache freshness for all configured IMGW sources:
+
+- `overall_status`: `healthy`, `stale`, `degraded`, or `empty`
+- per-source `cache_status`, `age_seconds`, `ttl_seconds`, `stale`, parser warnings
+- `alerting_disclaimer` clarifying MeteoLens is not an official alerting system
+
+### `GET /api/v1/compare/warning-station/{station_id}`
+
+Compares cached station observations with active warnings matched to the station
+coordinates (when available). Includes `notes`, attribution, processed notice, and
+the same alerting disclaimer.
+
+Local alert evaluation in the UI uses live API data plus browser-stored rules; it
+does not call a separate alerting endpoint.
+
+See also:
+
+- [`docs/pwa/PWA_PLAN.md`](docs/pwa/PWA_PLAN.md)
+- [`docs/power-user/TREND_ANOMALY_IDEAS.md`](docs/power-user/TREND_ANOMALY_IDEAS.md)
+- [`docs/power-user/OPENAPI_CLIENT.md`](docs/power-user/OPENAPI_CLIENT.md)
+
 ## Planned Power-User APIs
 
-Stage 11 may add endpoints for saved locations, saved map views, dashboards,
-local alert rules, source availability, data freshness, warning-vs-measurement
-comparison, and a generated public API client. Local alert endpoints must state
-that MeteoLens is not an official alerting system and must not obscure IMGW-PIB
-warning responsibility.
+Future authenticated deployments may add server-side persistence for saved views
+and alert delivery audit logs. Local alert endpoints must state that MeteoLens is
+not an official alerting system and must not obscure IMGW-PIB warning responsibility.
 
 ## Error Shape
 

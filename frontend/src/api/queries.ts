@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { LayerKey, StationType, WarningType } from "../lib/layers";
 import {
+  fetchFreshnessStatus,
   fetchHealth,
   fetchLocationSummary,
   fetchMapLayers,
@@ -12,6 +13,7 @@ import {
   fetchStation,
   fetchStations,
   fetchWarning,
+  fetchWarningStationComparison,
   fetchWarnings,
 } from "./client";
 
@@ -117,6 +119,23 @@ export function useProductFramesQuery(productId: string | null, limit = 500, off
     queryKey: ["product-frames", productId, limit, offset],
     queryFn: () => fetchProductFrames(productId as string, { limit, offset }),
     enabled: Boolean(productId),
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useFreshnessQuery() {
+  return useQuery({
+    queryKey: ["freshness"],
+    queryFn: fetchFreshnessStatus,
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useWarningComparisonQuery(stationId: string | null) {
+  return useQuery({
+    queryKey: ["warning-comparison", stationId],
+    queryFn: () => fetchWarningStationComparison(stationId as string),
+    enabled: Boolean(stationId),
     staleTime: STALE_TIME,
   });
 }

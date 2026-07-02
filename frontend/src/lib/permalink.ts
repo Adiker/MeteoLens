@@ -45,13 +45,19 @@ export function encodePermalink(state: PermalinkState): string {
     params.set("ph", state.filters.phenomenon.trim());
   }
   if (state.filters.province.trim()) {
-    params.set("pr", state.filters.province.trim());
+    params.set("pv", state.filters.province.trim());
   }
   if (state.filters.county.trim()) {
-    params.set("co", state.filters.county.trim());
+    params.set("cy", state.filters.county.trim());
   }
   if (state.filters.basin.trim()) {
-    params.set("ba", state.filters.basin.trim());
+    params.set("bs", state.filters.basin.trim());
+  }
+  if (state.filters.maxDataDelayMinutes !== null) {
+    params.set("md", String(state.filters.maxDataDelayMinutes));
+  }
+  if (state.filters.onlyStaleCache) {
+    params.set("osc", "1");
   }
   return params.toString();
 }
@@ -101,23 +107,30 @@ export function decodePermalink(search: string): Partial<PermalinkState> {
 
   const warningLevel = params.get("wl");
   const phenomenon = params.get("ph");
-  const province = params.get("pr");
-  const county = params.get("co");
-  const basin = params.get("ba");
+  const province = params.get("pv") ?? params.get("pr");
+  const county = params.get("cy") ?? params.get("co");
+  const basin = params.get("bs") ?? params.get("ba");
+  const maxDelay = params.get("md");
+  const onlyStale = params.get("osc");
   if (
     warningLevel !== null ||
     phenomenon !== null ||
     province !== null ||
     county !== null ||
-    basin !== null
+    basin !== null ||
+    maxDelay !== null ||
+    onlyStale !== null
   ) {
     const level = Number(warningLevel);
+    const delay = Number(maxDelay);
     result.filters = {
       warningLevel: warningLevel !== null && Number.isFinite(level) ? level : null,
       phenomenon: phenomenon ?? "",
       province: province ?? "",
       county: county ?? "",
       basin: basin ?? "",
+      maxDataDelayMinutes: maxDelay !== null && Number.isFinite(delay) ? delay : null,
+      onlyStaleCache: onlyStale === "1",
     };
   }
 

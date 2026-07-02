@@ -31,6 +31,11 @@ export function usePermalink(): void {
     if (decoded.filters) {
       store.setFilter("warningLevel", decoded.filters.warningLevel);
       store.setFilter("phenomenon", decoded.filters.phenomenon);
+      store.setFilter("province", decoded.filters.province);
+      store.setFilter("county", decoded.filters.county);
+      store.setFilter("basin", decoded.filters.basin);
+      store.setFilter("maxDataDelayMinutes", decoded.filters.maxDataDelayMinutes);
+      store.setFilter("onlyStaleCache", decoded.filters.onlyStaleCache);
     }
     // Theme: permalink wins, otherwise fall back to the last stored preference.
     const storedTheme = decoded.theme ?? readStoredTheme();

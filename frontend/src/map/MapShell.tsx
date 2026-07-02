@@ -4,11 +4,13 @@ import maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef } from "react";
 
 import type { StationFeature } from "../api/client";
-import { useMapLayersQuery } from "../api/queries";
+import { useMapLayersQuery, useSourcesQuery } from "../api/queries";
+import { staleSourceKeys } from "../lib/alertRules";
 import { CAPTURE_PNG_EVENT, FLY_TO_EVENT, type FlyToDetail } from "../lib/mapBus";
 import { LAYERS, STATION_LAYERS, STATION_TYPE_COLOR, WARNING_LAYERS } from "../lib/layers";
 import { decodePermalink } from "../lib/permalink";
 import { useAppStore } from "../store/appStore";
+import { filterStationFeaturesByDelay, filterStationFeaturesByStaleCache } from "./stationFilters";
 
 const STATIONS_SOURCE = "stations";
 const STATIONS_LAYER = "stations-circles";
@@ -65,17 +67,26 @@ export function MapShell() {
 
   const activeLayers = useAppStore((state) => state.activeLayers);
   const selection = useAppStore((state) => state.selection);
+  const maxDataDelayMinutes = useAppStore((state) => state.filters.maxDataDelayMinutes);
+  const onlyStaleCache = useAppStore((state) => state.filters.onlyStaleCache);
 
   const activeMapLayerKeys = LAYERS.filter((layer) => activeLayers[layer.key]).map((layer) => layer.key);
   const mapQuery = useMapLayersQuery(activeMapLayerKeys);
+  const sourcesQuery = useSourcesQuery();
 
-  const stationFeatures = useMemo(
-    () =>
+  const stationFeatures = useMemo(() => {
+    const byDelay = filterStationFeaturesByDelay(
       (mapQuery.data?.layers ?? [])
         .filter((layer) => STATION_LAYERS.some((stationLayer) => stationLayer.key === layer.key))
         .flatMap((layer) => layer.geojson.features),
-    [mapQuery.data],
-  );
+      maxDataDelayMinutes,
+    );
+    return filterStationFeaturesByStaleCache(
+      byDelay,
+      onlyStaleCache,
+      staleSourceKeys(sourcesQuery.data?.sources ?? []),
+    );
+  }, [mapQuery.data, maxDataDelayMinutes, onlyStaleCache, sourcesQuery.data]);
   const warningFeatures = useMemo(
     () =>
       (mapQuery.data?.layers ?? [])

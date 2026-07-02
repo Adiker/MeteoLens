@@ -7,7 +7,15 @@ function reset() {
     selection: null,
     mode: "simple",
     theme: "system",
-    filters: { warningLevel: null, phenomenon: "", province: "", county: "", basin: "" },
+    filters: {
+      warningLevel: null,
+      phenomenon: "",
+      province: "",
+      county: "",
+      basin: "",
+      maxDataDelayMinutes: null,
+      onlyStaleCache: false,
+    },
     mapView: POLAND_VIEW,
   });
   useAppStore.getState().setActiveLayers([
@@ -80,6 +88,8 @@ describe("appStore", () => {
       province: "",
       county: "",
       basin: "",
+      maxDataDelayMinutes: null,
+      onlyStaleCache: false,
     });
     useAppStore.getState().resetFilters();
     expect(useAppStore.getState().filters).toEqual({
@@ -88,6 +98,8 @@ describe("appStore", () => {
       province: "",
       county: "",
       basin: "",
+      maxDataDelayMinutes: null,
+      onlyStaleCache: false,
     });
   });
 

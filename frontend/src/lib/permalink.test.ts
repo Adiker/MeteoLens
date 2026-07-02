@@ -14,6 +14,8 @@ const baseState: PermalinkState = {
     province: "12",
     county: "1205",
     basin: "B1",
+    maxDataDelayMinutes: 45,
+    onlyStaleCache: true,
   },
 };
 
@@ -25,13 +27,7 @@ describe("permalink", () => {
     expect(decoded.selection).toEqual({ kind: "station", id: "synop:12375" });
     expect(decoded.mode).toBe("expert");
     expect(decoded.theme).toBe("dark");
-    expect(decoded.filters).toEqual({
-      warningLevel: 2,
-      phenomenon: "burze",
-      province: "12",
-      county: "1205",
-      basin: "B1",
-    });
+    expect(decoded.filters).toEqual(baseState.filters);
   });
 
   it("omits theme from the URL when it is system default", () => {
@@ -50,6 +46,14 @@ describe("permalink", () => {
     expect(decodePermalink("sel=w:meteo:123").selection).toEqual({
       kind: "warning",
       id: "meteo:123",
+    });
+  });
+
+  it("accepts legacy spatial filter aliases", () => {
+    expect(decodePermalink("pr=12&co=1205&ba=B1").filters).toMatchObject({
+      province: "12",
+      county: "1205",
+      basin: "B1",
     });
   });
 });

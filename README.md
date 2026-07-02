@@ -54,7 +54,8 @@ Future implementation planning is now split into Stages 8-11:
 - Stage 8: observation history and real time series.
 - Stage 9: geometry datasets and spatial warnings.
 - Stage 10: radar/product files, GRIB research, and timeline animation.
-- Stage 11: PWA, local alerts, dashboards, and power-user features.
+- Stage 11: PWA shell, saved views/locations, local alert rules, freshness monitor,
+  warning-vs-measurement comparison, and expert tooling.
 
 Stage 7 (production deployment) is implemented — see [DEPLOYMENT.md](DEPLOYMENT.md).
 
@@ -211,7 +212,11 @@ data (see `AGENTS.md`).
   test:e2e` seeds the backend cache from `backend/tests/fixtures` so CI does
   not depend on the real endpoint's availability or rate limits — it verifies
   the app's own request/response handling, not IMGW-PIB's live behavior.
-- **No production security/source-terms review.** Attribution and processed-data
+- **Expert mode tools.** Saved locations, saved map views, local alert rules,
+  freshness monitor, and warning-vs-station comparison live in the advanced panel
+  (browser-local storage). MeteoLens is not an official alerting system.
+- **Minimal PWA shell.** Manifest and service worker cache static assets only; IMGW
+  data still requires a live backend connection.
   notices are implemented and tested, but deployers must still verify current
   IMGW-PIB terms before public or commercial use (see
   `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use"). Stage 7 tracks the

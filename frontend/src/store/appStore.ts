@@ -2,6 +2,20 @@ import { create } from "zustand";
 
 import { DEFAULT_ACTIVE_LAYERS, type LayerKey } from "../lib/layers";
 import { initialTheme } from "../lib/theme";
+import {
+  readAlertRules,
+  readDashboardWidgets,
+  readSavedLocations,
+  readSavedViews,
+  writeAlertRules,
+  writeDashboardWidgets,
+  writeSavedLocations,
+  writeSavedViews,
+  type AlertRule,
+  type DashboardWidgets,
+  type SavedLocation,
+  type SavedMapView,
+} from "../lib/userData";
 
 export type ThemePreference = "system" | "light" | "dark";
 export type ViewMode = "simple" | "expert";
@@ -28,6 +42,10 @@ export interface Filters {
   county: string;
   /** Hydrological basin code filter where geometry exists. */
   basin: string;
+  /** Expert: hide stations with delay above this many minutes. */
+  maxDataDelayMinutes: number | null;
+  /** Expert: surface only layers backed by stale/error cache. */
+  onlyStaleCache: boolean;
 }
 
 export type TimelineSpeed = 0.5 | 1 | 2 | 4;
@@ -53,6 +71,11 @@ export interface AppState {
   controlPanelOpen: boolean;
   shortcutHelpOpen: boolean;
   timeline: TimelineState;
+  powerPanelOpen: boolean;
+  savedLocations: SavedLocation[];
+  savedViews: SavedMapView[];
+  alertRules: AlertRule[];
+  dashboardWidgets: DashboardWidgets;
 
   toggleLayer: (key: LayerKey) => void;
   setLayerActive: (key: LayerKey, active: boolean) => void;
@@ -77,6 +100,17 @@ export interface AppState {
   setTimelineSpeed: (speed: TimelineSpeed) => void;
   stepTimelineFrame: (delta: number) => void;
   setTimelineFocused: (focused: boolean) => void;
+  setPowerPanelOpen: (open: boolean) => void;
+  togglePowerPanel: () => void;
+  addSavedLocation: (location: SavedLocation) => void;
+  removeSavedLocation: (id: string) => void;
+  addSavedView: (view: SavedMapView) => void;
+  removeSavedView: (id: string) => void;
+  applySavedView: (view: SavedMapView) => void;
+  addAlertRule: (rule: AlertRule) => void;
+  updateAlertRule: (rule: AlertRule) => void;
+  removeAlertRule: (id: string) => void;
+  setDashboardWidgets: (widgets: DashboardWidgets) => void;
 }
 
 function buildActiveLayers(keys: LayerKey[]): Record<LayerKey, boolean> {
@@ -93,6 +127,8 @@ const DEFAULT_FILTERS: Filters = {
   province: "",
   county: "",
   basin: "",
+  maxDataDelayMinutes: null,
+  onlyStaleCache: false,
 };
 
 const THEME_CYCLE: ThemePreference[] = ["system", "light", "dark"];
@@ -117,6 +153,11 @@ export const useAppStore = create<AppState>((set) => ({
   controlPanelOpen: true,
   shortcutHelpOpen: false,
   timeline: DEFAULT_TIMELINE,
+  powerPanelOpen: false,
+  savedLocations: readSavedLocations(),
+  savedViews: readSavedViews(),
+  alertRules: readAlertRules(),
+  dashboardWidgets: readDashboardWidgets(),
 
   toggleLayer: (key) =>
     set((state) => ({ activeLayers: { ...state.activeLayers, [key]: !state.activeLayers[key] } })),
@@ -159,6 +200,62 @@ export const useAppStore = create<AppState>((set) => ({
     })),
   setTimelineFocused: (focused) =>
     set((state) => ({ timeline: { ...state.timeline, focused } })),
+  setPowerPanelOpen: (open) => set({ powerPanelOpen: open }),
+  togglePowerPanel: () => set((state) => ({ powerPanelOpen: !state.powerPanelOpen })),
+  addSavedLocation: (location) =>
+    set((state) => {
+      const savedLocations = [...state.savedLocations, location];
+      writeSavedLocations(savedLocations);
+      return { savedLocations };
+    }),
+  removeSavedLocation: (id) =>
+    set((state) => {
+      const savedLocations = state.savedLocations.filter((item) => item.id !== id);
+      writeSavedLocations(savedLocations);
+      return { savedLocations };
+    }),
+  addSavedView: (view) =>
+    set((state) => {
+      const savedViews = [...state.savedViews, view];
+      writeSavedViews(savedViews);
+      return { savedViews };
+    }),
+  removeSavedView: (id) =>
+    set((state) => {
+      const savedViews = state.savedViews.filter((item) => item.id !== id);
+      writeSavedViews(savedViews);
+      return { savedViews };
+    }),
+  applySavedView: (view) =>
+    set({
+      mapView: view.mapView,
+      activeLayers: buildActiveLayers(view.activeLayers),
+      filters: view.filters,
+      mode: view.mode,
+      theme: view.theme,
+    }),
+  addAlertRule: (rule) =>
+    set((state) => {
+      const alertRules = [...state.alertRules, rule];
+      writeAlertRules(alertRules);
+      return { alertRules };
+    }),
+  updateAlertRule: (rule) =>
+    set((state) => {
+      const alertRules = state.alertRules.map((item) => (item.id === rule.id ? rule : item));
+      writeAlertRules(alertRules);
+      return { alertRules };
+    }),
+  removeAlertRule: (id) =>
+    set((state) => {
+      const alertRules = state.alertRules.filter((item) => item.id !== id);
+      writeAlertRules(alertRules);
+      return { alertRules };
+    }),
+  setDashboardWidgets: (widgets) => {
+    writeDashboardWidgets(widgets);
+    set({ dashboardWidgets: widgets });
+  },
 }));
 
 export function activeLayerKeys(active: Record<LayerKey, boolean>): LayerKey[] {
