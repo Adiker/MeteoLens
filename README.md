@@ -41,8 +41,10 @@ Implemented now:
   and tests.
 - IMGW-PIB HTTP client, parser layer, normalized models, file cache, and parser
   tests for current synop/hydro/meteo/warning endpoints plus product manifests.
-- Live IMGW startup cache refresh (`METEOLENS_SYNC_ON_STARTUP`), enabled by
-  default in Docker Compose, with its own refresh tests.
+- Live IMGW startup cache refresh (`METEOLENS_SYNC_ON_STARTUP`) and a periodic
+  in-process refresh scheduler (`METEOLENS_REFRESH_ENABLED` with
+  `METEOLENS_REFRESH_*_SECONDS` intervals), both enabled by default in Docker
+  Compose, with their own refresh tests.
 - Stage 6 quality work: expanded backend/frontend test coverage, a Playwright
   E2E suite, and verified attribution/missing-value handling (see
   [Known Limitations](#known-limitations)).
@@ -111,7 +113,9 @@ docker compose up --build
 
 Docker Compose enables `METEOLENS_SYNC_ON_STARTUP=true`, so the backend fetches
 the configured live IMGW sources and writes the normalized file cache before the
-frontend is marked ready.
+frontend is marked ready. It also enables `METEOLENS_REFRESH_ENABLED=true`, so
+the backend keeps re-fetching each source on its configured
+`METEOLENS_REFRESH_*_SECONDS` interval while it runs.
 
 Local URLs:
 
@@ -198,7 +202,8 @@ data (see `AGENTS.md`).
 - **Province/time-range quick filters are deferred.** These depend on the same
   area-geometry and archive-series work planned in Stages 8-9.
 - **No public cache-refresh endpoint.** Docker Compose populates the cache at
-  backend startup via `METEOLENS_SYNC_ON_STARTUP=true`; there is still no
+  backend startup via `METEOLENS_SYNC_ON_STARTUP=true` and keeps it fresh with
+  the periodic scheduler (`METEOLENS_REFRESH_ENABLED=true`); there is still no
   user-facing "refresh data" API call.
 - **Radar, GRIB, and other `product` API files are not parsed or rendered on the
   map.** Stage 10 documents product IDs, exposes frame metadata APIs, and adds a

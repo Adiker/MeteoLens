@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging, log_api_error
 from app.db.engine import init_db
 from app.imgw.refresh import refresh_sources
+from app.imgw.scheduler import RefreshScheduler
 from app.services.observation_history import prune_history
 
 logger = logging.getLogger(__name__)
@@ -22,12 +23,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings)
     logger.info(
-        "Starting %s v%s env=%s cache_dir=%s sync_on_startup=%s",
+        "Starting %s v%s env=%s cache_dir=%s sync_on_startup=%s refresh_enabled=%s",
         settings.service_name,
         settings.version,
         settings.env,
         settings.cache_dir,
         settings.sync_on_startup,
+        settings.refresh_enabled,
     )
     init_db()
     pruned = prune_history(retention_days=settings.observation_retention_days)
@@ -48,7 +50,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
                     result.source_key,
                     result.error,
                 )
+    scheduler: RefreshScheduler | None = None
+    if settings.refresh_enabled:
+        scheduler = RefreshScheduler(settings=settings)
+        scheduler.start()
     yield
+    if scheduler is not None:
+        await scheduler.stop()
 
 
 def create_app() -> FastAPI:

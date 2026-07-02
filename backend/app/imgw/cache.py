@@ -1,5 +1,7 @@
+import os
 from datetime import UTC, datetime
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -53,7 +55,7 @@ class SourceCache:
             "parser_warnings": parser_warnings,
             "error": None,
         }
-        self._path_for(source_key).write_text(_json_dump(payload), encoding="utf-8")
+        write_text_atomic(self._path_for(source_key), _json_dump(payload))
 
     def write_error(self, *, source_key: str, error: str) -> None:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -62,7 +64,7 @@ class SourceCache:
         if payload is not None:
             payload["error"] = error
             payload["last_error_at"] = datetime.now(UTC).isoformat()
-            cache_file.write_text(_json_dump(payload), encoding="utf-8")
+            write_text_atomic(cache_file, _json_dump(payload))
             return
 
         payload = {
@@ -74,7 +76,7 @@ class SourceCache:
             "parser_warnings": [],
             "error": error,
         }
-        self._path_for(source_key).write_text(_json_dump(payload), encoding="utf-8")
+        write_text_atomic(self._path_for(source_key), _json_dump(payload))
 
     def read(self, source_key: str) -> CachedSourcePayload | None:
         cache_file = self._path_for(source_key)
@@ -108,6 +110,28 @@ class SourceCache:
             parser_warnings=payload.get("parser_warnings", []),
             error=payload.get("error"),
         )
+
+
+def write_text_atomic(path: Path, text: str) -> None:
+    # Concurrent readers (API handlers, other workers) must never see a
+    # truncated file, so write to a sibling temp file and atomically replace.
+    tmp = NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    )
+    try:
+        with tmp:
+            tmp.write(text)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+        os.replace(tmp.name, path)
+    except BaseException:
+        Path(tmp.name).unlink(missing_ok=True)
+        raise
 
 
 def _json_dump(payload: dict[str, Any]) -> str:

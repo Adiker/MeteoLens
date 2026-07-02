@@ -1,7 +1,9 @@
 import json
 from datetime import UTC, datetime
 
-from app.imgw.cache import SourceCache
+import pytest
+
+from app.imgw.cache import SourceCache, write_text_atomic
 
 
 def test_source_cache_reports_fresh_success(tmp_path) -> None:
@@ -88,3 +90,31 @@ def test_source_cache_preserves_last_success_on_error(tmp_path) -> None:
     assert status.record_count == 1
     assert status.parser_warnings == ["minor parser warning"]
     assert status.error == "timeout"
+
+
+def test_write_success_leaves_no_temp_files(tmp_path) -> None:
+    cache = SourceCache(tmp_path)
+    cache.write_success(
+        source_key="synop",
+        url="https://example.test/api/data/synop",
+        retrieved_at=datetime.now(UTC),
+        raw_payload=[{"id_stacji": "1"}],
+        normalized_payload=[{"id": "synop:1"}],
+        parser_warnings=[],
+    )
+
+    assert [path.name for path in tmp_path.iterdir()] == ["synop.json"]
+
+
+def test_write_text_atomic_replaces_content_and_cleans_up_on_failure(tmp_path) -> None:
+    target = tmp_path / "cache.json"
+    write_text_atomic(target, "first")
+    write_text_atomic(target, "second")
+    assert target.read_text(encoding="utf-8") == "second"
+
+    with pytest.raises(TypeError):
+        write_text_atomic(target, None)  # type: ignore[arg-type]
+
+    # The previous content survives and no temp files are left behind.
+    assert target.read_text(encoding="utf-8") == "second"
+    assert [path.name for path in tmp_path.iterdir()] == ["cache.json"]
