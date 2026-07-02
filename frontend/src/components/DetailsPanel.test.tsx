@@ -87,6 +87,8 @@ const observationsResponse: ObservationResponse = {
   generated_at: "2026-06-30T07:30:00Z",
   station_id: "hydro:151140030",
   source: stationResponse.station.source,
+  series_kind: "snapshot",
+  interval: "raw",
   empty_state: null,
   observations: stationResponse.station.observations,
 };

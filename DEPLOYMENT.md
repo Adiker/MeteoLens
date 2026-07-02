@@ -64,40 +64,87 @@ Docker healthcheck should call `/health`.
 
 ## Stage 7 Production Target
 
-Stage 7 should create a production deployment path separate from the local
-development Docker Compose setup.
+Stage 7 adds a production deployment path separate from the local development
+Docker Compose setup.
 
-Required production changes:
+### Commands
 
-- build the frontend with Vite and serve static assets through nginx, Caddy, or
-  an equivalent static server,
-- do not run the Vite dev server in production,
-- build the backend image without development-only dependencies,
-- configure a reverse proxy with TLS termination,
-- document production CORS origins instead of using permissive local defaults,
-- add restart policies for backend and frontend services,
-- mount persistent volumes for SQLite/cache data and any manually reviewed
-  geometry datasets,
-- document backup expectations for database, cache metadata, and reviewed
-  external datasets,
-- document rate-limit, retry, and backoff expectations for IMGW access,
-- keep stale cache and source failures visible instead of masking them.
+Local development (Vite dev server + backend):
 
-Stage 7 public deployment checklist:
+```bash
+docker compose up --build
+```
 
-- current IMGW-PIB terms verified for the intended public or commercial use,
-- MIT License documented in public deployment notes,
-- attribution visible in UI, exports, screenshots, and README,
-- processed-data notice visible wherever data is normalized, aggregated,
-  converted, or otherwise transformed,
-- production CORS origins set,
-- reverse proxy and TLS configured,
-- persistent volumes configured and tested,
-- restart policies configured,
-- `/health` and `/api/v1/sources` monitored,
-- source fetch, parser failure, stale cache, and API error logs reviewed,
-- README screenshots captured from a populated real cache,
-- known limitations remain visible.
+Production smoke test (nginx static frontend + runtime backend image):
+
+```bash
+cp deploy/.env.production.example .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml up --build
+```
+
+Open `http://localhost:8080` (or the configured `PUBLIC_HTTP_PORT`). The nginx
+frontend proxies `/api/*` and `/health` to the backend and serves the Vite build
+from `/usr/share/nginx/html`.
+
+### Production assets
+
+- `docker-compose.prod.yml` — production services with restart policies and a
+  named volume for `/data`.
+- `backend/Dockerfile.prod` — installs runtime dependencies only (no pytest/ruff).
+- `frontend/Dockerfile.prod` — multi-stage build + nginx runtime.
+- `deploy/nginx/frontend.conf` — static UI, API proxy, SPA fallback.
+- `deploy/caddy/Caddyfile.example` — TLS termination example in front of the stack.
+- `deploy/.env.production.example` — production environment template.
+- `deploy/PRODUCTION_CHECKLIST.md` — public deployment checklist.
+
+### CORS
+
+Set `METEOLENS_FRONTEND_ORIGIN` to the public site origin. Comma-separated values
+are supported when the UI and API are served from different hostnames, for example:
+
+```env
+METEOLENS_FRONTEND_ORIGIN=https://meteolens.example.com,https://www.meteolens.example.com
+```
+
+When nginx serves the UI and proxies `/api` on the same origin, CORS is mainly
+relevant for direct backend access during diagnostics.
+
+### IMGW retry and backoff
+
+Configure public-instance fetch discipline through:
+
+- `METEOLENS_REFRESH_*` — scheduler/refresh intervals per source family,
+- `METEOLENS_IMGW_TIMEOUT_SECONDS` — HTTP timeout per request,
+- `METEOLENS_IMGW_MAX_RETRIES` — retry count for transient 5xx/transport errors,
+- `METEOLENS_IMGW_RETRY_DELAY_SECONDS` — delay between retries.
+
+Keep refresh intervals conservative. MeteoLens must not hammer IMGW-PIB public
+endpoints.
+
+### Observability
+
+Production logging writes structured single-line records for:
+
+- app startup (`meteolens` logger),
+- IMGW source fetch outcomes (`meteolens.source`: source key, URL, status,
+  retrieval timestamp, record count, parser warning count),
+- API errors (`meteolens.api`: path, status code, error code).
+
+Monitor `/health` for liveness and `/api/v1/sources` for cache freshness,
+parser warnings, and stale/error states.
+
+### License and terms
+
+Public deployments must document the MIT License (see repository `LICENSE`) and
+verify current IMGW-PIB terms before commercial or high-traffic public use. See
+`LEGAL_ATTRIBUTION.md`.
+
+### Demo media
+
+Capture README screenshots from a populated real cache following
+`docs/screenshots/README.md`.
+
+Stage 7 public deployment checklist: see `deploy/PRODUCTION_CHECKLIST.md`.
 
 ## Stage 10 Product-File Deployment Notes
 
