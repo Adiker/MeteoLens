@@ -255,6 +255,36 @@ def test_hydro_warning_uses_row_index_when_numer_missing() -> None:
     assert result.records[0].id == "warningshydro:row-0"
 
 
+def test_hydro_warning_ids_disambiguate_recycled_numer() -> None:
+    # IMGW recycles `numer` values over time (e.g. the same numer is reissued
+    # months later for an unrelated warning), so the id must not collide.
+    result = parse_source(
+        "warningshydro",
+        [
+            {
+                "numer": "72",
+                "zdarzenie": "Susza hydrologiczna",
+                "opublikowano": "2026-04-24 09:00:00",
+                "data_od": "2026-04-24 09:00:00",
+            },
+            {
+                "numer": "72",
+                "zdarzenie": "Susza hydrologiczna",
+                "opublikowano": "2026-05-29 11:15:00",
+                "data_od": "2026-05-29 11:15:00",
+            },
+        ],
+        source_metadata("warningshydro"),
+    )
+
+    assert len(result.records) == 2
+    first, second = result.records
+    assert first.source_id == "72"
+    assert second.source_id == "72"
+    assert first.id != second.id
+    assert len({record.id for record in result.records}) == 2
+
+
 def test_hydro_warning_falls_back_to_province_area_without_basin_codes() -> None:
     result = parse_source(
         "warningshydro",
