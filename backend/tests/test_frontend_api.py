@@ -9,11 +9,17 @@ from app.imgw.cache import SourceCache
 from app.imgw.parsers import parse_source
 from app.main import app
 from app.normalization.models import SourceMetadata
+from tests.settings_helpers import apply_test_settings
 from tests.test_parsers import load_fixture
 
 
 def _settings(tmp_path) -> Settings:
-    return Settings(cache_dir=tmp_path, imgw_base_url="https://danepubliczne.imgw.pl")
+    db_path = tmp_path / "meteolens.sqlite3"
+    return Settings(
+        cache_dir=tmp_path,
+        database_url=f"sqlite:///{db_path}",
+        imgw_base_url="https://danepubliczne.imgw.pl",
+    )
 
 
 def _source_metadata(source_key: str) -> SourceMetadata:
@@ -46,6 +52,7 @@ def _seed_cache(tmp_path, source_keys: tuple[str, ...]) -> SourceCache:
 
 def test_stations_returns_empty_state_when_cache_is_empty(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations")
 
@@ -59,6 +66,7 @@ def test_stations_returns_empty_state_when_cache_is_empty(monkeypatch, tmp_path)
 def test_stations_detail_and_observations_use_normalized_cache(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     list_response = TestClient(app).get("/api/v1/stations?type=hydro&q=Przewo")
     detail_response = TestClient(app).get("/api/v1/stations/hydro:151140030")
@@ -84,6 +92,7 @@ def test_stations_detail_and_observations_use_normalized_cache(monkeypatch, tmp_
 def test_stations_filter_miss_returns_matching_empty_state(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations?type=synop")
 
@@ -97,6 +106,7 @@ def test_stations_serve_stale_cache_after_refresh_error(monkeypatch, tmp_path) -
     cache = _seed_cache(tmp_path, ("hydro",))
     cache.write_error(source_key="hydro", error="timeout")
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations?type=hydro")
 
@@ -112,6 +122,7 @@ def test_stations_serve_stale_cache_after_refresh_error(monkeypatch, tmp_path) -
 def test_observations_accept_naive_datetime_filters(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get(
         "/api/v1/stations/hydro:151140030/observations"
@@ -125,6 +136,7 @@ def test_observations_accept_naive_datetime_filters(monkeypatch, tmp_path) -> No
 def test_warnings_filters_preserve_area_metadata(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("warningsmeteo", "warningshydro"))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/warnings?type=meteo&teryt=1205&level=2")
     detail_response = TestClient(app).get("/api/v1/warnings/warningsmeteo:Sk20260630043222424")
@@ -140,6 +152,7 @@ def test_warnings_filters_preserve_area_metadata(monkeypatch, tmp_path) -> None:
 def test_map_layers_include_points_and_missing_geometry(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("synop", "hydro", "meteo", "warningsmeteo"))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get(
         "/api/v1/map/layers?layers=synop_stations,hydro_stations,warnings_meteo"
@@ -163,6 +176,7 @@ def test_location_summary_distinguishes_missing_coords_from_empty_cache(
 ) -> None:
     _seed_cache(tmp_path, ("synop",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/location/summary?lat=52.23&lon=21.01&radius_km=50")
 
@@ -175,6 +189,7 @@ def test_location_summary_distinguishes_missing_coords_from_empty_cache(
 def test_location_summary_returns_nearest_cached_stations(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro", "meteo", "warningsmeteo"))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/location/summary?lat=51.52&lon=14.82&radius_km=20")
 
@@ -188,6 +203,7 @@ def test_location_summary_returns_nearest_cached_stations(monkeypatch, tmp_path)
 def test_station_exports_include_attribution_and_missing_fields(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     csv_response = TestClient(app).get("/api/v1/export/station/hydro:151140030.csv")
     json_response = TestClient(app).get("/api/v1/export/station/hydro:151140030.json")
@@ -206,6 +222,7 @@ def test_station_exports_include_attribution_and_missing_fields(monkeypatch, tmp
 def test_station_csv_export_distinguishes_real_zero_from_missing(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("synop",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
     client = TestClient(app)
 
     zero_response = client.get("/api/v1/export/station/synop:12295.csv")
@@ -229,6 +246,7 @@ def test_station_csv_export_distinguishes_real_zero_from_missing(monkeypatch, tm
 
 def test_map_layers_rejects_unsupported_layer_key(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/map/layers?layers=not_a_real_layer")
 
@@ -238,6 +256,7 @@ def test_map_layers_rejects_unsupported_layer_key(monkeypatch, tmp_path) -> None
 
 def test_map_layers_rejects_invalid_bbox_format(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/map/layers?bbox=not,a,bbox")
 
@@ -247,6 +266,7 @@ def test_map_layers_rejects_invalid_bbox_format(monkeypatch, tmp_path) -> None:
 
 def test_map_layers_rejects_bbox_with_min_above_max(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/map/layers?bbox=20,50,10,55")
 
@@ -257,6 +277,7 @@ def test_map_layers_rejects_bbox_with_min_above_max(monkeypatch, tmp_path) -> No
 def test_map_layers_bbox_excludes_stations_outside_area(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get(
         "/api/v1/map/layers?layers=hydro_stations&bbox=0,0,1,1"
@@ -269,6 +290,7 @@ def test_map_layers_bbox_excludes_stations_outside_area(monkeypatch, tmp_path) -
 
 def test_map_layers_report_cache_empty_when_no_data_cached(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/map/layers?layers=hydro_stations")
 
@@ -280,6 +302,7 @@ def test_map_layers_report_cache_empty_when_no_data_cached(monkeypatch, tmp_path
 def test_stations_bbox_and_query_filters_exclude_non_matches(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     bbox_miss = TestClient(app).get("/api/v1/stations?type=hydro&bbox=0,0,1,1")
     query_miss = TestClient(app).get("/api/v1/stations?type=hydro&q=NoSuchStation")
@@ -295,6 +318,7 @@ def test_stations_bbox_filter_excludes_stations_without_coordinates(
 ) -> None:
     _seed_cache(tmp_path, ("synop",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations?type=synop&bbox=10,50,20,55")
 
@@ -306,6 +330,7 @@ def test_observations_missing_timestamp_excluded_by_time_range_filter(
 ) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get(
         "/api/v1/stations/hydro:151140030/observations"
@@ -320,6 +345,7 @@ def test_station_not_found_returns_404_when_cache_has_other_stations(
 ) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations/hydro:does-not-exist")
 
@@ -329,6 +355,7 @@ def test_station_not_found_returns_404_when_cache_has_other_stations(
 
 def test_station_returns_503_when_cache_is_completely_empty(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations/hydro:151140030")
 
@@ -341,6 +368,7 @@ def test_warning_not_found_returns_404_when_cache_has_other_warnings(
 ) -> None:
     _seed_cache(tmp_path, ("warningsmeteo",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/warnings/warningsmeteo:does-not-exist")
 
@@ -349,6 +377,7 @@ def test_warning_not_found_returns_404_when_cache_has_other_warnings(
 
 def test_warning_returns_503_when_cache_is_completely_empty(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/warnings/warningsmeteo:does-not-exist")
 
@@ -359,6 +388,7 @@ def test_warning_returns_503_when_cache_is_completely_empty(monkeypatch, tmp_pat
 def test_observations_filters_by_metric_and_time_range(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro",))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     wrong_metric = TestClient(app).get(
         "/api/v1/stations/hydro:151140030/observations?metric=flow"
@@ -388,6 +418,7 @@ def test_warnings_filters_exclude_by_level_phenomenon_basin_and_active_at(
 ) -> None:
     _seed_cache(tmp_path, ("warningsmeteo", "warningshydro"))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     client = TestClient(app)
     level_miss = client.get("/api/v1/warnings?type=meteo&level=1")
@@ -420,6 +451,7 @@ def test_cache_read_error_returns_503_cache_invalid(monkeypatch, tmp_path) -> No
     _seed_cache(tmp_path, ("hydro",))
     (tmp_path / "hydro.json").write_text("not-json", encoding="utf-8")
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations?type=hydro")
 
@@ -441,6 +473,7 @@ def test_cache_with_malformed_normalized_record_returns_503_cache_invalid(
         parser_warnings=[],
     )
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/stations?type=hydro")
 
@@ -451,6 +484,7 @@ def test_cache_with_malformed_normalized_record_returns_503_cache_invalid(
 def test_map_geojson_export_includes_non_spatial_warning_records(monkeypatch, tmp_path) -> None:
     _seed_cache(tmp_path, ("hydro", "warningsmeteo"))
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
 
     response = TestClient(app).get("/api/v1/export/map.geojson")
 

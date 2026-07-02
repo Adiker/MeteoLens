@@ -9,10 +9,21 @@ from app.imgw.client import ImgwClient
 from app.imgw.refresh import refresh_source
 from app.imgw.sources import SOURCE_BY_KEY
 from app.main import app
+from tests.settings_helpers import apply_test_settings
 
 
 @pytest.mark.asyncio
-async def test_refresh_source_fetches_parses_and_writes_cache(tmp_path) -> None:
+async def test_refresh_source_fetches_parses_and_writes_cache(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "app.db.engine.get_settings",
+        lambda: Settings(
+            cache_dir=tmp_path,
+            database_url=f"sqlite:///{tmp_path / 'test.sqlite3'}",
+        ),
+    )
+    from app.db.engine import reset_engine_cache
+
+    reset_engine_cache()
     async def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
@@ -75,22 +86,24 @@ async def test_refresh_source_records_error_without_masking_it(tmp_path) -> None
 def test_app_lifespan_runs_startup_refresh_when_enabled(monkeypatch, tmp_path) -> None:
     calls = []
 
-    async def fake_refresh_sources(*, base_url: str, cache_dir):
-        calls.append((base_url, cache_dir))
+    async def fake_refresh_sources(*, base_url: str, cache_dir, **kwargs):
+        calls.append((base_url, cache_dir, kwargs))
         return []
 
-    monkeypatch.setattr(main, "refresh_sources", fake_refresh_sources)
-    monkeypatch.setattr(
-        main,
-        "get_settings",
-        lambda: Settings(
+    apply_test_settings(
+        monkeypatch,
+        Settings(
             imgw_base_url="https://example.test",
             cache_dir=tmp_path,
+            database_url=f"sqlite:///{tmp_path / 'test.sqlite3'}",
             sync_on_startup=True,
         ),
     )
+    monkeypatch.setattr(main, "refresh_sources", fake_refresh_sources)
 
     with TestClient(app) as client:
         assert client.get("/health").status_code == 200
 
-    assert calls == [("https://example.test/", tmp_path)]
+    assert calls[0][0] == "https://example.test/"
+    assert calls[0][1] == tmp_path
+    assert calls[0][2]["timeout_seconds"] == 20.0

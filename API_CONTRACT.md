@@ -177,21 +177,22 @@ Query parameters:
   `1h`, or `1d`.
 - `limit`: planned Stage 8 maximum number of returned points.
 
-Returns observation values for charts and exports. The current implementation is
-backed by the latest normalized cache snapshot, so it can return current values
-but not a historical multi-point series. Stage 8 should turn this endpoint into
-a real time-series API backed by persisted observation history.
+Returns observation values for charts and exports. The implementation reads
+persisted observation history when available and falls back to the latest cache
+snapshot when history is empty. Responses include `series_kind` (`history` or
+`snapshot`) and the requested `interval`.
 
 Each observation preserves `null` values and includes `missing`,
-`raw_field`, `observed_at`, `retrieved_at`-derived `data_delay_seconds`, and
+`raw_field`, `observed_at`, `retrieved_at`, `data_delay_seconds`, and
 unit metadata where available.
 
-Planned Stage 8 endpoints:
+`GET /api/v1/stations/compare`
 
-- `GET /api/v1/stations/compare`
-- `GET /api/v1/rankings`
-- `GET /api/v1/export/station/{id}/observations.csv`
-- `GET /api/v1/export/station/{id}/observations.json`
+`GET /api/v1/rankings`
+
+`GET /api/v1/export/station/{id}/observations.csv`
+
+`GET /api/v1/export/station/{id}/observations.json`
 
 Planned station comparison parameters:
 
