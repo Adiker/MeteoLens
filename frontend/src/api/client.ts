@@ -171,6 +171,11 @@ export interface WarningRecord {
   comment: string | null;
   areas: WarningArea[];
   area_codes: string[];
+  geometry_status?: string;
+  resolved_areas?: Array<Record<string, unknown>>;
+  unresolved_areas?: Array<Record<string, unknown>>;
+  match_type?: string;
+  matched_area?: Record<string, unknown>;
   missing_fields: string[];
   source: SourceMetadata;
   raw: Record<string, unknown>;
@@ -335,7 +340,15 @@ export function fetchRankings(params: {
 }
 
 export function fetchWarnings(
-  params: { type?: WarningType; level?: number; phenomenon?: string; active_at?: string } = {},
+  params: {
+    type?: WarningType;
+    level?: number;
+    phenomenon?: string;
+    province?: string;
+    county?: string;
+    basin?: string;
+    active_at?: string;
+  } = {},
 ) {
   return getJson<WarningsResponse>(`/api/v1/warnings${query(params)}`);
 }

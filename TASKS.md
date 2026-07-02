@@ -144,20 +144,20 @@ filters wait for area geometry and archive series.
 
 ## Stage 9 - Geometry Datasets And Spatial Warnings
 
-- [ ] Research legal/public TERYT administrative boundary datasets.
-- [ ] Research legal/public hydrological basin or catchment geometry datasets.
-- [ ] Research official station metadata or station coordinate lists for
+- [x] Research legal/public TERYT administrative boundary datasets.
+- [x] Research legal/public hydrological basin or catchment geometry datasets.
+- [x] Research official station metadata or station coordinate lists for
   synoptic stations.
-- [ ] Add a source/legal review checklist for every external geometry dataset.
-- [ ] Design geometry import and cache pipeline.
-- [ ] Map meteorological warning TERYT codes to polygons.
-- [ ] Map hydrological warning basin or area codes to geometries where possible.
-- [ ] Reconcile synoptic station coordinates from an official or legally cleared
+- [x] Add a source/legal review checklist for every external geometry dataset.
+- [x] Design geometry import and cache pipeline.
+- [x] Map meteorological warning TERYT codes to polygons.
+- [x] Map hydrological warning basin or area codes to geometries where possible.
+- [x] Reconcile synoptic station coordinates from an official or legally cleared
   station metadata source.
-- [ ] Add warning polygons on the map.
-- [ ] Add spatial matching for "My location" warnings.
-- [ ] Add province, county, and basin filters where geometry exists.
-- [ ] Clearly show missing geometry where mapping cannot be resolved.
+- [x] Add warning polygons on the map.
+- [x] Add spatial matching for "My location" warnings.
+- [x] Add province, county, and basin filters where geometry exists.
+- [x] Clearly show missing geometry where mapping cannot be resolved.
 
 ## Stage 10 - Radar, Product Files, GRIB, And Timeline Animation
 

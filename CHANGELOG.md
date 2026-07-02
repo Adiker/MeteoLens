@@ -4,6 +4,9 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 9 geometry pipeline: local geometry manifest/cache, warning polygon
+  map layers, spatial location matching, province/county/basin filters, and
+  geometry dataset status API.
 - Added Stage 8 observation history: SQLite persistence on IMGW refresh,
   time-series/compare/rankings API endpoints, range exports, retention policy,
   and frontend time-series chart mode.

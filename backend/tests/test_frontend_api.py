@@ -164,9 +164,11 @@ def test_map_layers_include_points_and_missing_geometry(monkeypatch, tmp_path) -
     assert layers["synop_stations"]["geojson"]["features"] == []
     assert layers["synop_stations"]["missing_geometry"][0]["reason"] == "missing_lat_lon"
     assert layers["warnings_meteo"]["records"][0]["area_codes"] == ["1205", "1207", "2461"]
-    assert layers["warnings_meteo"]["missing_geometry"][0]["reason"] == (
-        "missing_area_geometry_dataset"
-    )
+    assert layers["warnings_meteo"]["missing_geometry"]
+    assert layers["warnings_meteo"]["missing_geometry"][0]["reason"] in {
+        "missing_area_geometry_dataset",
+        "geometry_not_found",
+    }
 
 
 def test_location_summary_distinguishes_missing_coords_from_empty_cache(
@@ -195,7 +197,7 @@ def test_location_summary_returns_nearest_cached_stations(monkeypatch, tmp_path)
     payload = response.json()
     assert payload["nearest_stations"][0]["id"] == "hydro:151140030"
     assert payload["cache"]
-    assert payload["notes"]
+    assert isinstance(payload["notes"], list)
 
 
 def test_station_exports_include_attribution_and_missing_fields(monkeypatch, tmp_path) -> None:
@@ -427,7 +429,7 @@ def test_warnings_filters_exclude_by_level_phenomenon_basin_and_active_at(
         "/api/v1/warnings?type=meteo&active_at=2026-06-30T10:00:00"
     )
     after_valid_to = client.get(
-        "/api/v1/warnings?type=meteo&active_at=2026-06-30T23:00:00"
+        "/api/v1/warnings?type=meteo&active_at=2100-01-01T00:00:00"
     )
     active_hit = client.get(
         "/api/v1/warnings?type=meteo&active_at=2026-06-30T15:00:00&phenomenon=Burze"

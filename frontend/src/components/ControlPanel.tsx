@@ -27,7 +27,8 @@ function LayerToggles() {
   const activeLayers = useAppStore((state) => state.activeLayers);
   const toggleLayer = useAppStore((state) => state.toggleLayer);
   const activeStationKeys = STATION_LAYERS.filter((l) => activeLayers[l.key]).map((l) => l.key);
-  const mapQuery = useMapLayersQuery(activeStationKeys);
+  const activeWarningKeys = WARNING_LAYERS.filter((l) => activeLayers[l.key]).map((l) => l.key);
+  const mapQuery = useMapLayersQuery([...activeStationKeys, ...activeWarningKeys]);
 
   const countsByKey = new Map<string, { features: number; missing: number }>();
   for (const layer of mapQuery.data?.layers ?? []) {
@@ -64,7 +65,12 @@ function LayerToggles() {
                   {counts.missing > 0 && ` · ${counts.missing} bez współrzędnych`}
                 </span>
               )}
-              {layer.kind === "warning" && (
+              {layer.kind === "warning" && counts && (
+                <span className="block text-xs text-muted-foreground">
+                  {counts.features} poligonów · {counts.missing} bez geometrii
+                </span>
+              )}
+              {layer.kind === "warning" && !counts && (
                 <span className="block text-xs text-muted-foreground">
                   Brak geometrii — lista poniżej
                 </span>
@@ -114,6 +120,36 @@ function Filters() {
           onChange={(event) => setFilter("phenomenon", event.target.value)}
         />
       </label>
+      <label className="block text-xs">
+        <span className="mb-1 block font-medium text-muted-foreground">Województwo (TERYT)</span>
+        <input
+          type="text"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          placeholder="np. 12"
+          value={filters.province}
+          onChange={(event) => setFilter("province", event.target.value)}
+        />
+      </label>
+      <label className="block text-xs">
+        <span className="mb-1 block font-medium text-muted-foreground">Powiat (TERYT)</span>
+        <input
+          type="text"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          placeholder="np. 1205"
+          value={filters.county}
+          onChange={(event) => setFilter("county", event.target.value)}
+        />
+      </label>
+      <label className="block text-xs">
+        <span className="mb-1 block font-medium text-muted-foreground">Zlewnia</span>
+        <input
+          type="text"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          placeholder="np. Z_P_WP_1856"
+          value={filters.basin}
+          onChange={(event) => setFilter("basin", event.target.value)}
+        />
+      </label>
     </div>
   );
 }
@@ -134,7 +170,9 @@ function WarningsList() {
     type,
     level: filters.warningLevel ?? undefined,
     phenomenon: filters.phenomenon.trim() || undefined,
-    // Only show warnings whose validity window covers now; the list is labelled "active".
+    province: filters.province.trim() || undefined,
+    county: filters.county.trim() || undefined,
+    basin: filters.basin.trim() || undefined,
     active_at: activeAt,
   });
 

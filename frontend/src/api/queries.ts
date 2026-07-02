@@ -64,7 +64,15 @@ export function useObservationsQuery(id: string | null) {
 }
 
 export function useWarningsQuery(
-  params: { type?: WarningType; level?: number; phenomenon?: string; active_at?: string } = {},
+  params: {
+    type?: WarningType;
+    level?: number;
+    phenomenon?: string;
+    province?: string;
+    county?: string;
+    basin?: string;
+    active_at?: string;
+  } = {},
 ) {
   return useQuery({
     queryKey: ["warnings", params],

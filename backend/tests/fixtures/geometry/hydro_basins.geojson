@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "Z_P_WP_1856",
+        "basin_code": "Z_P_WP_1856",
+        "name": "Test basin Z_P_WP_1856"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[16.0, 52.0], [18.0, 52.0], [18.0, 53.5], [16.0, 53.5], [16.0, 52.0]]]
+      }
+    }
+  ]
+}

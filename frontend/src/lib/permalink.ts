@@ -44,6 +44,15 @@ export function encodePermalink(state: PermalinkState): string {
   if (state.filters.phenomenon.trim()) {
     params.set("ph", state.filters.phenomenon.trim());
   }
+  if (state.filters.province.trim()) {
+    params.set("pr", state.filters.province.trim());
+  }
+  if (state.filters.county.trim()) {
+    params.set("co", state.filters.county.trim());
+  }
+  if (state.filters.basin.trim()) {
+    params.set("ba", state.filters.basin.trim());
+  }
   return params.toString();
 }
 
@@ -92,11 +101,23 @@ export function decodePermalink(search: string): Partial<PermalinkState> {
 
   const warningLevel = params.get("wl");
   const phenomenon = params.get("ph");
-  if (warningLevel !== null || phenomenon !== null) {
+  const province = params.get("pr");
+  const county = params.get("co");
+  const basin = params.get("ba");
+  if (
+    warningLevel !== null ||
+    phenomenon !== null ||
+    province !== null ||
+    county !== null ||
+    basin !== null
+  ) {
     const level = Number(warningLevel);
     result.filters = {
       warningLevel: warningLevel !== null && Number.isFinite(level) ? level : null,
       phenomenon: phenomenon ?? "",
+      province: province ?? "",
+      county: county ?? "",
+      basin: basin ?? "",
     };
   }
 
