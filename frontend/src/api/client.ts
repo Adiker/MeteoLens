@@ -138,6 +138,8 @@ export interface ObservationResponse {
   station_id: string;
   source: SourceMetadata;
   observations: Observation[];
+  series_kind: "history" | "snapshot";
+  interval: string;
   empty_state: EmptyState | null;
 }
 
@@ -298,10 +300,38 @@ export function fetchStation(id: string) {
   return getJson<StationResponse>(`/api/v1/stations/${encodeURIComponent(id)}`);
 }
 
-export function fetchObservations(id: string, params: { metric?: string } = {}) {
+export function fetchObservations(
+  id: string,
+  params: {
+    metric?: string;
+    from?: string;
+    to?: string;
+    interval?: "raw" | "10m" | "1h" | "1d";
+    limit?: number;
+  } = {},
+) {
   return getJson<ObservationResponse>(
     `/api/v1/stations/${encodeURIComponent(id)}/observations${query(params)}`,
   );
+}
+
+export interface RankingsResponse {
+  generated_at: string;
+  metric: string;
+  direction: "highest" | "lowest";
+  rankings: Array<Observation & { station_id: string; station_name: string; station_type: string }>;
+  attribution: string;
+  processed_notice: string;
+  empty_state: EmptyState | null;
+}
+
+export function fetchRankings(params: {
+  metric: string;
+  direction?: "highest" | "lowest";
+  type?: StationType;
+  limit?: number;
+}) {
+  return getJson<RankingsResponse>(`/api/v1/rankings${query(params)}`);
 }
 
 export function fetchWarnings(

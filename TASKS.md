@@ -126,20 +126,20 @@ filters wait for area geometry and archive series.
 
 ## Stage 8 - Observation History And Real Time Series
 
-- [ ] Persist repeated observations instead of replacing each station with only
+- [x] Persist repeated observations instead of replacing each station with only
   the latest snapshot.
-- [ ] Design the SQLite observation-history schema with a migration path to
+- [x] Design the SQLite observation-history schema with a migration path to
   PostgreSQL/PostGIS/TimescaleDB.
-- [ ] Add backend API contract for station time series.
-- [ ] Add time-series query parameters for metric, date/time range,
+- [x] Add backend API contract for station time series.
+- [x] Add time-series query parameters for metric, date/time range,
   aggregation interval, and limit.
-- [ ] Add time-series charts backed by real multi-point data.
-- [ ] Add station comparison.
-- [ ] Add rankings for highest temperature, lowest temperature, strongest wind,
+- [x] Add time-series charts backed by real multi-point data.
+- [x] Add station comparison.
+- [x] Add rankings for highest temperature, lowest temperature, strongest wind,
   highest precipitation, and highest/lowest water level where applicable.
-- [ ] Add export support for selected time ranges.
-- [ ] Add retention policy for the local historical cache.
-- [ ] Preserve source timestamp, retrieval timestamp, data delay, attribution,
+- [x] Add export support for selected time ranges.
+- [x] Add retention policy for the local historical cache.
+- [x] Preserve source timestamp, retrieval timestamp, data delay, attribution,
   missing values, and processed-data notice in historical views and exports.
 
 ## Stage 9 - Geometry Datasets And Spatial Warnings

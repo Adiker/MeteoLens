@@ -10,7 +10,9 @@ from app.api.health import router as health_router
 from app.api.v1 import router as v1_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging, log_api_error
+from app.db.engine import init_db
 from app.imgw.refresh import refresh_sources
+from app.services.observation_history import prune_history
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         settings.cache_dir,
         settings.sync_on_startup,
     )
+    init_db()
+    pruned = prune_history(retention_days=settings.observation_retention_days)
+    if pruned:
+        logger.info("Pruned %s observation history rows.", pruned)
     if settings.sync_on_startup:
         results = await refresh_sources(
             base_url=str(settings.imgw_base_url),

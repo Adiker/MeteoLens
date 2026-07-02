@@ -46,6 +46,14 @@ async def refresh_source(
             normalized_payload=normalized_payload,
             parser_warnings=parse_result.warnings,
         )
+        from app.db.engine import init_db
+        from app.normalization.models import Station
+        from app.services.observation_history import persist_station
+
+        init_db()
+        for record in parse_result.records:
+            if isinstance(record, Station):
+                persist_station(record)
         log_source_fetch(
             source_key=source.key,
             url=fetch.url,

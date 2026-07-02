@@ -22,6 +22,7 @@ from app.normalization.models import (
     Station,
     Warning,
 )
+from app.services import observation_history as history_service
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
 NORMALIZED_RECORD_ADAPTER = TypeAdapter(NormalizedRecord)
@@ -127,6 +128,27 @@ class ObservationResponse(BaseModel):
     station_id: str
     source: SourceMetadata
     observations: list[dict[str, Any]]
+    series_kind: Literal["history", "snapshot"] = "snapshot"
+    interval: str = "raw"
+    empty_state: EmptyState | None = None
+
+
+class CompareResponse(BaseModel):
+    generated_at: datetime
+    metric: str
+    interval: str
+    series: dict[str, list[dict[str, Any]]]
+    attribution: str = ATTRIBUTION
+    processed_notice: str = PROCESSED_NOTICE
+
+
+class RankingsResponse(BaseModel):
+    generated_at: datetime
+    metric: str
+    direction: Literal["highest", "lowest"]
+    rankings: list[dict[str, Any]]
+    attribution: str = ATTRIBUTION
+    processed_notice: str = PROCESSED_NOTICE
     empty_state: EmptyState | None = None
 
 
@@ -283,6 +305,79 @@ def list_stations(
     )
 
 
+@router.get("/stations/compare", response_model=CompareResponse)
+def compare_stations(
+    station_ids: Annotated[str, Query(description="Comma-separated stable station IDs.")],
+    metric: str,
+    observed_from: Annotated[datetime | None, Query(alias="from")] = None,
+    observed_to: Annotated[datetime | None, Query(alias="to")] = None,
+    interval: Literal["raw", "10m", "1h", "1d"] = "raw",
+    limit: Annotated[int, Query(ge=1, le=5000)] = 200,
+) -> CompareResponse:
+    ids = [value.strip() for value in station_ids.split(",") if value.strip()]
+    if not ids:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": {
+                    "code": "invalid_filter",
+                    "message": "station_ids must contain at least one station ID.",
+                }
+            },
+        )
+    for station_id in ids:
+        _get_station_or_404(station_id)
+
+    return CompareResponse(
+        generated_at=datetime.now(UTC),
+        metric=metric,
+        interval=interval,
+        series=history_service.compare_stations(
+            station_ids=ids,
+            metric=metric,
+            observed_from=observed_from,
+            observed_to=observed_to,
+            interval=interval,
+            limit=limit,
+        ),
+    )
+
+
+@router.get("/rankings", response_model=RankingsResponse)
+def get_rankings(
+    metric: str,
+    direction: Literal["highest", "lowest"] = "highest",
+    station_type: Annotated[
+        Literal["synop", "hydro", "meteo"] | None,
+        Query(alias="type"),
+    ] = None,
+    observed_from: Annotated[datetime | None, Query(alias="from")] = None,
+    observed_to: Annotated[datetime | None, Query(alias="to")] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> RankingsResponse:
+    rankings = history_service.rankings(
+        metric=metric,
+        direction=direction,
+        station_type=station_type,
+        observed_from=observed_from,
+        observed_to=observed_to,
+        limit=limit,
+    )
+    return RankingsResponse(
+        generated_at=datetime.now(UTC),
+        metric=metric,
+        direction=direction,
+        rankings=rankings,
+        empty_state=None
+        if rankings
+        else EmptyState(
+            code="no_history",
+            message="No observation history matched the requested ranking filters.",
+            source_keys=list(STATION_SOURCE_KEYS),
+        ),
+    )
+
+
 @router.get("/stations/{station_id}", response_model=StationResponse)
 def get_station(station_id: str) -> StationResponse:
     station = _get_station_or_404(station_id)
@@ -301,23 +396,50 @@ def get_station_observations(
     metric: str | None = None,
     observed_from: Annotated[datetime | None, Query(alias="from")] = None,
     observed_to: Annotated[datetime | None, Query(alias="to")] = None,
+    interval: Literal["raw", "10m", "1h", "1d"] = "raw",
+    limit: Annotated[int, Query(ge=1, le=5000)] = 500,
 ) -> ObservationResponse:
     station = _get_station_or_404(station_id)
-    observations = [
-        _observation_payload(observation, station.source.retrieved_at)
-        for observation in station.observations
-        if _observation_matches(
-            observation,
-            metric=metric,
-            observed_from=observed_from,
-            observed_to=observed_to,
-        )
-    ]
+    history = history_service.query_station_history(
+        station_id=station_id,
+        metric=metric,
+        observed_from=observed_from,
+        observed_to=observed_to,
+        interval=interval,
+        limit=limit,
+    )
+    if history:
+        observations = [
+            point
+            for point in history
+            if _history_observation_matches(
+                point,
+                metric=metric,
+                observed_from=observed_from,
+                observed_to=observed_to,
+            )
+        ]
+        series_kind: Literal["history", "snapshot"] = "history"
+    else:
+        observations = [
+            _observation_payload(observation, station.source.retrieved_at)
+            for observation in station.observations
+            if _observation_matches(
+                observation,
+                metric=metric,
+                observed_from=observed_from,
+                observed_to=observed_to,
+            )
+        ]
+        series_kind = "snapshot"
+
     return ObservationResponse(
         generated_at=datetime.now(UTC),
         station_id=station.id,
         source=station.source,
         observations=observations,
+        series_kind=series_kind,
+        interval=interval,
         empty_state=None
         if observations
         else EmptyState(
@@ -430,6 +552,112 @@ def get_location_summary(
             "Warnings are not spatially matched yet because TERYT and basin "
             "geometry datasets are not cached."
         ],
+    )
+
+
+@router.get("/export/station/{station_id}/observations.csv")
+def export_station_observations_csv(
+    station_id: str,
+    metric: str | None = None,
+    observed_from: Annotated[datetime | None, Query(alias="from")] = None,
+    observed_to: Annotated[datetime | None, Query(alias="to")] = None,
+    interval: Literal["raw", "10m", "1h", "1d"] = "raw",
+    limit: Annotated[int, Query(ge=1, le=5000)] = 500,
+) -> PlainTextResponse:
+    response = get_station_observations(
+        station_id=station_id,
+        metric=metric,
+        observed_from=observed_from,
+        observed_to=observed_to,
+        interval=interval,
+        limit=limit,
+    )
+    station = _get_station_or_404(station_id)
+    buffer = StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=[
+            "station_id",
+            "station_name",
+            "metric",
+            "value",
+            "unit",
+            "observed_at",
+            "retrieved_at",
+            "data_delay_seconds",
+            "missing",
+            "raw_field",
+            "source_key",
+            "attribution",
+            "processed_notice",
+            "series_kind",
+            "interval",
+        ],
+    )
+    writer.writeheader()
+    for observation in response.observations:
+        writer.writerow(
+            {
+                "station_id": station.id,
+                "station_name": station.name,
+                "metric": observation.get("metric"),
+                "value": "" if observation.get("value") is None else observation["value"],
+                "unit": "" if observation.get("unit") is None else observation["unit"],
+                "observed_at": observation.get("observed_at") or "",
+                "retrieved_at": observation.get("retrieved_at")
+                or station.source.retrieved_at.isoformat(),
+                "data_delay_seconds": observation.get("data_delay_seconds"),
+                "missing": observation.get("missing"),
+                "raw_field": observation.get("raw_field"),
+                "source_key": station.source_key,
+                "attribution": station.source.attribution,
+                "processed_notice": station.source.processed_notice,
+                "series_kind": response.series_kind,
+                "interval": response.interval,
+            }
+        )
+    return PlainTextResponse(
+        buffer.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{station.id}-observations.csv"'
+        },
+    )
+
+
+@router.get("/export/station/{station_id}/observations.json")
+def export_station_observations_json(
+    station_id: str,
+    metric: str | None = None,
+    observed_from: Annotated[datetime | None, Query(alias="from")] = None,
+    observed_to: Annotated[datetime | None, Query(alias="to")] = None,
+    interval: Literal["raw", "10m", "1h", "1d"] = "raw",
+    limit: Annotated[int, Query(ge=1, le=5000)] = 500,
+) -> JSONResponse:
+    response = get_station_observations(
+        station_id=station_id,
+        metric=metric,
+        observed_from=observed_from,
+        observed_to=observed_to,
+        interval=interval,
+        limit=limit,
+    )
+    station = _get_station_or_404(station_id)
+    return JSONResponse(
+        content=jsonable_encoder(
+            {
+                "generated_at": datetime.now(UTC),
+                "attribution": station.source.attribution,
+                "processed_notice": station.source.processed_notice,
+                "station_id": station.id,
+                "series_kind": response.series_kind,
+                "interval": response.interval,
+                "observations": response.observations,
+            }
+        ),
+        headers={
+            "Content-Disposition": f'attachment; filename="{station.id}-observations.json"'
+        },
     )
 
 
@@ -911,6 +1139,32 @@ def _observation_matches(
     if metric is not None and observation.metric != metric:
         return False
     observed_at = observation.observed_at
+    if observed_from is not None:
+        comparison = _compare_datetimes(observed_at, observed_from)
+        if comparison is None or comparison < 0:
+            return False
+    if observed_to is not None:
+        comparison = _compare_datetimes(observed_at, observed_to)
+        if comparison is None or comparison > 0:
+            return False
+    return True
+
+
+def _history_observation_matches(
+    observation: dict[str, Any],
+    *,
+    metric: str | None,
+    observed_from: datetime | None,
+    observed_to: datetime | None,
+) -> bool:
+    if metric is not None and observation.get("metric") != metric:
+        return False
+    observed_at_raw = observation.get("observed_at")
+    observed_at = (
+        datetime.fromisoformat(str(observed_at_raw).replace("Z", "+00:00"))
+        if observed_at_raw
+        else None
+    )
     if observed_from is not None:
         comparison = _compare_datetimes(observed_at, observed_from)
         if comparison is None or comparison < 0:

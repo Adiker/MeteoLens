@@ -4,6 +4,9 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 8 observation history: SQLite persistence on IMGW refresh,
+  time-series/compare/rankings API endpoints, range exports, retention policy,
+  and frontend time-series chart mode.
 - Added Stage 7 production deployment: `docker-compose.prod.yml`,
   production Dockerfiles, nginx static frontend, structured logging, IMGW
   retry/backoff settings, production CORS guidance, and public deployment
