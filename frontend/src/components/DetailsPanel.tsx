@@ -155,7 +155,10 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
           )}
         </ul>
       ) : (
-        <StationChart observations={observations} />
+        <StationChart
+          observations={observations}
+          seriesKind={observationsQuery.data?.series_kind ?? "snapshot"}
+        />
       )}
 
       <div className="flex flex-wrap gap-2">

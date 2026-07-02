@@ -2,18 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { LayerKey, StationType, WarningType } from "../lib/layers";
 import {
+  fetchFreshnessStatus,
   fetchHealth,
   fetchLocationSummary,
   fetchMapLayers,
   fetchMapTimeline,
   fetchObservations,
   fetchProductFrames,
-  fetchFreshnessStatus,
-  fetchWarningStationComparison,
   fetchSources,
   fetchStation,
   fetchStations,
   fetchWarning,
+  fetchWarningStationComparison,
   fetchWarnings,
 } from "./client";
 

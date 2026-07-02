@@ -96,6 +96,54 @@ def test_map_timeline_lists_cached_product_layers(seeded_products) -> None:
     assert "Binary product parsing" in layer["notes"][1]
 
 
+def test_products_endpoint_reports_missing_manifest_fields(seeded_products) -> None:
+    response = TestClient(app).get("/api/v1/products")
+    assert response.status_code == 200
+    by_id = {item["id"]: item for item in response.json()["products"]}
+    assert by_id["COMPO_CAPPI.comp.cappi_h5"]["missing_fields"] == []
+    for product in by_id.values():
+        assert "missing_fields" in product
+
+
+def test_products_endpoint_missing_manifest_field_is_reported(monkeypatch, tmp_path) -> None:
+    metadata = _source_metadata("product")
+    incomplete_payload = [
+        {
+            "id": "COSMO_HVD_00_00",
+            "url": "https://danepubliczne.imgw.pl/api/data/product/id/COSMO_HVD_00_00",
+        }
+    ]
+    parse_result = parse_source("product", incomplete_payload, metadata)
+    SourceCache(tmp_path).write_success(
+        source_key="product",
+        url=metadata.url,
+        retrieved_at=metadata.retrieved_at,
+        raw_payload=incomplete_payload,
+        normalized_payload=[record.model_dump(mode="json") for record in parse_result.records],
+        parser_warnings=parse_result.warnings,
+    )
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/products")
+
+    assert response.status_code == 200
+    product = response.json()["products"][0]
+    assert product["missing_fields"] == ["opis"]
+
+
+def test_products_endpoint_does_not_synthesize_retrieved_at_for_empty_cache(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/products")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["retrieved_at"] is None
+    assert payload["empty_state"]["code"] == "cache_empty"
+
+
 def test_product_frames_empty_state_without_detail_cache(monkeypatch, tmp_path) -> None:
     _write_cached_source(SourceCache(tmp_path), "product")
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))

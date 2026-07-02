@@ -54,10 +54,12 @@ def find_area_geometry(store: GeometryStore, area: WarningArea) -> GeometryFeatu
         feature = store.find_by_code(dataset_key="teryt_counties", code=area.code)
         if feature is not None:
             return feature
-        if len(area.code) >= 2:
+        if len(area.code) == 2:
+            # The code is itself a two-digit voivodeship code, not a county missing
+            # from the dataset — only then is the voivodeship geometry a real match.
             return store.find_by_code(
                 dataset_key="teryt_voivodeships",
-                code=area.code[:2],
+                code=area.code,
             )
         return None
     for dataset_key in _dataset_keys_for_area(area):
