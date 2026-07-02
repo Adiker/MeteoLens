@@ -113,7 +113,9 @@ relevant for direct backend access during diagnostics.
 
 Configure public-instance fetch discipline through:
 
-- `METEOLENS_REFRESH_*` — scheduler/refresh intervals per source family,
+- `METEOLENS_REFRESH_ENABLED` — enables the in-process periodic refresh
+  scheduler (enabled by default in the provided Compose files),
+- `METEOLENS_REFRESH_*_SECONDS` — scheduler/refresh intervals per source family,
 - `METEOLENS_IMGW_TIMEOUT_SECONDS` — HTTP timeout per request,
 - `METEOLENS_IMGW_MAX_RETRIES` — retry count for transient 5xx/transport errors,
 - `METEOLENS_IMGW_RETRY_DELAY_SECONDS` — delay between retries.

@@ -145,6 +145,17 @@ normalized file cache used by the public API. Per-source fetch or parser errors
 are stored as cache errors; stale successful payloads are preserved when
 available.
 
+A periodic in-process scheduler (`app/imgw/scheduler.py`) is controlled by
+`METEOLENS_REFRESH_ENABLED`. When enabled, the app lifespan starts one refresh
+loop per source; each loop waits its configured interval
+(`METEOLENS_REFRESH_SYNOP_SECONDS`, `METEOLENS_REFRESH_HYDRO_SECONDS`,
+`METEOLENS_REFRESH_METEO_SECONDS`, `METEOLENS_REFRESH_WARNINGS_SECONDS`; other
+sources fall back to their default TTL) and then re-runs the same
+fetch/parse/cache path used at startup, which also appends station observation
+history rows. Loops log failures without masking them and shut down cleanly on
+app shutdown. The first scheduled refresh happens one interval after startup;
+initial freshness comes from the startup sync.
+
 Stage 8 should add an observation-history cache instead of replacing each
 station with only the latest snapshot. Historical rows must keep source
 timestamp, retrieval timestamp, data delay, missing/null state, attribution, and

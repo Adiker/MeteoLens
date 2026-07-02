@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     geometry_dir: Path = Path("../data/geometry")
     log_level: str = "INFO"
     sync_on_startup: bool = False
+    refresh_enabled: bool = False
     refresh_synop_seconds: int = Field(default=600, ge=60)
     refresh_hydro_seconds: int = Field(default=600, ge=60)
     refresh_meteo_seconds: int = Field(default=600, ge=60)
