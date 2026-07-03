@@ -4,7 +4,9 @@
 # can contain container-owned cache files unreadable by the build — stays out.
 *
 !frontend/
+!frontend/**
 !deploy/nginx/
+!deploy/nginx/**
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/

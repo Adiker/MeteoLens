@@ -6,6 +6,7 @@
 //
 // Usage (dev stack): node scripts/smoke.mjs http://localhost:5173 http://localhost:8000 [screenshotDir]
 // Usage (prod stack): node scripts/smoke.mjs http://localhost:8080 http://localhost:8080 [screenshotDir]
+import { mkdir } from "node:fs/promises";
 import { chromium } from "@playwright/test";
 
 const BASE = process.argv[2] ?? "http://localhost:5173";
@@ -18,9 +19,27 @@ function record(name, ok, note = "") {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${note ? ` — ${note}` : ""}`);
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function chooseStationName() {
+  const stationsApi = await fetch(`${API_BASE}/api/v1/stations`)
+    .then((res) => res.json())
+    .catch(() => null);
+  const stations = stationsApi?.stations ?? [];
+  const station =
+    stations.find((item) => /Warszawa/i.test(item.name)) ??
+    stations.find((item) => item.lat != null && item.lon != null) ??
+    stations[0];
+
+  return station?.name ?? "Warszawa";
+}
+
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 page.setDefaultTimeout(20000);
+if (OUT) await mkdir(OUT, { recursive: true });
 
 try {
   await page.goto(BASE, { waitUntil: "networkidle" });
@@ -59,16 +78,17 @@ try {
   }
 
   // 3. Expert mode + station details via search
+  const stationName = await chooseStationName();
   await page.getByLabel("Przełącz tryb prosty/ekspercki").click();
-  await page.getByLabel("Szukaj stacji").fill("Warszawa");
+  await page.getByLabel("Szukaj stacji").fill(stationName);
   await page
-    .getByRole("button", { name: /Warszawa/ })
+    .getByRole("button", { name: new RegExp(escapeRegExp(stationName), "i") })
     .first()
     .click();
   const panel = page.getByRole("dialog", { name: "Panel szczegółów" });
   await panel.waitFor();
   await panel.getByText(/Pobrano:/).waitFor();
-  record("station details panel opens from search", true);
+  record("station details panel opens from search", true, stationName);
   const panelText = await panel.innerText();
   record(
     "station details show retrieval timestamp and delay",
@@ -89,26 +109,35 @@ try {
   // 4. Warnings list + warning details
   const warningsHeading = page.getByText(/Aktywne ostrzeżenia \(\d+\)/);
   await warningsHeading.first().waitFor();
-  record("warning list renders", true, await warningsHeading.first().innerText());
   const controlPanel = page.getByLabel("Panel warstw i filtrów");
-  const firstWarning = controlPanel
-    .locator("button")
-    .filter({ hasText: /poziom|st\.|Burze|upał|Susza|deszcz|wezbrani/i })
-    .first();
-  await firstWarning.click();
-  await panel.waitFor();
-  const warnText = await panel.innerText();
-  record(
-    "warning details show validity + office metadata",
-    /Ważne|Obowiązuje|Biuro|IMGW/i.test(warnText),
-  );
-  record(
-    "missing area geometry stays explicit",
-    /Brak geometrii obszaru/i.test(warnText),
-  );
-  await page.waitForTimeout(1000);
-  if (OUT) await page.screenshot({ path: `${OUT}/warning-details-list.png` });
-  await page.getByLabel("Zamknij panel szczegółów").click();
+  const warningsHeadingText = await warningsHeading.first().innerText();
+  const warningCount = Number(warningsHeadingText.match(/\((\d+)\)/)?.[1] ?? NaN);
+  record("warning list renders", Number.isFinite(warningCount), warningsHeadingText);
+
+  if (warningCount > 0) {
+    const firstWarning = controlPanel
+      .locator("button")
+      .filter({ hasText: /poziom|st\.|Burze|upał|Susza|deszcz|wezbrani/i })
+      .first();
+    await firstWarning.click();
+    await panel.waitFor();
+    const warnText = await panel.innerText();
+    record(
+      "warning details show validity + office metadata",
+      /Ważne|Obowiązuje|Biuro|IMGW/i.test(warnText),
+    );
+    record(
+      "missing area geometry stays explicit",
+      /Brak geometrii obszaru/i.test(warnText),
+    );
+    await page.waitForTimeout(1000);
+    if (OUT) await page.screenshot({ path: `${OUT}/warning-details-list.png` });
+    await page.getByLabel("Zamknij panel szczegółów").click();
+  } else {
+    const emptyWarningState = controlPanel.getByText("Brak aktywnych ostrzeżeń");
+    record("warning empty state renders", await emptyWarningState.isVisible());
+    if (OUT) await page.screenshot({ path: `${OUT}/warning-details-list.png` });
+  }
 
   // 5. Export menu (map-level GeoJSON/PNG)
   const exportButton = page.getByLabel("Eksport danych");
