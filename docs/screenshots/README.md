@@ -1,8 +1,15 @@
-# Capture populated-cache screenshots for README.md
+# Populated-cache screenshots for README.md
 
-Stage 12 demo media should show real IMGW-backed data, not fixtures.
+Demo media must show real IMGW-backed data, not fixtures. The committed
+screenshots were captured on 2026-07-03 from a live cache (see
+`docs/release/SMOKE_TEST_2026-07-03.md`):
 
-## Steps
+- `map-stations-light.png` — map view, station layers, active warning list.
+- `station-details-expert.png` — station details in expert mode with raw JSON.
+- `warning-details-list.png` — warning details with the missing-geometry notice.
+- `power-user-panel.png` — expert power-user panel with the freshness monitor.
+
+## Re-capturing
 
 1. Start the stack with live cache refresh:
 
@@ -10,18 +17,25 @@ Stage 12 demo media should show real IMGW-backed data, not fixtures.
    docker compose up --build
    ```
 
-2. Wait until `/api/v1/sources` reports `fresh` or `stale` (not `empty`) for synop/hydro/meteo.
+2. Wait until `/api/v1/sources` reports `fresh` or `stale` (not `empty`) for
+   synop/hydro/meteo.
 
-3. Open the frontend, enable station layers, select a station with numeric values, and capture:
-   - full map view with attribution bar visible,
-   - station details panel with timestamps and missing-field labels,
-   - warning list or empty-state if no active warnings.
+3. Either run the smoke script, which captures all four screenshots into the
+   given directory as part of its checks:
 
-4. Save PNG files here using descriptive names, for example:
-   - `map-stations-light.png`
-   - `station-details-expert.png`
+   ```bash
+   cd frontend
+   npx playwright install chromium  # first run only
+   node scripts/smoke.mjs http://localhost:5173 http://localhost:8000 ../docs/screenshots
+   ```
 
-5. Reference the images from `README.md` and keep attribution legible in every crop.
+   or capture manually: open the frontend, enable station layers, select a
+   station with numeric values, and shoot the full map view with the
+   attribution bar, the station details panel with timestamps and
+   missing-field labels, and the warning list (or empty state).
+
+4. Keep the IMGW-PIB attribution and processed-data notice legible in every
+   crop, and update the references in `README.md` if filenames change.
 
 Do not commit screenshots that hide stale/error cache states unless the caption
 explicitly explains the limitation.

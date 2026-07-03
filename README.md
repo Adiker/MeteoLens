@@ -1,11 +1,20 @@
 # MeteoLens
 
+**Status: public alpha (`v0.1.0-alpha` candidate).** MeteoLens works end to
+end against live IMGW-PIB data, but it is an alpha: expect the gaps listed in
+[Known Limitations](#known-limitations) (no warning polygons or synop map
+markers until reviewed geometry datasets are installed, no radar/product
+rendering, history starts empty). Reproducible local and production smoke-test
+records live in
+[docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md).
+
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-11 (research, documentation, backend
+hydrological data for Poland. Stages 0-12 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
-deployment, observation history, geometry datasets, product timeline, and
-PWA/power-user features) are implemented. See [TASKS.md](TASKS.md) for the
-full staged backlog. Stages 12-16 are planned next and are not implemented yet.
+deployment, observation history, geometry datasets, product timeline,
+PWA/power-user features, and public-alpha release polish) are implemented. See
+[TASKS.md](TASKS.md) for the full staged backlog. Stages 13-16 are planned
+next and are not implemented yet.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -76,11 +85,16 @@ Implemented now:
   freshness monitor, advanced filters — all browser-local storage), and a
   minimal installable PWA shell.
 
+- Stage 12 public alpha release polish: recorded local and production smoke
+  tests against live IMGW data
+  ([docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md)),
+  a repeatable browser smoke script (`frontend/scripts/smoke.mjs`),
+  populated-cache screenshots under `docs/screenshots/`, this alpha status
+  section, and a
+  [v0.1.0-alpha release checklist](docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md).
+
 Planned next:
 
-- Stage 12 public alpha release polish: reproducible local and production smoke
-  tests, populated-cache screenshots from real IMGW-backed data, README alpha
-  status, a `v0.1.0-alpha` checklist, and documentation consistency fixes.
 - Stage 13 reviewed geometry dataset MVP: legally reviewed administrative,
   basin, and station-coordinate datasets with validation, tests, and explicit
   unresolved-geometry states.
@@ -175,14 +189,37 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
   with a migration path to PostgreSQL/PostGIS/TimescaleDB.
 - Deployment: Docker Compose for local and small production deployments.
 
-## Screenshots And Mockups
+## Screenshots
 
-The map-first UI is implemented; screenshot assets under `docs/screenshots/`
-are not captured yet — follow the capture instructions in
-[docs/screenshots/README.md](docs/screenshots/README.md) against a populated
-live cache. Public-alpha screenshots and README references are planned in
-Stage 12 and must use real IMGW-backed data, not fixtures. The target layout is
-specified in [UI_UX.md](UI_UX.md).
+Captured on 2026-07-03 from a populated live IMGW-PIB cache (not fixtures);
+every view keeps the IMGW-PIB attribution and processed-data notice visible.
+Note the honest gaps in the shots: synoptic stations report "0 na mapie · 62
+bez współrzędnych" and warnings show "0 poligonów" until reviewed geometry
+datasets are installed (see [Known Limitations](#known-limitations)).
+
+Map view with live station layers and the active warning list:
+
+![Map view with live IMGW station layers](docs/screenshots/map-stations-light.png)
+
+Station details in expert mode, with retrieval timestamp, data delay, explicit
+missing fields, and raw source JSON:
+
+![Station details panel in expert mode](docs/screenshots/station-details-expert.png)
+
+Warning details with the explicit missing-area-geometry notice:
+
+![Warning details with missing geometry notice](docs/screenshots/warning-details-list.png)
+
+Expert power-user panel with source freshness, saved locations/views, and
+local alert rules (clearly labelled as not an official alerting system):
+
+![Power-user panel with freshness monitor](docs/screenshots/power-user-panel.png)
+
+To re-capture against a fresh live cache, follow
+[docs/screenshots/README.md](docs/screenshots/README.md) or run the smoke
+script with a screenshot directory (see
+[docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md)).
+The target layout is specified in [UI_UX.md](UI_UX.md).
 
 ## Exports
 
@@ -305,4 +342,13 @@ fixture data instead of live IMGW-PIB):
 cd frontend
 npx playwright install chromium  # first run only
 npm run test:e2e
+```
+
+Live smoke test (drives a running stack — dev or production — through the
+map, station details, warnings, exports, and expert tools; optionally captures
+the README screenshots):
+
+```bash
+cd frontend
+node scripts/smoke.mjs http://localhost:5173 http://localhost:8000 [screenshotDir]
 ```

@@ -4,6 +4,15 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 12 public alpha release polish: recorded local and production
+  smoke tests against live IMGW-PIB data
+  (`docs/release/SMOKE_TEST_2026-07-03.md`), a repeatable browser smoke script
+  (`frontend/scripts/smoke.mjs`) that also captures README screenshots,
+  populated-cache screenshots under `docs/screenshots/`, a public-alpha status
+  section in `README.md`, a `v0.1.0-alpha` release checklist
+  (`docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md`), and a root
+  `.dockerignore` fixing the production frontend build when the local
+  `./data` bind mount contains container-owned cache files.
 - Added documentation-only planning for Stages 12-16: public alpha release
   polish, reviewed geometry dataset MVP, radar/product rendering MVP,
   historical archive backfill, and public API/SDK/power-user export work.
