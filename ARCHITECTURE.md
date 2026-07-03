@@ -363,6 +363,10 @@ Stage 6:
   `backend/tests/e2e_seed_cache.py` so the suite exercises real API responses
   without calling out to IMGW-PIB. Wired into CI as the `e2e` job.
 
+The CI workflow first classifies changed paths. Documentation-only PRs keep the
+lightweight change-detection job, while backend, frontend, and E2E jobs run only
+when their code, compose files, or the CI workflow itself changes.
+
 ## Deployment
 
 Stage 2 should introduce Docker Compose with:
