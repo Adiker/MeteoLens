@@ -4,6 +4,11 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added documentation-only planning for Stages 12-16: public alpha release
+  polish, reviewed geometry dataset MVP, radar/product rendering MVP,
+  historical archive backfill, and public API/SDK/power-user export work.
+- Clarified that populated-cache README screenshots are still pending Stage 12
+  release polish, while Stage 7 only documented the capture requirements.
 - Added Stage 11 power-user tooling: local saved locations/views, dashboard
   widget layout, local alert rules with official-warning disclaimer, freshness
   monitor API, warning-vs-station comparison, expert filters, minimal PWA shell,

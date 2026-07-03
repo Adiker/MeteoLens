@@ -1,6 +1,6 @@
 # Capture populated-cache screenshots for README.md
 
-Stage 7 demo media should show real IMGW-backed data, not fixtures.
+Stage 12 demo media should show real IMGW-backed data, not fixtures.
 
 ## Steps
 

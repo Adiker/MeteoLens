@@ -122,7 +122,7 @@ filters wait for area geometry and archive series.
 - [x] Add public deployment checklist.
 - [x] Confirm the MIT License is documented in public deployment notes.
 - [x] Verify current IMGW-PIB terms before public or commercial use.
-- [x] Capture populated-cache screenshots or demo media for `README.md`.
+- [x] Document populated-cache screenshot capture requirements for `README.md`.
 
 ## Stage 8 - Observation History And Real Time Series
 
@@ -192,3 +192,209 @@ filters wait for area geometry and archive series.
 - [x] Add generated public API client task from OpenAPI.
 - [x] Keep alerting clearly separated from official warning responsibility;
   MeteoLens must not present itself as an official alerting system.
+
+## Stage 12 - Public Alpha Release Polish
+
+Goal: prepare the repository and app for an honest public alpha release.
+
+- [ ] Run and document a full local development smoke test with
+  `docker compose up --build`.
+- [ ] Verify and record local smoke-test results for backend `/health`.
+- [ ] Verify and record local smoke-test results for backend `/api/v1/sources`.
+- [ ] Verify and record frontend map load against a populated live cache.
+- [ ] Verify and record station details behavior.
+- [ ] Verify and record warning details and warning list behavior.
+- [ ] Verify and record CSV, JSON, GeoJSON, and PNG exports.
+- [ ] Verify and record expert panel behavior.
+- [ ] Verify and record timeline shell behavior.
+- [ ] Run and document a production smoke test using
+  `cp deploy/.env.production.example .env.production` and
+  `docker compose --env-file .env.production -f docker-compose.prod.yml up --build`.
+- [ ] Verify the configured public HTTP port opens during the production smoke
+  test.
+- [ ] Capture populated-cache screenshots from real IMGW-backed data, not
+  fixtures.
+- [ ] Add screenshots to `docs/screenshots/` and reference them from
+  `README.md`.
+- [ ] Add a clear public-alpha status badge or section to `README.md`.
+- [ ] Add a short `v0.1.0-alpha` release checklist.
+- [ ] Fix documentation drift where `TASKS.md`, `README.md`, `CHANGELOG.md`, and
+  `deploy/PRODUCTION_CHECKLIST.md` disagree.
+- [ ] Ensure screenshots visibly preserve IMGW-PIB attribution and
+  processed-data notices.
+- [ ] Keep known limitations visible, including missing geometry, stale cache,
+  and non-renderable product states.
+
+Acceptance criteria:
+
+- [ ] A reviewer can reproduce the local and production smoke-test checks from
+  documented commands.
+- [ ] README screenshots show real IMGW-backed data and visible attribution.
+- [ ] `README.md`, `TASKS.md`, `CHANGELOG.md`, and
+  `deploy/PRODUCTION_CHECKLIST.md` describe the same alpha readiness state.
+
+## Stage 13 - Reviewed Geometry Dataset MVP
+
+Goal: make spatial warning features useful by adding a reviewed, reproducible
+geometry dataset workflow.
+
+- [ ] Select candidate public geometry sources for Polish province boundaries.
+- [ ] Select candidate public geometry sources for Polish county boundaries.
+- [ ] Select candidate public geometry sources for warning TERYT code matching.
+- [ ] Select candidate public hydrological basin or catchment geometries if
+  legally usable.
+- [ ] Select a source for synoptic station coordinates from an official or
+  legally cleared source.
+- [ ] For every candidate dataset, document provider, canonical URL,
+  license/terms URL, attribution text, public-use status, commercial-use status,
+  caching/redistribution/screenshot/export implications, update cadence, and
+  known limitations.
+- [ ] Add a reviewed dataset manifest format under `data/geometry/manifest.json`.
+- [ ] Add an import/validation script or CLI for reviewed GeoJSON datasets.
+- [ ] Validate GeoJSON syntax and expected geometry type before use.
+- [ ] Validate required dataset properties before use.
+- [ ] Validate TERYT, basin, or station identifier coverage before use.
+- [ ] Validate reasonable coordinate bounds for Poland before use.
+- [ ] Add backend tests for geometry manifest loading.
+- [ ] Add backend tests for invalid dataset rejection.
+- [ ] Add backend tests for TERYT-to-polygon mapping.
+- [ ] Add backend tests for unresolved geometry metadata.
+- [ ] Add backend tests for location-to-warning spatial matching.
+- [ ] Add frontend tests for warning polygon rendering when geometry exists.
+- [ ] Add frontend tests for fallback list-only state when geometry is missing.
+- [ ] Add frontend tests for province, county, and basin filters.
+- [ ] Update `docs/geometry/GEOMETRY_SOURCES.md`.
+- [ ] Update `DATA_SOURCES.md`.
+- [ ] Update `LEGAL_ATTRIBUTION.md`.
+- [ ] Update `README.md`.
+- [ ] Update `TASKS.md`.
+
+Acceptance criteria:
+
+- [ ] The app can render at least one reviewed administrative geometry dataset
+  on the warning layer.
+- [ ] Missing or partial geometry remains explicit in API responses and UI.
+- [ ] No unofficial or legally unclear geometry source is marked as implemented.
+- [ ] Synoptic stations only appear as map markers after coordinates come from a
+  reviewed source.
+
+## Stage 14 - Radar/Product Rendering MVP
+
+Goal: turn the current product metadata/timeline shell into the first real
+rendered product layer on the map.
+
+- [ ] Pick one technically realistic high-value product path first, such as a
+  legally usable radar composite preview or a simple raster/tile pipeline for
+  one stable product.
+- [ ] Avoid full GRIB or radar binary decoding in one large step unless the
+  format is fully documented.
+- [ ] Add product-detail refresh support so selected product frame manifests can
+  be refreshed automatically with retention limits.
+- [ ] Add cache limits for product detail manifests and downloaded renderable
+  files.
+- [ ] Add explicit source time, frame time, retrieval time, stale status,
+  missing frame status, rendering status, attribution, and processed-data notice
+  metadata.
+- [ ] Add backend API support for a renderable map layer descriptor only when
+  frames are actually renderable.
+- [ ] Add frontend support for selecting a renderable product layer.
+- [ ] Add frontend support for displaying frame time.
+- [ ] Add frontend support for play, pause, and step controls across frames.
+- [ ] Add frontend labels for metadata-only or not-renderable frames when map
+  rendering is unavailable.
+- [ ] Add tests for frame metadata parsing.
+- [ ] Add tests for retention policy.
+- [ ] Add tests for missing frame handling.
+- [ ] Add tests for stale frame handling.
+- [ ] Add tests for frontend timeline state.
+- [ ] Update `docs/products/PRODUCT_RESEARCH.md`.
+- [ ] Update `docs/products/RASTER_PIPELINE.md`.
+- [ ] Update `API_CONTRACT.md`.
+- [ ] Update `DATA_SOURCES.md`.
+- [ ] Update `README.md`.
+- [ ] Update `TASKS.md`.
+
+Acceptance criteria:
+
+- [ ] At least one product path can be represented as a real map-renderable
+  layer, or the docs clearly explain why the stage remains blocked by format or
+  legal constraints.
+- [ ] The UI never presents metadata-only frames as rendered radar or model data.
+- [ ] All rendered or exported product views include IMGW-PIB attribution and a
+  processed-data notice.
+
+## Stage 15 - Historical Archive Backfill
+
+Goal: add optional historical backfill so station charts and rankings do not
+depend only on data collected after this deployment starts.
+
+- [ ] Research current IMGW public archive formats for synop observations.
+- [ ] Research current IMGW public archive formats for hydro observations.
+- [ ] Research current IMGW public archive formats for meteo observations.
+- [ ] Document archive endpoints or directories, file formats, update cadence,
+  and legal notes.
+- [ ] Design an opt-in, bounded-time-range backfill process.
+- [ ] Ensure the backfill process is rate-limited and resumable.
+- [ ] Add clear progress and error reporting for backfill runs.
+- [ ] Keep archive fetching server-side; do not add direct browser-to-IMGW
+  archive calls.
+- [ ] Add backend import logic for at least one archive source if legally and
+  technically clear.
+- [ ] Normalize archive records into the existing observation-history schema.
+- [ ] Preserve source timestamp, retrieval/import timestamp, source attribution,
+  processed-data notice, and missing/null values.
+- [ ] Add API metadata distinguishing live refresh history, imported archive
+  history, and mixed series.
+- [ ] Add frontend labels for imported historical data.
+- [ ] Add tests for parser correctness.
+- [ ] Add tests for duplicate handling.
+- [ ] Add tests for null handling.
+- [ ] Add tests for time-range queries.
+- [ ] Add tests for retention interaction.
+- [ ] Add tests for mixed live/archive series.
+- [ ] Update `DATA_SOURCES.md`.
+- [ ] Update `API_CONTRACT.md`.
+- [ ] Update `README.md`.
+- [ ] Update `TASKS.md`.
+- [ ] Update `TROUBLESHOOTING.md`.
+
+Acceptance criteria:
+
+- [ ] A fresh deployment can optionally import a bounded historical time range
+  for at least one supported source.
+- [ ] Charts can show multi-point historical data immediately after a successful
+  backfill.
+- [ ] Imported data is clearly labelled as processed IMGW-PIB data.
+
+## Stage 16 - Public API, SDK, And Power-User Exports
+
+Goal: make MeteoLens easier to integrate, automate, and use as a data
+exploration tool.
+
+- [ ] Stabilize and document the public API surface.
+- [ ] Generate or prepare a TypeScript API client from OpenAPI.
+- [ ] Add example scripts for listing stations.
+- [ ] Add example scripts for fetching station observations.
+- [ ] Add example scripts for exporting station time ranges.
+- [ ] Add example scripts for checking source freshness.
+- [ ] Add example scripts for getting active warnings for a location.
+- [ ] Add stronger station time-range CSV export support.
+- [ ] Add stronger station time-range JSON export support.
+- [ ] Add warning GeoJSON export support.
+- [ ] Add map state JSON export support.
+- [ ] Plan optional report-like PDF export without presenting it as implemented.
+- [ ] Add API versioning notes and a backwards-compatibility policy.
+- [ ] Add rate-limit and responsible-use notes for deployed instances.
+- [ ] Add tests for generated or exported API examples where practical.
+- [ ] Update `API_CONTRACT.md`.
+- [ ] Update `README.md`.
+- [ ] Update `ROADMAP.md`.
+- [ ] Update `TASKS.md`.
+- [ ] Update `CHANGELOG.md`.
+
+Acceptance criteria:
+
+- [ ] A developer can understand the supported API without reading backend code.
+- [ ] Exported files include attribution and processed-data notices.
+- [ ] The frontend and generated client do not drift from the backend API
+  contract.

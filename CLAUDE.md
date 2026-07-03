@@ -7,9 +7,11 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
 
 - **What:** Web application for visualising public IMGW-PIB meteorological and
   hydrological data for Poland.
-- **Status:** Stage 3 exists: FastAPI health/source endpoints, IMGW client,
-  parser/normalization/cache layer, React/Vite map shell, Docker Compose,
-  tests, lint, and CI.
+- **Status:** Stages 0-11 are implemented and documented: FastAPI cache-backed
+  APIs, IMGW client/parser/cache layer, React/Vite/MapLibre frontend,
+  production Compose setup, local observation history, geometry pipeline shell,
+  product timeline metadata, PWA shell, and browser-local power-user tools.
+  Stages 12-16 are planned next and must not be treated as implemented.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
   GL, ECharts, TanStack Query, Zustand.
 - **Backend plan:** Python FastAPI, Pydantic, httpx, scheduler, cache, SQLite
@@ -82,5 +84,9 @@ and must stay test-only.
   backend cache/API.
 - Never turn `null` into `0`.
 - Keep raw source metadata available for expert mode.
-- Public refresh endpoints are deferred to Stage 4; Stage 3 cache refresh stays
-  inside backend implementation work.
+- Public cache refresh is handled by startup sync and the scheduler; there is no
+  user-facing refresh endpoint yet.
+- Stage 12 is release-polish planning and smoke-test documentation; do not mark
+  screenshots, alpha release readiness, reviewed datasets, product rendering,
+  archive backfill, or generated SDK work complete until the repo contains the
+  implementation and matching docs/tests.

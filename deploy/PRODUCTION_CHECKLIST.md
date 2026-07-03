@@ -13,7 +13,13 @@ Use this checklist before exposing a public demo or production instance.
 
 ## Infrastructure
 
+- [ ] Local development smoke test recorded with `docker compose up --build`,
+  `/health`, `/api/v1/sources`, frontend map load, station details, warning
+  details/list, exports, expert panel, and timeline shell.
 - [ ] `docker compose -f docker-compose.prod.yml up --build` succeeds on the target host.
+- [ ] Production smoke test recorded with
+  `docker compose --env-file .env.production -f docker-compose.prod.yml up --build`.
+- [ ] Configured public HTTP port opens during the production smoke test.
 - [ ] Frontend is served as static assets (nginx), not the Vite dev server.
 - [ ] Backend image built from `backend/Dockerfile.prod` without dev dependencies.
 - [ ] Reverse proxy and TLS configured (`deploy/caddy/Caddyfile.example` or equivalent).
