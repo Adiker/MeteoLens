@@ -12,6 +12,7 @@ test("loads the map shell with attribution and layer toggles", async ({ page }) 
   await expect(page.getByRole("heading", { name: "MeteoLens" })).toBeVisible();
   await expect(page.getByLabel("Mapa MeteoLens")).toBeVisible();
   await expect(page.getByText("Źródło danych: IMGW-PIB.")).toBeVisible();
+  await expect(page.getByText(/Granice administracyjne: PRG/)).toBeVisible();
   await expect(page.getByLabel("Warstwa Stacje synoptyczne")).toBeChecked();
 });
 
@@ -63,10 +64,11 @@ test("opens and closes keyboard shortcut help", async ({ page }) => {
   await expect(dialog).not.toBeVisible();
 });
 
-test("deep-links to a warning and surfaces the missing-geometry notice", async ({ page }) => {
+test("deep-links to a warning and surfaces resolved geometry status", async ({ page }) => {
   await page.goto(`/?sel=w:${METEO_WARNING_ID}`);
 
   const panel = page.getByRole("dialog", { name: "Panel szczegółów" });
   await expect(panel.getByRole("heading", { name: "Burze" })).toBeVisible();
-  await expect(panel.getByText("Brak geometrii obszaru")).toBeVisible();
+  await expect(panel.getByText("Geometria obszaru dostępna")).toBeVisible();
+  await expect(panel.getByText("Brak geometrii obszaru")).not.toBeVisible();
 });
