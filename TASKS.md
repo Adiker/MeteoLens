@@ -251,45 +251,65 @@ Acceptance criteria:
 Goal: make spatial warning features useful by adding a reviewed, reproducible
 geometry dataset workflow.
 
-- [ ] Select candidate public geometry sources for Polish province boundaries.
-- [ ] Select candidate public geometry sources for Polish county boundaries.
-- [ ] Select candidate public geometry sources for warning TERYT code matching.
-- [ ] Select candidate public hydrological basin or catchment geometries if
-  legally usable.
-- [ ] Select a source for synoptic station coordinates from an official or
-  legally cleared source.
-- [ ] For every candidate dataset, document provider, canonical URL,
+Implemented: PRG © GUGiK voivodeship and county polygons are reviewed,
+converted (`scripts/geometry/convert_prg_shapefiles.py`), validated, and
+bundled under `data/geometry/`. Hydro basins (MPHP candidate) and the synop
+coordinate dataset (WMO OSCAR candidate) stay `planned` pending terms review;
+their backend mechanisms are implemented and tested with fixtures. Full review
+notes: `docs/geometry/GEOMETRY_SOURCES.md`.
+
+- [x] Select candidate public geometry sources for Polish province boundaries.
+  Selected and implemented: PRG (GUGiK) via the GIS Support SHP mirror.
+- [x] Select candidate public geometry sources for Polish county boundaries.
+  Selected and implemented: PRG (GUGiK) via the GIS Support SHP mirror.
+- [x] Select candidate public geometry sources for warning TERYT code matching.
+  PRG `JPT_KOD_JE` attributes carry TERYT codes directly; live `warningsmeteo`
+  codes resolved fully at import time.
+- [x] Select candidate public hydrological basin or catchment geometries if
+  legally usable. Candidate documented (MPHP, PGW Wody Polskie); **not**
+  implemented — licensing and `kod_zlewni` mapping unverified.
+- [x] Select a source for synoptic station coordinates from an official or
+  legally cleared source. Candidate documented (WMO OSCAR/Surface; IMGW
+  `wykaz_stacji.csv` has no coordinates); import pending terms review.
+- [x] For every candidate dataset, document provider, canonical URL,
   license/terms URL, attribution text, public-use status, commercial-use status,
   caching/redistribution/screenshot/export implications, update cadence, and
   known limitations.
-- [ ] Add a reviewed dataset manifest format under `data/geometry/manifest.json`.
-- [ ] Add an import/validation script or CLI for reviewed GeoJSON datasets.
-- [ ] Validate GeoJSON syntax and expected geometry type before use.
-- [ ] Validate required dataset properties before use.
-- [ ] Validate TERYT, basin, or station identifier coverage before use.
-- [ ] Validate reasonable coordinate bounds for Poland before use.
-- [ ] Add backend tests for geometry manifest loading.
-- [ ] Add backend tests for invalid dataset rejection.
-- [ ] Add backend tests for TERYT-to-polygon mapping.
-- [ ] Add backend tests for unresolved geometry metadata.
-- [ ] Add backend tests for location-to-warning spatial matching.
-- [ ] Add frontend tests for warning polygon rendering when geometry exists.
-- [ ] Add frontend tests for fallback list-only state when geometry is missing.
-- [ ] Add frontend tests for province, county, and basin filters.
-- [ ] Update `docs/geometry/GEOMETRY_SOURCES.md`.
-- [ ] Update `DATA_SOURCES.md`.
-- [ ] Update `LEGAL_ATTRIBUTION.md`.
-- [ ] Update `README.md`.
-- [ ] Update `TASKS.md`.
+- [x] Add a reviewed dataset manifest format under `data/geometry/manifest.json`
+  (format_version 2 with review metadata enforced by the loader).
+- [x] Add an import/validation script or CLI for reviewed GeoJSON datasets
+  (`python -m app.geometry.import_cli` plus reference metadata under
+  `docs/geometry/metadata/`).
+- [x] Validate GeoJSON syntax and expected geometry type before use.
+- [x] Validate required dataset properties before use.
+- [x] Validate TERYT, basin, or station identifier coverage before use.
+- [x] Validate reasonable coordinate bounds for Poland before use.
+- [x] Add backend tests for geometry manifest loading.
+- [x] Add backend tests for invalid dataset rejection.
+- [x] Add backend tests for TERYT-to-polygon mapping.
+- [x] Add backend tests for unresolved geometry metadata.
+- [x] Add backend tests for location-to-warning spatial matching.
+- [x] Add frontend tests for warning polygon rendering when geometry exists.
+- [x] Add frontend tests for fallback list-only state when geometry is missing.
+- [x] Add frontend tests for province, county, and basin filters.
+- [x] Update `docs/geometry/GEOMETRY_SOURCES.md`.
+- [x] Update `DATA_SOURCES.md`.
+- [x] Update `LEGAL_ATTRIBUTION.md`.
+- [x] Update `README.md`.
+- [x] Update `TASKS.md`.
 
 Acceptance criteria:
 
-- [ ] The app can render at least one reviewed administrative geometry dataset
-  on the warning layer.
-- [ ] Missing or partial geometry remains explicit in API responses and UI.
-- [ ] No unofficial or legally unclear geometry source is marked as implemented.
-- [ ] Synoptic stations only appear as map markers after coordinates come from a
-  reviewed source.
+- [x] The app can render at least one reviewed administrative geometry dataset
+  on the warning layer (bundled PRG county/voivodeship polygons).
+- [x] Missing or partial geometry remains explicit in API responses and UI
+  (hydro basins and unresolved codes keep `geometry_not_found` /
+  `missing_area_geometry_dataset`).
+- [x] No unofficial or legally unclear geometry source is marked as implemented
+  (MPHP and WMO OSCAR stay `planned`).
+- [x] Synoptic stations only appear as map markers after coordinates come from a
+  reviewed source (`coordinate_source` metadata; no reviewed dataset bundled
+  yet, so synop stations stay off the map).
 
 ## Stage 14 - Radar/Product Rendering MVP
 

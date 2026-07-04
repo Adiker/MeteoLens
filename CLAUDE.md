@@ -7,13 +7,16 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
 
 - **What:** Web application for visualising public IMGW-PIB meteorological and
   hydrological data for Poland.
-- **Status:** Stages 0-12 are implemented and documented: FastAPI cache-backed
+- **Status:** Stages 0-13 are implemented and documented: FastAPI cache-backed
   APIs, IMGW client/parser/cache layer, React/Vite/MapLibre frontend,
-  production Compose setup, local observation history, geometry pipeline shell,
-  product timeline metadata, PWA shell, browser-local power-user tools, and
+  production Compose setup, local observation history, geometry pipeline,
+  product timeline metadata, PWA shell, browser-local power-user tools,
   public-alpha release polish (recorded smoke tests, populated-cache
-  screenshots, release checklist — see `docs/release/`). Stages 13-16 are
-  planned next and must not be treated as implemented.
+  screenshots, release checklist — see `docs/release/`), and the Stage 13
+  reviewed geometry dataset MVP (manifest v2, import CLI, bundled PRG
+  voivodeship/county polygons; hydro basins and synop coordinates remain
+  planned candidates). Stages 14-16 are planned next and must not be treated
+  as implemented.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
   GL, ECharts, TanStack Query, Zustand.
 - **Backend plan:** Python FastAPI, Pydantic, httpx, scheduler, cache, SQLite
@@ -89,7 +92,9 @@ and must stay test-only.
 - Public cache refresh is handled by startup sync and the scheduler; there is no
   user-facing refresh endpoint yet.
 - Stage 12 release polish is done (smoke-test record, screenshots, alpha
-  checklist under `docs/release/` and `docs/screenshots/`). Do not mark
-  Stage 13-16 work (reviewed datasets, product rendering, archive backfill,
-  generated SDK) complete until the repo contains the implementation and
-  matching docs/tests.
+  checklist under `docs/release/` and `docs/screenshots/`). Stage 13 reviewed
+  geometry is done (import CLI, bundled PRG datasets, docs under
+  `docs/geometry/`); never edit `data/geometry/manifest.json` by hand — use
+  `python -m app.geometry.import_cli`. Do not mark Stage 14-16 work (product
+  rendering, archive backfill, generated SDK) complete until the repo contains
+  the implementation and matching docs/tests.

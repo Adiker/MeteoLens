@@ -97,9 +97,13 @@ Implemented layer keys:
 
 Returns GeoJSON FeatureCollections grouped by layer. Hydro and meteo stations
 are point features when coordinates exist. Synop records are emitted as point
-features only if coordinates exist; otherwise they are listed in
-`missing_geometry`. Warning records do not yet have polygons and are returned in
-`records` with area codes and `missing_area_geometry_dataset` metadata.
+features only when coordinates come from a reviewed `synop_stations` geometry
+dataset; otherwise they are listed in `missing_geometry` with
+`missing_lat_lon`. Warning areas are emitted as polygon features when their
+TERYT/basin codes resolve against reviewed geometry datasets (Stage 13 ships
+PRG voivodeship and county polygons); unresolved codes stay visible in
+`records` and `missing_geometry` with `geometry_not_found` or
+`missing_area_geometry_dataset` reasons.
 
 ```json
 {
@@ -150,6 +154,7 @@ Returns:
       "name": "Przewoźniki",
       "lat": 51.5253,
       "lon": 14.8217,
+      "coordinate_source": null,
       "latest_observed_at": "2026-06-30T07:00:00+02:00",
       "data_delay_seconds": 1800,
       "missing_fields": ["temperatura_wody"],
@@ -159,6 +164,11 @@ Returns:
   ]
 }
 ```
+
+`coordinate_source` names the reviewed geometry dataset attribution when a
+synop station's coordinates were filled from the `synop_stations` dataset
+(IMGW's synop API publishes none); it is `null` when coordinates come directly
+from the IMGW payload or are missing.
 
 `GET /api/v1/stations/{id}`
 
@@ -229,14 +239,20 @@ Query parameters:
 - `phenomenon`: optional text/enum filter.
 - `teryt`: optional administrative area code.
 - `basin`: optional hydrological basin code.
-- `province`: planned Stage 9 filter where reviewed administrative geometry
-  exists.
-- `county`: planned Stage 9 filter where reviewed administrative geometry
-  exists.
+- `province`: two-digit TERYT voivodeship filter; resolves against warning
+  area codes and reviewed geometry metadata.
+- `county`: four-digit TERYT county filter.
 
 `GET /api/v1/geometry/datasets`
 
 Returns reviewed geometry dataset status from the local `data/geometry/` cache.
+Since Stage 13 each dataset entry also exposes the review metadata recorded at
+import time: `provider`, `canonical_url`, `license_url`, `attribution`,
+`public_use`, `commercial_use`, `redistribution_note`, `update_cadence`,
+`known_limitations`, `dataset_version`, `review_status`, and `reviewed_at`,
+next to `loaded`, `feature_count`, and `error`. Datasets without an approved
+review are never loaded and report a `dataset_not_reviewed` error; datasets
+failing validation report `invalid_dataset`.
 
 `GET /api/v1/warnings/{id}`
 

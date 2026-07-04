@@ -1,25 +1,93 @@
 {
+  "format_version": 2,
   "datasets": [
     {
       "key": "teryt_voivodeships",
+      "file": "teryt_voivodeships.geojson",
       "title": "Test TERYT voivodeships",
-      "source": "MeteoLens test fixture",
+      "provider": "MeteoLens test fixture",
+      "canonical_url": "https://example.invalid/test-fixture",
+      "license_url": "https://example.invalid/test-fixture-license",
       "license_note": "Test-only geometry. Not for production.",
-      "file": "teryt_voivodeships.geojson"
+      "attribution": "MeteoLens test fixture",
+      "public_use": true,
+      "commercial_use": false,
+      "redistribution_note": "Test-only; never redistribute as real geometry.",
+      "update_cadence": "never",
+      "known_limitations": "Synthetic rectangles covering only codes 12 and 24.",
+      "dataset_version": "fixture-1",
+      "review": {
+        "status": "approved",
+        "reviewed_at": "2026-07-04",
+        "reviewed_by": "MeteoLens tests",
+        "notes": "Synthetic fixture reviewed for test use only."
+      }
     },
     {
       "key": "teryt_counties",
+      "file": "teryt_counties.geojson",
       "title": "Test TERYT counties",
-      "source": "MeteoLens test fixture",
+      "provider": "MeteoLens test fixture",
+      "canonical_url": "https://example.invalid/test-fixture",
+      "license_url": "https://example.invalid/test-fixture-license",
       "license_note": "Test-only geometry. Not for production.",
-      "file": "teryt_counties.geojson"
+      "attribution": "MeteoLens test fixture",
+      "public_use": true,
+      "commercial_use": false,
+      "redistribution_note": "Test-only; never redistribute as real geometry.",
+      "update_cadence": "never",
+      "known_limitations": "Synthetic rectangles covering a few county codes.",
+      "dataset_version": "fixture-1",
+      "review": {
+        "status": "approved",
+        "reviewed_at": "2026-07-04",
+        "reviewed_by": "MeteoLens tests",
+        "notes": "Synthetic fixture reviewed for test use only."
+      }
     },
     {
       "key": "hydro_basins",
+      "file": "hydro_basins.geojson",
       "title": "Test hydro basins",
-      "source": "MeteoLens test fixture",
+      "provider": "MeteoLens test fixture",
+      "canonical_url": "https://example.invalid/test-fixture",
+      "license_url": "https://example.invalid/test-fixture-license",
       "license_note": "Test-only geometry. Not for production.",
-      "file": "hydro_basins.geojson"
+      "attribution": "MeteoLens test fixture",
+      "public_use": true,
+      "commercial_use": false,
+      "redistribution_note": "Test-only; never redistribute as real geometry.",
+      "update_cadence": "never",
+      "known_limitations": "Single synthetic basin polygon.",
+      "dataset_version": "fixture-1",
+      "review": {
+        "status": "approved",
+        "reviewed_at": "2026-07-04",
+        "reviewed_by": "MeteoLens tests",
+        "notes": "Synthetic fixture reviewed for test use only."
+      }
+    },
+    {
+      "key": "synop_stations",
+      "file": "synop_stations.geojson",
+      "title": "Test synop station coordinates",
+      "provider": "MeteoLens test fixture",
+      "canonical_url": "https://example.invalid/test-fixture",
+      "license_url": "https://example.invalid/test-fixture-license",
+      "license_note": "Test-only station coordinates. Not for production.",
+      "attribution": "MeteoLens test fixture",
+      "public_use": true,
+      "commercial_use": false,
+      "redistribution_note": "Test-only; never redistribute as real coordinates.",
+      "update_cadence": "never",
+      "known_limitations": "Covers only station 12295.",
+      "dataset_version": "fixture-1",
+      "review": {
+        "status": "approved",
+        "reviewed_at": "2026-07-04",
+        "reviewed_by": "MeteoLens tests",
+        "notes": "Synthetic fixture reviewed for test use only."
+      }
     }
   ]
 }

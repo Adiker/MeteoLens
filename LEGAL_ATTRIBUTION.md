@@ -121,6 +121,25 @@ station-coordinate sources as implemented sources. If a source is technically
 useful but unclear, mark it as requiring legal/source review in
 `DATA_SOURCES.md`.
 
+### Reviewed Geometry Datasets (Stage 13)
+
+The administrative boundary datasets shipped in `data/geometry/`
+(`teryt_voivodeships`, `teryt_counties`) are simplified derivatives of the
+Państwowy Rejestr Granic (PRG). PRG boundary data is free public data under
+art. 40a ust. 2 pkt 1 of the Polish Geodetic and Cartographic Law; public and
+commercial use, caching, and redistribution are allowed with source
+attribution. Use this attribution wherever the boundary geometry is shown or
+exported alongside the IMGW-PIB attribution:
+
+```text
+Granice administracyjne: Państwowy Rejestr Granic (PRG), © GUGiK; kopia SHP: gis-support.pl; uproszczenie geometrii: MeteoLens.
+```
+
+The simplification is a MeteoLens transformation, so views and exports showing
+these polygons must keep the processed-data notice. The full review (canonical
+URLs, terms, limitations) lives in `docs/geometry/GEOMETRY_SOURCES.md` and in
+the machine-readable manifest metadata exposed by `/api/v1/geometry/datasets`.
+
 ## Implementation Requirements
 
 - API responses include `source`, `attribution`, and `processed_notice` fields
@@ -131,8 +150,10 @@ useful but unclear, mark it as requiring legal/source review in
 
 ## Open Legal Questions
 
-- Which external geometry datasets will be used for TERYT and basin polygons?
-- Are any selected external datasets compatible with the MIT License and the
-  intended deployment model?
+- TERYT polygons are resolved (PRG, see above). Which dataset will be used for
+  hydrological basin polygons (candidate: MPHP, PGW Wody Polskie), and do its
+  terms allow redistribution?
+- Do the WMO OSCAR/Surface terms allow importing synoptic station coordinates
+  as a redistributable reviewed dataset?
 - Which product/radar/model files are high-value open data and which require
   additional terms review?

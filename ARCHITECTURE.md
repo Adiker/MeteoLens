@@ -274,11 +274,26 @@ MVP layers:
 - hydrological warnings.
 
 Hydrological and meteorological stations are emitted as GeoJSON point features
-when IMGW coordinates are present. Synoptic records currently lack coordinates
-in the public endpoint and are therefore listed in missing-geometry metadata
-unless a future source provides lat/lon. Warning records are exposed with TERYT,
-basin, or province area codes and marked as missing area geometry until TERYT
-and basin geometry datasets are added.
+when IMGW coordinates are present. Synoptic records lack coordinates in the
+public endpoint; Stage 13 fills them from a reviewed `synop_stations` geometry
+dataset when one is imported (recorded in `coordinate_source`), otherwise they
+stay in missing-geometry metadata. Warning TERYT codes resolve to polygons via
+the reviewed PRG voivodeship/county datasets bundled in `data/geometry/`;
+hydro basin codes remain marked as missing area geometry until a reviewed
+basin dataset is added.
+
+Stage 13 geometry components live in `backend/app/geometry/`:
+
+- `loader.py` reads the format_version 2 manifest, refuses datasets without an
+  approved review (`dataset_not_reviewed`) or failing structural validation
+  (`invalid_dataset`), and exposes review metadata through
+  `/api/v1/geometry/datasets`.
+- `validation.py` checks GeoJSON structure, per-dataset geometry types,
+  required identifier/name properties, TERYT patterns and coverage, duplicate
+  codes, and Poland coordinate bounds.
+- `import_cli.py` (`python -m app.geometry.import_cli`) validates and installs
+  reviewed datasets with metadata files from `docs/geometry/metadata/`;
+  `scripts/geometry/convert_prg_shapefiles.py` reproduces the PRG conversion.
 
 Post-MVP layers:
 

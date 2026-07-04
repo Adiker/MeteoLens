@@ -13,7 +13,11 @@ from tests.test_parsers import load_fixture
 
 
 def _settings(tmp_path) -> Settings:
-    return Settings(cache_dir=tmp_path, imgw_base_url="https://danepubliczne.imgw.pl")
+    return Settings(
+        cache_dir=tmp_path,
+        geometry_dir=tmp_path / "geometry",
+        imgw_base_url="https://danepubliczne.imgw.pl",
+    )
 
 
 def _source_metadata(source_key: str) -> SourceMetadata:

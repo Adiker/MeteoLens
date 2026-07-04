@@ -1,17 +1,20 @@
 # GEOMETRY_SOURCES.md - Reviewed Geometry Datasets
 
-Stage 9 adds a local geometry cache under `data/geometry/`. Every dataset must
-pass the legal/source review checklist before it is listed in `manifest.json`.
+MeteoLens renders IMGW warning areas and station markers only from **reviewed**
+geometry datasets cached under `data/geometry/`. Stage 9 added the loader and
+spatial matching; Stage 13 added the reviewed-manifest format, the import CLI,
+strict validation, and the first two implemented datasets (PRG voivodeships and
+counties).
 
 ## Source And Legal Review Checklist
 
 For each candidate dataset document:
 
 - provider and canonical URL,
-- dataset version or publication date,
-- license/terms and attribution text,
+- license/terms URL and attribution text,
 - whether public and commercial use are allowed,
-- update cadence and refresh process,
+- caching, redistribution, screenshot, and export implications,
+- dataset version or publication date and update cadence,
 - geometry format and coordinate reference system (expected: WGS84 / EPSG:4326),
 - code system and mapping key (TERYT, basin code, station ID),
 - known gaps and unresolved mapping behaviour,
@@ -19,20 +22,175 @@ For each candidate dataset document:
 
 Do not ship unofficial or legally unclear geometry as an implemented source.
 
-## Candidate Datasets
+## Dataset Status Overview
 
-| Dataset key | Purpose | Candidate source | Status |
+| Dataset key | Purpose | Source | Status |
 | --- | --- | --- | --- |
-| `teryt_voivodeships` | Meteo warning voivodeship fallback | GUS TERYT / official administrative open data after legal review | planned |
-| `teryt_counties` | Meteo warning county polygons, province/county filters | GUS TERYT / official administrative open data after legal review | planned |
-| `hydro_basins` | Hydro warning basin polygons, basin filters | Public hydrological basin/catchment dataset after legal review | planned |
-| `synop_stations` | Synoptic station coordinate reconciliation | Official IMGW or GUS station metadata after legal review | planned |
+| `teryt_voivodeships` | Voivodeship polygons, meteo warning fallback, province filter | PRG (GUGiK) via GIS Support SHP mirror | **implemented** |
+| `teryt_counties` | County polygons for meteo warning TERYT codes, county filter | PRG (GUGiK) via GIS Support SHP mirror | **implemented** |
+| `hydro_basins` | Hydro warning basin polygons, basin filters | MPHP (PGW Wody Polskie) — candidate | planned (licensing and `kod_zlewni` mapping unverified) |
+| `synop_stations` | Synoptic station coordinates (IMGW synop API has none) | WMO OSCAR/Surface — candidate; IMGW `wykaz_stacji.csv` has no coordinates | planned (mechanism implemented, dataset import pending review) |
+
+## Implemented: `teryt_voivodeships` and `teryt_counties`
+
+- **Provider:** Główny Urząd Geodezji i Kartografii (GUGiK) — Państwowy Rejestr
+  Granic (PRG). Converted SHP copies downloaded from GIS Support:
+  `https://www.gis-support.pl/downloads/2022/wojewodztwa.zip` and
+  `https://www.gis-support.pl/downloads/2022/powiaty.zip` (PRG snapshot,
+  `WERSJA_OD` 2022, EPSG:2180, attributes `JPT_KOD_JE` = TERYT,
+  `JPT_NAZWA_` = name).
+- **Canonical URL:**
+  <https://www.gugik.gov.pl/pzgik/dane-bez-oplat/dane-z-panstwowego-rejestru-granic-i-powierzchni-jednostek-podzialow-terytorialnych-kraju-prg>
+- **License/terms:** PRG unit-of-territorial-division boundary data is free
+  public data under art. 40a ust. 2 pkt 1 of the Polish Geodetic and
+  Cartographic Law (Prawo geodezyjne i kartograficzne). Terms overview:
+  <https://www.gugik.gov.pl/pzgik/dane-bez-oplat>.
+- **Public use:** allowed. **Commercial use:** allowed.
+- **Attribution text:** `Granice administracyjne: Państwowy Rejestr Granic
+  (PRG), © GUGiK; kopia SHP: gis-support.pl; uproszczenie geometrii:
+  MeteoLens.`
+- **Caching/redistribution/screenshot/export implications:** local caching and
+  redistribution of PRG-derived boundaries are allowed with source attribution.
+  The committed GeoJSON files are **simplified derivatives** (processed data);
+  screenshots and exports that show warning polygons must keep the IMGW-PIB
+  attribution plus the processed-data notice, and expert mode exposes the
+  geometry attribution via `/api/v1/geometry/datasets`.
+- **Update cadence:** PRG is updated continuously by GUGiK; the imported
+  snapshot is from 2022. Refresh by downloading a newer PRG export, re-running
+  the conversion script, and re-importing.
+- **Known limitations:** geometry is simplified with Douglas-Peucker
+  (tolerance 500 m for voivodeships, 200 m for counties), so hairline
+  slivers/gaps between neighbouring units can occur; administrative boundary
+  changes after the 2022 snapshot are not reflected; not suitable for legal or
+  cadastral use.
+
+Reproducible pipeline:
+
+```bash
+# 1. download and unzip the PRG-derived shapefiles listed above
+# 2. convert + reproject + simplify (requires: pip install pyshp pyproj)
+python scripts/geometry/convert_prg_shapefiles.py \
+  --voivodeships-shp wojewodztwa/wojewodztwa.shp \
+  --counties-shp powiaty/powiaty.shp --out-dir out/
+
+# 3. validate + install with the documented review metadata
+cd backend
+python -m app.geometry.import_cli import teryt_voivodeships \
+  ../out/teryt_voivodeships.geojson \
+  --metadata ../docs/geometry/metadata/teryt_voivodeships.json
+python -m app.geometry.import_cli import teryt_counties \
+  ../out/teryt_counties.geojson \
+  --metadata ../docs/geometry/metadata/teryt_counties.json
+```
+
+Conversion sanity checks performed for the committed import: feature counts
+(16 voivodeships, 380 counties), full TERYT coverage of all 16 voivodeship
+codes, Poland coordinate bounds, and point-in-polygon checks for Warszawa,
+Kraków, Gdańsk, Wrocław, Białystok, Suwałki, and powiat tatrzański. All TERYT
+codes from live `warningsmeteo` responses resolved against the county dataset
+at import time.
+
+## Candidate: `hydro_basins` (planned)
+
+- **Candidate provider:** PGW Wody Polskie — Mapa Podziału Hydrograficznego
+  Polski (MPHP), e.g. via <https://dane.gov.pl>.
+- **Open questions before implementation:** exact license/terms for
+  redistribution of MPHP geometry; mapping between IMGW `kod_zlewni` values
+  (e.g. `Z_P_WP_1856`) and MPHP basin identifiers; dataset size and
+  simplification strategy.
+- Until reviewed, hydro warnings stay list-only with
+  `missing_area_geometry_dataset` / `geometry_not_found` metadata.
+
+## Candidate: `synop_stations` (planned; mechanism implemented)
+
+- IMGW's synop API returns no coordinates, and the public station list
+  (`https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/wykaz_stacji.csv`)
+  contains station codes and names but **no coordinates**, so it cannot be the
+  coordinate source on its own.
+- **Candidate provider:** WMO OSCAR/Surface (<https://oscar.wmo.int/surface>),
+  the official WMO station metadata registry. Polish synoptic stations use WMO
+  block 12 identifiers that match IMGW `id_stacji` (verified against the live
+  synop API, e.g. `12295` = Białystok). WIGOS identifiers have the form
+  `0-20000-0-12295`. WMO metadata is intended for free reuse with attribution
+  (WMO Unified Data Policy, Res. 1 Cg-Ext(2021)); confirm the exact terms
+  before import.
+- **Behaviour until then:** synop stations appear in lists and charts but not
+  as map markers; `/api/v1/map/layers` reports them under `missing_geometry`
+  with `missing_lat_lon`.
+- The backend mechanism is already implemented and tested: once a reviewed
+  `synop_stations` Point dataset (feature `code` = IMGW `id_stacji`) is
+  imported, synop stations gain coordinates plus a visible
+  `coordinate_source`, and render as markers.
+
+## Manifest Format (format_version 2)
+
+`data/geometry/manifest.json` lists reviewed datasets. Every entry must carry
+full provenance and an approved review, otherwise the loader refuses it with a
+`dataset_not_reviewed` error (visible in `/api/v1/geometry/datasets`):
+
+```json
+{
+  "format_version": 2,
+  "datasets": [
+    {
+      "key": "teryt_counties",
+      "file": "teryt_counties.geojson",
+      "title": "Powiaty – granice administracyjne (PRG)",
+      "provider": "GUGiK – Państwowy Rejestr Granic (PRG)",
+      "canonical_url": "https://www.gugik.gov.pl/pzgik/dane-bez-oplat/...",
+      "license_url": "https://www.gugik.gov.pl/pzgik/dane-bez-oplat",
+      "license_note": "Free public data under art. 40a ust. 2 pkt 1 ...",
+      "attribution": "Granice administracyjne: PRG, © GUGiK; ...",
+      "public_use": true,
+      "commercial_use": true,
+      "redistribution_note": "Allowed with attribution; simplified derivative.",
+      "update_cadence": "PRG continuous; imported snapshot 2022.",
+      "known_limitations": "Simplified geometry; 2022 snapshot.",
+      "dataset_version": "PRG WERSJA_OD 2022; MeteoLens simplification 2026-07-04",
+      "imported_at": "2026-07-04T14:20:00+00:00",
+      "feature_count": 380,
+      "review": {
+        "status": "approved",
+        "reviewed_at": "2026-07-04",
+        "reviewed_by": "MeteoLens Stage 13 source/legal review",
+        "notes": "..."
+      }
+    }
+  ]
+}
+```
+
+Do not edit `manifest.json` by hand; use the import CLI so validation always
+runs. Reference metadata files live under `docs/geometry/metadata/`.
+
+## Import CLI And Validation
+
+```bash
+cd backend
+python -m app.geometry.import_cli validate <dataset-key> <file.geojson>
+python -m app.geometry.import_cli import <dataset-key> <file.geojson> \
+  --metadata <metadata.json> [--geometry-dir DIR]
+python -m app.geometry.import_cli status
+```
+
+Validation (strict at import time, structural re-check at load time):
+
+- GeoJSON syntax: FeatureCollection with Feature objects,
+- geometry types per dataset (`Polygon`/`MultiPolygon` for areas, `Point` for
+  stations), closed rings with at least 4 positions,
+- required properties: an identifier (`teryt`/`code`/`basin_code`) and a name,
+- identifier patterns (2-digit voivodeship TERYT, 4-digit county TERYT with a
+  valid voivodeship prefix, numeric station IDs) and duplicate detection,
+- coordinate bounds for Poland (lon 13.5–24.5, lat 48.5–55.5, WGS84),
+- coverage at import time: all 16 voivodeship codes present; counties cover
+  every voivodeship prefix.
 
 ## Mapping Rules
 
 - Meteo warnings: IMGW `teryt` codes map to `teryt_counties` first, then
-  `teryt_voivodeships` by two-digit prefix.
+  `teryt_voivodeships` when the code itself is a two-digit voivodeship code.
 - Hydro warnings: IMGW `kod_zlewni` values map to `hydro_basins`.
+- Synop stations: IMGW `id_stacji` maps to `synop_stations` Point features.
 - Unresolved codes remain visible in API/UI as `geometry_not_found` or
   `missing_area_geometry_dataset`; MeteoLens must not hide partial data.
 

@@ -222,6 +222,23 @@ MeteoLens needs public geometry datasets to render some IMGW data:
 These datasets must be documented here before implementation and must pass the
 same legal/attribution review as IMGW data.
 
+Stage 13 status (full review in `docs/geometry/GEOMETRY_SOURCES.md`):
+
+- `teryt_voivodeships`, `teryt_counties`: **implemented**. Source: Państwowy
+  Rejestr Granic (PRG), © GUGiK — free public data under art. 40a ust. 2 pkt 1
+  Prawa geodezyjnego i kartograficznego; converted from the GIS Support SHP
+  mirror (2022 snapshot, EPSG:2180 → WGS84), simplified with Douglas-Peucker
+  (500 m / 200 m) by `scripts/geometry/convert_prg_shapefiles.py`, and imported
+  as a reviewed, validated derivative into `data/geometry/`. Attribution:
+  "Granice administracyjne: PRG, © GUGiK; kopia SHP: gis-support.pl;
+  uproszczenie geometrii: MeteoLens."
+- `hydro_basins`: planned. Candidate MPHP (PGW Wody Polskie); licensing and
+  IMGW `kod_zlewni` mapping unverified — hydro warnings stay list-only.
+- `synop_stations`: planned. IMGW `wykaz_stacji.csv` has no coordinates;
+  candidate WMO OSCAR/Surface (WIGOS `0-20000-0-12xxx` matches IMGW
+  `id_stacji`). The backend enrichment mechanism is implemented; synop stations
+  stay off the map until a reviewed dataset is imported.
+
 Stage 9 source research must document candidate datasets with:
 
 - provider and canonical URL,

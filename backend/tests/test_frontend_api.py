@@ -17,6 +17,9 @@ def _settings(tmp_path) -> Settings:
     db_path = tmp_path / "meteolens.sqlite3"
     return Settings(
         cache_dir=tmp_path,
+        # Isolate tests from any reviewed datasets imported into the real
+        # data/geometry directory of this checkout.
+        geometry_dir=tmp_path / "geometry",
         database_url=f"sqlite:///{db_path}",
         imgw_base_url="https://danepubliczne.imgw.pl",
     )

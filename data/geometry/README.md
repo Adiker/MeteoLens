@@ -1,26 +1,30 @@
-# Geometry dataset manifest template
+# Reviewed geometry datasets
 
-Copy reviewed geometry datasets into `data/geometry/` and list them in
-`manifest.json`. MeteoLens loads datasets only from this directory; it does not
-download geometry automatically.
+This directory holds reviewed geometry datasets and their `manifest.json`
+(format_version 2). MeteoLens loads datasets only from this directory; it does
+not download geometry automatically.
 
-Example entry:
+Shipped datasets (Stage 13):
 
-```json
-{
-  "datasets": [
-    {
-      "key": "teryt_counties",
-      "title": "TERYT county boundaries",
-      "source": "https://example.gov.pl/...",
-      "license_note": "Attribution and terms summary from source/legal review.",
-      "file": "teryt_counties.geojson"
-    }
-  ]
-}
+- `teryt_voivodeships.geojson` — voivodeship boundaries, PRG © GUGiK
+  (simplified derivative, processed data),
+- `teryt_counties.geojson` — county boundaries, PRG © GUGiK (simplified
+  derivative, processed data).
+
+Do not edit `manifest.json` by hand. Import or update datasets with the CLI so
+validation and review metadata stay consistent:
+
+```bash
+cd backend
+python -m app.geometry.import_cli validate <dataset-key> <file.geojson>
+python -m app.geometry.import_cli import <dataset-key> <file.geojson> \
+  --metadata ../docs/geometry/metadata/<dataset-key>.json
+python -m app.geometry.import_cli status
 ```
 
-See `docs/geometry/GEOMETRY_SOURCES.md` for the source/legal review checklist.
+GeoJSON features must expose a stable `code` property (or `teryt` /
+`basin_code`) matching IMGW warning area codes, plus a `name` property. Station
+datasets (`synop_stations`) use Point features with `code` = IMGW `id_stacji`.
 
-GeoJSON features must expose a stable `code` property (or `teryt` / `basin_code`)
-matching IMGW warning area codes.
+See `docs/geometry/GEOMETRY_SOURCES.md` for the source/legal review of every
+dataset and the full manifest format.
