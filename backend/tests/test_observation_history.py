@@ -19,6 +19,7 @@ def _settings(tmp_path: Path) -> Settings:
     db_path = tmp_path / "history.sqlite3"
     return Settings(
         cache_dir=tmp_path / "cache",
+        geometry_dir=tmp_path / "geometry",
         database_url=f"sqlite:///{db_path}",
         imgw_base_url="https://danepubliczne.imgw.pl",
     )

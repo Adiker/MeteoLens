@@ -36,6 +36,7 @@ class Station(BaseModel):
     name: str
     lat: float | None = None
     lon: float | None = None
+    coordinate_source: str | None = None
     region: str | None = None
     watercourse: str | None = None
     observations: list[Observation] = Field(default_factory=list)

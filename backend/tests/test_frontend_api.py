@@ -1,5 +1,6 @@
 import csv
 from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -17,6 +18,19 @@ def _settings(tmp_path) -> Settings:
     db_path = tmp_path / "meteolens.sqlite3"
     return Settings(
         cache_dir=tmp_path,
+        # Isolate tests from any reviewed datasets imported into the real
+        # data/geometry directory of this checkout.
+        geometry_dir=tmp_path / "geometry",
+        database_url=f"sqlite:///{db_path}",
+        imgw_base_url="https://danepubliczne.imgw.pl",
+    )
+
+
+def _geometry_fixture_settings(tmp_path) -> Settings:
+    db_path = tmp_path / "meteolens.sqlite3"
+    return Settings(
+        cache_dir=tmp_path,
+        geometry_dir=Path(__file__).parent / "fixtures" / "geometry",
         database_url=f"sqlite:///{db_path}",
         imgw_base_url="https://danepubliczne.imgw.pl",
     )
@@ -494,4 +508,19 @@ def test_map_geojson_export_includes_non_spatial_warning_records(monkeypatch, tm
     assert payload["features"][0]["id"] == "hydro:151140030"
     assert payload["non_spatial_records"][0]["id"] == "warningsmeteo:Sk20260630043222424"
     assert payload["attribution"] == "Źródło danych: IMGW-PIB."
+    assert payload["geometry_attributions"] == []
     assert payload["processed_notice"] == "Dane IMGW-PIB zostały przetworzone przez MeteoLens."
+
+
+def test_map_geojson_export_includes_geometry_attribution(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("warningsmeteo",))
+    settings = _geometry_fixture_settings(tmp_path)
+    monkeypatch.setattr(v1, "get_settings", lambda: settings)
+    apply_test_settings(monkeypatch, settings)
+
+    response = TestClient(app).get("/api/v1/export/map.geojson?layers=warnings_meteo")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["features"][0]["properties"]["dataset_key"] == "teryt_counties"
+    assert payload["geometry_attributions"] == ["MeteoLens test fixture"]

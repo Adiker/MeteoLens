@@ -1,0 +1,20 @@
+{
+  "title": "Województwa – granice administracyjne (PRG)",
+  "provider": "Główny Urząd Geodezji i Kartografii (GUGiK) – Państwowy Rejestr Granic (PRG); SHP mirror: GIS Support sp. z o.o.",
+  "canonical_url": "https://www.gugik.gov.pl/pzgik/dane-bez-oplat/dane-z-panstwowego-rejestru-granic-i-powierzchni-jednostek-podzialow-terytorialnych-kraju-prg",
+  "license_url": "https://www.gugik.gov.pl/pzgik/dane-bez-oplat",
+  "license_note": "PRG boundary data is free public data under art. 40a ust. 2 pkt 1 of the Polish Geodetic and Cartographic Law (Prawo geodezyjne i kartograficzne); free for any use, including commercial, with source attribution.",
+  "attribution": "Granice administracyjne: Państwowy Rejestr Granic (PRG), © GUGiK; kopia SHP: gis-support.pl; uproszczenie geometrii: MeteoLens.",
+  "public_use": true,
+  "commercial_use": true,
+  "redistribution_note": "Redistribution of PRG-derived boundaries is allowed with source attribution. This file is a simplified derivative and must stay labelled as processed data in UI, screenshots, and exports.",
+  "update_cadence": "PRG is updated continuously by GUGiK. This import uses the PRG snapshot with WERSJA_OD 2022-06-13 (GIS Support 2022 SHP package). Refresh by downloading a newer PRG export, re-running scripts/geometry/convert_prg_shapefiles.py, and re-importing.",
+  "known_limitations": "Geometry simplified with Douglas-Peucker (tolerance 500 m), so small boundary slivers/gaps between neighbouring units can occur; a 2022 snapshot, so later administrative boundary changes are not reflected; not suitable for legal or cadastral use.",
+  "dataset_version": "PRG WERSJA_OD 2022-06-13; GIS Support SHP 2022-12-22; MeteoLens simplification 2026-07-04",
+  "review": {
+    "status": "approved",
+    "reviewed_at": "2026-07-04",
+    "reviewed_by": "MeteoLens Stage 13 source/legal review",
+    "notes": "Official public PRG data via GIS Support SHP mirror; legal basis and attribution documented in docs/geometry/GEOMETRY_SOURCES.md and LEGAL_ATTRIBUTION.md."
+  }
+}

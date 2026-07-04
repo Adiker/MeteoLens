@@ -1,12 +1,22 @@
 # Build context filter for images built from the repository root
-# (frontend/Dockerfile.prod). Only the frontend sources and the nginx config
-# are needed; everything else — especially the local ./data bind mount, which
-# can contain container-owned cache files unreadable by the build — stays out.
+# (frontend/Dockerfile.prod and backend/Dockerfile.prod). Keep runtime caches out
+# while allowing the prod backend image to bundle reviewed geometry seeds.
 *
+!backend/
+!backend/**
 !frontend/
 !frontend/**
 !deploy/nginx/
 !deploy/nginx/**
+!data/
+data/*
+!data/geometry/
+!data/geometry/**
+backend/.venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/**/__pycache__/
+backend/**/*.pyc
 frontend/node_modules/
 frontend/dist/
 frontend/coverage/

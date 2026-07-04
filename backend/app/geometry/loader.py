@@ -1,4 +1,10 @@
-"""Load reviewed geometry datasets from the local cache directory."""
+"""Load reviewed geometry datasets from the local cache directory.
+
+The manifest (`manifest.json`, format_version 2) lists every reviewed dataset
+together with its provenance and legal-review metadata. Datasets without an
+approved review entry are never loaded; they stay visible in the status API
+with an explicit error so partial availability is not hidden.
+"""
 
 from __future__ import annotations
 
@@ -10,8 +16,25 @@ from pathlib import Path
 from typing import Any
 
 from app.core.config import get_settings
+from app.geometry.validation import validate_dataset
 
 logger = logging.getLogger(__name__)
+
+MANIFEST_FORMAT_VERSION = 2
+
+REVIEW_METADATA_FIELDS = (
+    "provider",
+    "canonical_url",
+    "license_url",
+    "license_note",
+    "attribution",
+    "public_use",
+    "commercial_use",
+    "redistribution_note",
+    "update_cadence",
+    "known_limitations",
+    "dataset_version",
+)
 
 
 @dataclass
@@ -34,6 +57,20 @@ class GeometryDataset:
     title: str
     source: str
     license_note: str
+    provider: str | None = None
+    canonical_url: str | None = None
+    license_url: str | None = None
+    attribution: str | None = None
+    public_use: bool | None = None
+    commercial_use: bool | None = None
+    redistribution_note: str | None = None
+    update_cadence: str | None = None
+    known_limitations: str | None = None
+    dataset_version: str | None = None
+    review_status: str | None = None
+    reviewed_at: str | None = None
+    reviewed_by: str | None = None
+    review_notes: str | None = None
     features: list[GeometryFeature] = field(default_factory=list)
     loaded: bool = False
     error: str | None = None
@@ -53,37 +90,53 @@ class GeometryStore:
 
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         for entry in manifest.get("datasets", []):
-            dataset = GeometryDataset(
-                key=entry["key"],
-                title=entry.get("title", entry["key"]),
-                source=entry.get("source", "unknown"),
-                license_note=entry.get("license_note", ""),
-            )
+            dataset = _dataset_from_manifest_entry(entry)
+            self._datasets[dataset.key] = dataset
+            if dataset.error is not None:
+                continue
+
+            if dataset.review_status != "approved":
+                dataset.error = (
+                    "dataset_not_reviewed: manifest entry has no approved review; "
+                    "re-import it with the geometry import CLI"
+                )
+                continue
+
             file_name = entry.get("file")
             if not file_name:
                 dataset.error = "manifest entry missing file"
-                self._datasets[dataset.key] = dataset
                 continue
             file_path = self.geometry_dir / file_name
             if not file_path.exists():
                 dataset.error = f"missing file {file_name}"
-                self._datasets[dataset.key] = dataset
                 continue
             try:
                 payload = json.loads(file_path.read_text(encoding="utf-8"))
-                dataset.features = _features_from_geojson(
-                    payload,
-                    dataset_key=dataset.key,
-                    source_file=file_name,
-                )
-                dataset.loaded = True
-            except (OSError, ValueError, TypeError, KeyError) as exc:
+            except (OSError, ValueError) as exc:
                 dataset.error = str(exc)
-            self._datasets[dataset.key] = dataset
+                continue
+
+            report = validate_dataset(dataset.key, payload)
+            if not report.ok:
+                dataset.error = "invalid_dataset: " + "; ".join(report.issues[:3])
+                logger.warning(
+                    "Geometry dataset %s rejected: %s", dataset.key, dataset.error
+                )
+                continue
+
+            dataset.features = _features_from_geojson(
+                payload,
+                dataset_key=dataset.key,
+                source_file=file_name,
+            )
+            dataset.loaded = True
 
     @property
     def datasets(self) -> list[GeometryDataset]:
         return list(self._datasets.values())
+
+    def get_dataset(self, key: str) -> GeometryDataset | None:
+        return self._datasets.get(key)
 
     def features_for_dataset(self, key: str) -> list[GeometryFeature]:
         dataset = self._datasets.get(key)
@@ -105,6 +158,18 @@ class GeometryStore:
                 "title": dataset.title,
                 "source": dataset.source,
                 "license_note": dataset.license_note,
+                "provider": dataset.provider,
+                "canonical_url": dataset.canonical_url,
+                "license_url": dataset.license_url,
+                "attribution": dataset.attribution,
+                "public_use": dataset.public_use,
+                "commercial_use": dataset.commercial_use,
+                "redistribution_note": dataset.redistribution_note,
+                "update_cadence": dataset.update_cadence,
+                "known_limitations": dataset.known_limitations,
+                "dataset_version": dataset.dataset_version,
+                "review_status": dataset.review_status,
+                "reviewed_at": dataset.reviewed_at,
                 "loaded": dataset.loaded,
                 "feature_count": len(dataset.features),
                 "error": dataset.error,
@@ -123,6 +188,33 @@ def get_geometry_store() -> GeometryStore:
 
 def reset_geometry_store() -> None:
     get_geometry_store.cache_clear()
+
+
+def _dataset_from_manifest_entry(entry: dict[str, Any]) -> GeometryDataset:
+    review = entry.get("review") or {}
+    dataset = GeometryDataset(
+        key=entry.get("key", "unknown"),
+        title=entry.get("title", entry.get("key", "unknown")),
+        source=entry.get("source", entry.get("provider", "unknown")),
+        license_note=entry.get("license_note", ""),
+        provider=entry.get("provider"),
+        canonical_url=entry.get("canonical_url"),
+        license_url=entry.get("license_url"),
+        attribution=entry.get("attribution"),
+        public_use=entry.get("public_use"),
+        commercial_use=entry.get("commercial_use"),
+        redistribution_note=entry.get("redistribution_note"),
+        update_cadence=entry.get("update_cadence"),
+        known_limitations=entry.get("known_limitations"),
+        dataset_version=entry.get("dataset_version"),
+        review_status=review.get("status"),
+        reviewed_at=review.get("reviewed_at"),
+        reviewed_by=review.get("reviewed_by"),
+        review_notes=review.get("notes"),
+    )
+    if "key" not in entry:
+        dataset.error = "manifest entry missing key"
+    return dataset
 
 
 def _features_from_geojson(

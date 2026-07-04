@@ -1,31 +1,62 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
+import { render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CAPTURE_PNG_EVENT } from "../lib/mapBus";
+import { useAppStore } from "../store/appStore";
 
-class FakeMap {
-  addControl = vi.fn();
-  addSource = vi.fn();
-  addLayer = vi.fn();
-  getSource = vi.fn();
-  getLayer = vi.fn();
-  setFilter = vi.fn();
-  flyTo = vi.fn();
-  on = vi.fn();
-  remove = vi.fn();
-  getCanvas = vi.fn(() => ({ width: 800, height: 600, style: {} }) as unknown as HTMLCanvasElement);
-  getCenter = vi.fn(() => ({ lng: 19, lat: 52 }));
-  getZoom = vi.fn(() => 5.4);
-}
-
-vi.mock("maplibre-gl", () => ({
-  default: {
-    Map: FakeMap,
-    NavigationControl: class {},
-    AttributionControl: class {},
-  },
+const mapMocks = vi.hoisted(() => ({
+  instances: [] as Array<{
+    fire: (event: string) => void;
+    sourceData: Map<string, unknown[]>;
+  }>,
 }));
+
+vi.mock("maplibre-gl", () => {
+  class FakeMap {
+    handlers: Record<string, Array<(...args: unknown[]) => void>> = {};
+    sourceData = new Map<string, unknown[]>();
+    constructor() {
+      mapMocks.instances.push(this as unknown as (typeof mapMocks.instances)[number]);
+    }
+    fire = (event: string) => {
+      for (const handler of this.handlers[event] ?? []) {
+        handler();
+      }
+    };
+    on = vi.fn((event: string, layerOrCb: unknown, maybeCb?: unknown) => {
+      const callback = typeof layerOrCb === "function" ? layerOrCb : maybeCb;
+      if (typeof callback === "function") {
+        (this.handlers[event] ??= []).push(callback as (...args: unknown[]) => void);
+      }
+    });
+    addControl = vi.fn();
+    addSource = vi.fn();
+    addLayer = vi.fn();
+    getSource = vi.fn((id: string) => ({
+      setData: (data: { features?: unknown[] }) => {
+        this.sourceData.set(id, data.features ?? []);
+      },
+    }));
+    getLayer = vi.fn(() => ({}));
+    setLayoutProperty = vi.fn();
+    setFilter = vi.fn();
+    flyTo = vi.fn();
+    remove = vi.fn();
+    getCanvas = vi.fn(
+      () => ({ width: 800, height: 600, style: {} }) as unknown as HTMLCanvasElement,
+    );
+    getCenter = vi.fn(() => ({ lng: 19, lat: 52 }));
+    getZoom = vi.fn(() => 5.4);
+  }
+  return {
+    default: {
+      Map: FakeMap,
+      NavigationControl: class {},
+      AttributionControl: class {},
+    },
+  };
+});
 
 async function renderMapShell() {
   const client = new QueryClient({
@@ -39,16 +70,53 @@ async function renderMapShell() {
   );
 }
 
+const initialStoreState = useAppStore.getState();
+
 describe("MapShell", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => Promise.reject(new Error("no backend"))),
     );
+    useAppStore.setState(initialStoreState, true);
+    mapMocks.instances.length = 0;
   });
 
-  it("embeds the IMGW-PIB attribution caption in the exported PNG canvas", async () => {
+  it("embeds the data attribution caption in the exported PNG canvas", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/v1/geometry/datasets")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              generated_at: "2026-07-04T00:00:00Z",
+              manifest_present: true,
+              datasets: [
+                {
+                  key: "teryt_counties",
+                  title: "Powiaty",
+                  source: "PRG",
+                  license_note: "Reviewed",
+                  attribution: "Granice administracyjne: Państwowy Rejestr Granic (PRG), © GUGiK.",
+                  loaded: true,
+                  feature_count: 380,
+                  error: null,
+                },
+              ],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ sources: [], layers: [] }),
+      } as Response);
+    });
+    vi.stubGlobal("fetch", fetchMock);
     // Legal requirement: PNG exports must carry visible attribution (see
     // LEGAL_ATTRIBUTION.md "Where Attribution Must Appear"). jsdom has no real
     // canvas backing, so stub the 2D context to capture what MapShell draws.
@@ -83,12 +151,144 @@ describe("MapShell", () => {
     });
 
     await renderMapShell();
-    window.dispatchEvent(new Event(CAPTURE_PNG_EVENT));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/v1/geometry/datasets")),
+    );
+    await waitFor(() => {
+      fillText.mockClear();
+      window.dispatchEvent(new Event(CAPTURE_PNG_EVENT));
+      expect(fillText).toHaveBeenCalledTimes(2);
+    });
 
-    expect(fillText).toHaveBeenCalledTimes(1);
-    const [text] = fillText.mock.calls[0];
+    const text = fillText.mock.calls.map((call) => String(call[0])).join(" ");
     expect(text).toContain("Źródło danych: IMGW-PIB.");
     expect(text).toContain("Dane przetworzone przez MeteoLens");
+    expect(text).toContain("Państwowy Rejestr Granic");
+  });
+
+  it("pushes warning polygons into the warnings map source when geometry exists", async () => {
+    const polygonFeature = {
+      type: "Feature",
+      id: "warningsmeteo:w1:1205",
+      properties: {
+        warning_id: "warningsmeteo:w1",
+        warning_type: "meteo",
+        event: "Burze z gradem",
+        level: 2,
+        area_type: "teryt",
+        code: "1205",
+        label: "powiat myślenicki",
+        dataset_key: "teryt_counties",
+        geometry_status: "resolved",
+      },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [19.0, 49.7],
+            [20.2, 49.7],
+            [20.2, 50.1],
+            [19.0, 50.1],
+            [19.0, 49.7],
+          ],
+        ],
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        const payload = url.includes("/api/v1/map/layers")
+          ? {
+              generated_at: "2026-07-04T00:00:00Z",
+              cache: [],
+              empty_state: null,
+              layers: [
+                {
+                  key: "warnings_meteo",
+                  title: "Ostrzeżenia meteorologiczne",
+                  source_keys: ["warningsmeteo"],
+                  sources: [],
+                  geojson: { type: "FeatureCollection", features: [polygonFeature] },
+                  records: [],
+                  missing_geometry: [],
+                },
+              ],
+            }
+          : { sources: [] };
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(payload),
+        } as Response);
+      }),
+    );
+    useAppStore.getState().setActiveLayers(["warnings_meteo"]);
+
+    await renderMapShell();
+    const fakeMap = mapMocks.instances[mapMocks.instances.length - 1];
+    expect(fakeMap).toBeDefined();
+    fakeMap!.fire("load");
+
+    await waitFor(() => {
+      const features = (fakeMap!.sourceData.get("warnings") ?? []) as Array<{ id?: string }>;
+      expect(features.map((feature) => feature.id)).toEqual(["warningsmeteo:w1:1205"]);
+    });
+  });
+
+  it("keeps the warnings map source empty in the list-only fallback state", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        const payload = url.includes("/api/v1/map/layers")
+          ? {
+              generated_at: "2026-07-04T00:00:00Z",
+              cache: [],
+              empty_state: null,
+              layers: [
+                {
+                  key: "warnings_meteo",
+                  title: "Ostrzeżenia meteorologiczne",
+                  source_keys: ["warningsmeteo"],
+                  sources: [],
+                  geojson: { type: "FeatureCollection", features: [] },
+                  records: [{ id: "warningsmeteo:w1" }],
+                  missing_geometry: [
+                    {
+                      id: "warningsmeteo:w1",
+                      source_key: "warningsmeteo",
+                      reason: "geometry_not_found",
+                      area_type: "teryt",
+                      area_codes: ["1205"],
+                    },
+                  ],
+                },
+              ],
+            }
+          : { sources: [] };
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(payload),
+        } as Response);
+      }),
+    );
+    useAppStore.getState().setActiveLayers(["warnings_meteo"]);
+
+    await renderMapShell();
+    const fakeMap = mapMocks.instances[mapMocks.instances.length - 1];
+    fakeMap!.fire("load");
+
+    // The warnings source stays empty and the fill layer is hidden; the warning
+    // itself is only presented in the ControlPanel list (see ControlPanel tests).
+    await waitFor(() => {
+      const setLayoutProperty = (
+        fakeMap as unknown as { setLayoutProperty: ReturnType<typeof vi.fn> }
+      ).setLayoutProperty;
+      expect(setLayoutProperty).toHaveBeenCalledWith("warnings-fill", "visibility", "none");
+      expect(fakeMap!.sourceData.get("warnings") ?? []).toEqual([]);
+    });
   });
 
   it("filters station features above the expert delay threshold", async () => {

@@ -2,19 +2,19 @@
 
 **Status: public alpha (`v0.1.0-alpha` candidate).** MeteoLens works end to
 end against live IMGW-PIB data, but it is an alpha: expect the gaps listed in
-[Known Limitations](#known-limitations) (no warning polygons or synop map
-markers until reviewed geometry datasets are installed, no radar/product
-rendering, history starts empty). Reproducible local and production smoke-test
-records live in
+[Known Limitations](#known-limitations) (no synop map markers until a reviewed
+station-coordinate dataset is imported, no radar/product rendering, history
+starts empty). Reproducible local and production smoke-test records live in
 [docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-12 (research, documentation, backend
+hydrological data for Poland. Stages 0-13 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
 deployment, observation history, geometry datasets, product timeline,
-PWA/power-user features, and public-alpha release polish) are implemented. See
-[TASKS.md](TASKS.md) for the full staged backlog. Stages 13-16 are planned
-next and are not implemented yet.
+PWA/power-user features, public-alpha release polish, and the reviewed
+geometry dataset MVP with bundled PRG voivodeship/county polygons) are
+implemented. See [TASKS.md](TASKS.md) for the full staged backlog. Stages
+14-16 are planned next and are not implemented yet.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -93,11 +93,18 @@ Implemented now:
   section, and a
   [v0.1.0-alpha release checklist](docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md).
 
+- Stage 13 reviewed geometry dataset MVP: a reviewed-manifest format with
+  full source/legal metadata, a validating geometry import CLI
+  (`python -m app.geometry.import_cli`), bundled PRG © GUGiK voivodeship and
+  county polygons (so meteo warning polygons and province/county filters work
+  out of the box), a reproducible conversion script
+  (`scripts/geometry/convert_prg_shapefiles.py`), and reviewed-source synop
+  coordinate enrichment (`coordinate_source`) that keeps synop stations off
+  the map until a reviewed coordinate dataset is imported — see
+  `docs/geometry/GEOMETRY_SOURCES.md`.
+
 Planned next:
 
-- Stage 13 reviewed geometry dataset MVP: legally reviewed administrative,
-  basin, and station-coordinate datasets with validation, tests, and explicit
-  unresolved-geometry states.
 - Stage 14 radar/product rendering MVP: one realistic renderable product layer
   path, retention limits, renderable-layer API metadata, and timeline playback
   that never labels metadata-only frames as rendered data.
@@ -194,8 +201,11 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 Captured on 2026-07-03 from a populated live IMGW-PIB cache (not fixtures);
 every view keeps the IMGW-PIB attribution and processed-data notice visible.
 Note the honest gaps in the shots: synoptic stations report "0 na mapie · 62
-bez współrzędnych" and warnings show "0 poligonów" until reviewed geometry
-datasets are installed (see [Known Limitations](#known-limitations)).
+bez współrzędnych" (still true until a reviewed coordinate dataset is
+imported), and warnings show "0 poligonów" because the shots predate the
+Stage 13 bundled PRG polygons — with the bundled datasets, meteo warnings now
+render county/voivodeship polygons (see
+[Known Limitations](#known-limitations)).
 
 Map view with live station layers and the active warning list:
 
@@ -255,20 +265,21 @@ work around. Each one is either a documented backend constraint or an
 intentional scope deferral; do not paper over them with mock/interpolated
 data (see `AGENTS.md`).
 
-- **Warning polygons need locally installed geometry datasets.** The Stage 9
-  geometry pipeline (manifest, loader, polygon mapping, spatial matching,
-  province/county/basin filters) is implemented, but the repository ships an
-  empty `data/geometry/manifest.json` — every candidate TERYT/basin dataset
-  is still `planned` pending source/legal review. Until reviewed GeoJSON is
-  placed under `data/geometry/`, warnings render as a filterable list and
-  report `missing_area_geometry_dataset`. See
-  `docs/geometry/GEOMETRY_SOURCES.md`.
+- **Hydro warning areas still have no polygons.** Stage 13 ships reviewed PRG
+  voivodeship and county polygons, so meteo warning TERYT codes resolve to
+  polygons out of the box. Hydro `kod_zlewni` basin geometry
+  (`hydro_basins`) remains `planned` pending MPHP licensing review, so hydro
+  warnings stay list-only with `geometry_not_found` /
+  `missing_area_geometry_dataset` metadata. The bundled administrative
+  polygons are a simplified 2022 PRG snapshot (processed data, not for
+  legal/cadastral use). See `docs/geometry/GEOMETRY_SOURCES.md`.
 - **Synoptic stations have no coordinates.** `api/data/synop` does not return
   `lat/lon`, so synop stations appear in lists/details but are excluded from
-  map markers (`missing_lat_lon`). The `synop_stations` coordinate
-  reconciliation dataset is designed but still `planned` in
-  `docs/geometry/GEOMETRY_SOURCES.md`, pending an officially cleared station
-  metadata source.
+  map markers (`missing_lat_lon`). The `synop_stations` reviewed-dataset
+  enrichment is implemented (stations gain coordinates plus a visible
+  `coordinate_source` once a dataset is imported), but the coordinate source
+  itself (candidate: WMO OSCAR/Surface) is still `planned` in
+  `docs/geometry/GEOMETRY_SOURCES.md`, pending terms review.
 - **Observation history starts empty and is local-only.** Time series are
   persisted to SQLite from this deployment's own IMGW refreshes; there is no
   backfill from the IMGW measurement archives. Fresh deployments serve
@@ -279,10 +290,11 @@ data (see `AGENTS.md`).
   the bottom timeline shows frame metadata with play/step controls and explicit
   “metadata only / not renderable on map” labels. Binary radar/GRIB rendering on
   the map is still deferred.
-- **Province/county/basin filters only work with installed geometry.** The
-  warning area filters shipped in Stage 9 resolve against the local geometry
-  cache, so they return no matches until reviewed datasets are installed (see
-  the warning-polygon limitation above).
+- **Basin filters only work with installed basin geometry.** Province and
+  county filters work against the bundled PRG datasets; the basin filter
+  matches only literal `kod_zlewni` values from warning metadata until a
+  reviewed `hydro_basins` dataset is installed (see the hydro limitation
+  above).
 - **No public cache-refresh endpoint.** Docker Compose populates the cache at
   backend startup via `METEOLENS_SYNC_ON_STARTUP=true` and keeps it fresh with
   the periodic scheduler (`METEOLENS_REFRESH_ENABLED=true`); there is still no

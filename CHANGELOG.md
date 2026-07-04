@@ -4,6 +4,18 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 13 reviewed geometry dataset MVP: a format_version 2 geometry
+  manifest with full source/legal review metadata enforced by the loader,
+  strict GeoJSON validation (structure, geometry types, required properties,
+  TERYT coverage, Poland bounds), a geometry import CLI
+  (`python -m app.geometry.import_cli`), bundled reviewed PRG © GUGiK
+  voivodeship and county polygons under `data/geometry/` (meteo warning
+  polygons and province/county filters now work out of the box), a
+  reproducible PRG conversion script
+  (`scripts/geometry/convert_prg_shapefiles.py`), reviewed-source synop
+  coordinate enrichment with a `coordinate_source` field, and expanded
+  backend/frontend geometry tests. Hydro basin geometry and the synop
+  coordinate dataset remain planned pending source review.
 - Added Stage 12 public alpha release polish: recorded local and production
   smoke tests against live IMGW-PIB data
   (`docs/release/SMOKE_TEST_2026-07-03.md`), a repeatable browser smoke script

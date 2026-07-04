@@ -4,8 +4,9 @@ import maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef } from "react";
 
 import type { StationFeature } from "../api/client";
-import { useMapLayersQuery, useSourcesQuery } from "../api/queries";
+import { useGeometryDatasetsQuery, useMapLayersQuery, useSourcesQuery } from "../api/queries";
 import { staleSourceKeys } from "../lib/alertRules";
+import { loadedGeometryAttributions } from "../lib/geometryAttribution";
 import { CAPTURE_PNG_EVENT, FLY_TO_EVENT, type FlyToDetail } from "../lib/mapBus";
 import { LAYERS, STATION_LAYERS, STATION_TYPE_COLOR, WARNING_LAYERS } from "../lib/layers";
 import { decodePermalink } from "../lib/permalink";
@@ -30,12 +31,12 @@ function selectedFilter(id: string): maplibregl.FilterSpecification {
 const PNG_ATTRIBUTION =
   "Źródło danych: IMGW-PIB. Dane przetworzone przez MeteoLens. © OpenStreetMap";
 
-function downloadCanvasPng(map: maplibregl.Map) {
+function downloadCanvasPng(map: maplibregl.Map, geometryAttributions: string[]) {
   try {
     const mapCanvas = map.getCanvas();
     // The MapLibre/MeteoLens attribution is DOM outside the WebGL canvas, so draw
     // it onto a composite before export — every export must carry attribution.
-    const footerHeight = 28;
+    const footerHeight = 22 * (1 + geometryAttributions.length) + 8;
     const out = document.createElement("canvas");
     out.width = mapCanvas.width;
     out.height = mapCanvas.height + footerHeight;
@@ -49,7 +50,10 @@ function downloadCanvasPng(map: maplibregl.Map) {
     ctx.fillStyle = "#ffffff";
     ctx.font = "13px sans-serif";
     ctx.textBaseline = "middle";
-    ctx.fillText(PNG_ATTRIBUTION, 10, mapCanvas.height + footerHeight / 2);
+    ctx.fillText(PNG_ATTRIBUTION, 10, mapCanvas.height + 16);
+    geometryAttributions.forEach((attribution, index) => {
+      ctx.fillText(attribution, 10, mapCanvas.height + 38 + index * 22);
+    });
 
     const link = document.createElement("a");
     link.href = out.toDataURL("image/png");
@@ -73,6 +77,11 @@ export function MapShell() {
   const activeMapLayerKeys = LAYERS.filter((layer) => activeLayers[layer.key]).map((layer) => layer.key);
   const mapQuery = useMapLayersQuery(activeMapLayerKeys);
   const sourcesQuery = useSourcesQuery();
+  const geometryQuery = useGeometryDatasetsQuery();
+  const geometryAttributions = useMemo(
+    () => loadedGeometryAttributions(geometryQuery.data?.datasets),
+    [geometryQuery.data],
+  );
 
   const stationFeatures = useMemo(() => {
     const byDelay = filterStationFeaturesByDelay(
@@ -96,6 +105,7 @@ export function MapShell() {
   );
   const featuresRef = useRef(stationFeatures);
   const warningFeaturesRef = useRef(warningFeatures);
+  const geometryAttributionsRef = useRef(geometryAttributions);
   const selectionRef = useRef(selection);
 
   // --- Map lifecycle (mount once) -----------------------------------------
@@ -241,7 +251,7 @@ export function MapShell() {
       const detail = (event as CustomEvent<FlyToDetail>).detail;
       map.flyTo({ center: [detail.lng, detail.lat], zoom: detail.zoom ?? map.getZoom() });
     };
-    const onCapture = () => downloadCanvasPng(map);
+    const onCapture = () => downloadCanvasPng(map, geometryAttributionsRef.current);
     window.addEventListener(FLY_TO_EVENT, onFlyTo);
     window.addEventListener(CAPTURE_PNG_EVENT, onCapture);
 
@@ -253,6 +263,10 @@ export function MapShell() {
       map.remove();
     };
   }, []);
+
+  useEffect(() => {
+    geometryAttributionsRef.current = geometryAttributions;
+  }, [geometryAttributions]);
 
   // --- Push station features into the map source --------------------------
   useEffect(() => {

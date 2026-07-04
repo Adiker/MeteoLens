@@ -1,0 +1,17 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12295",
+        "name": "Test station 12295",
+        "wigos_id": "0-20000-0-12295"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [23.1621, 53.1078]
+      }
+    }
+  ]
+}

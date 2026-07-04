@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { LayerKey, StationType, WarningType } from "../lib/layers";
 import {
   fetchFreshnessStatus,
+  fetchGeometryDatasets,
   fetchHealth,
   fetchLocationSummary,
   fetchMapLayers,
@@ -37,6 +38,14 @@ export function useMapLayersQuery(layers: LayerKey[]) {
     queryKey: ["map-layers", layers],
     queryFn: () => fetchMapLayers(layers),
     enabled: layers.length > 0,
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useGeometryDatasetsQuery() {
+  return useQuery({
+    queryKey: ["geometry-datasets"],
+    queryFn: fetchGeometryDatasets,
     staleTime: STALE_TIME,
   });
 }

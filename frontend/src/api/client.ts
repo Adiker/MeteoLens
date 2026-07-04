@@ -95,6 +95,7 @@ export interface StationListItem {
   name: string;
   lat: number | null;
   lon: number | null;
+  coordinate_source?: string | null;
   region?: string | null;
   watercourse?: string | null;
   latest_observed_at: string | null;
@@ -117,6 +118,7 @@ export interface StationDetail {
   name: string;
   lat: number | null;
   lon: number | null;
+  coordinate_source?: string | null;
   region?: string | null;
   watercourse?: string | null;
   observations: Observation[];
@@ -216,6 +218,34 @@ export interface MapLayer {
 
 export interface MapLayersResponse extends ApiEnvelope {
   layers: MapLayer[];
+}
+
+export interface GeometryDatasetStatus {
+  key: string;
+  title: string;
+  source: string;
+  license_note: string;
+  provider?: string | null;
+  canonical_url?: string | null;
+  license_url?: string | null;
+  attribution?: string | null;
+  public_use?: boolean | null;
+  commercial_use?: boolean | null;
+  redistribution_note?: string | null;
+  update_cadence?: string | null;
+  known_limitations?: string | null;
+  dataset_version?: string | null;
+  review_status?: string | null;
+  reviewed_at?: string | null;
+  loaded: boolean;
+  feature_count: number;
+  error?: string | null;
+}
+
+export interface GeometryDatasetsResponse {
+  generated_at: string;
+  datasets: GeometryDatasetStatus[];
+  manifest_present: boolean;
 }
 
 export interface LocationSummaryResponse extends ApiEnvelope {
@@ -382,6 +412,10 @@ export function fetchSources() {
 
 export function fetchMapLayers(layers: LayerKey[]) {
   return getJson<MapLayersResponse>(`/api/v1/map/layers${query({ layers: layers.join(",") })}`);
+}
+
+export function fetchGeometryDatasets() {
+  return getJson<GeometryDatasetsResponse>("/api/v1/geometry/datasets");
 }
 
 export function fetchStations(params: { type?: StationType; q?: string; limit?: number } = {}) {

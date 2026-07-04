@@ -111,6 +111,7 @@ class StationListItem(BaseModel):
     name: str
     lat: float | None = None
     lon: float | None = None
+    coordinate_source: str | None = None
     region: str | None = None
     watercourse: str | None = None
     latest_observed_at: datetime | None = None
@@ -199,6 +200,18 @@ class GeometryDatasetStatus(BaseModel):
     title: str
     source: str
     license_note: str
+    provider: str | None = None
+    canonical_url: str | None = None
+    license_url: str | None = None
+    attribution: str | None = None
+    public_use: bool | None = None
+    commercial_use: bool | None = None
+    redistribution_note: str | None = None
+    update_cadence: str | None = None
+    known_limitations: str | None = None
+    dataset_version: str | None = None
+    review_status: str | None = None
+    reviewed_at: str | None = None
     loaded: bool
     feature_count: int
     error: str | None = None
@@ -1007,6 +1020,7 @@ def export_map_geojson(
         "features": features,
         "generated_at": datetime.now(UTC),
         "attribution": ATTRIBUTION,
+        "geometry_attributions": _geometry_attributions_for_features(features),
         "processed_notice": PROCESSED_NOTICE,
         "cache": [state.model_dump(mode="json") for state in response.cache],
         "non_spatial_records": non_spatial_records,
@@ -1021,6 +1035,24 @@ def export_map_geojson(
 
 def _source_cache() -> SourceCache:
     return SourceCache(get_settings().cache_dir)
+
+
+def _geometry_attributions_for_features(features: list[dict[str, Any]]) -> list[str]:
+    store = get_geometry_store()
+    attributions: list[str] = []
+    for feature in features:
+        properties = feature.get("properties")
+        if not isinstance(properties, dict):
+            continue
+        dataset_key = properties.get("dataset_key")
+        if isinstance(dataset_key, str):
+            dataset = store.get_dataset(dataset_key)
+            if dataset is not None and dataset.attribution:
+                attributions.append(dataset.attribution)
+        coordinate_source = properties.get("coordinate_source")
+        if isinstance(coordinate_source, str) and coordinate_source:
+            attributions.append(coordinate_source)
+    return list(dict.fromkeys(attributions))
 
 
 def _cache_states(
@@ -1083,6 +1115,9 @@ def _records_from_cache(
                         }
                     },
                 ) from exc
+    _apply_reviewed_station_coordinates(
+        [record for record in records if isinstance(record, Station)]
+    )
     return records
 
 
@@ -1092,6 +1127,36 @@ def _stations_from_cache(cache: SourceCache) -> list[Station]:
         for record in _records_from_cache(cache, STATION_SOURCE_KEYS)
         if isinstance(record, Station)
     ]
+
+
+def _apply_reviewed_station_coordinates(stations: list[Station]) -> None:
+    """Fill synop station coordinates from the reviewed synop_stations dataset.
+
+    IMGW's synop API publishes no coordinates, so synop stations only become
+    map markers when a reviewed coordinate dataset is cached. Stations without
+    a reviewed match keep lat/lon missing.
+    """
+    store = get_geometry_store()
+    dataset = store.get_dataset("synop_stations")
+    if dataset is None or not dataset.loaded:
+        return
+    for station in stations:
+        if station.station_type != "synop" or station.lat is not None:
+            continue
+        feature = store.find_by_code(dataset_key="synop_stations", code=station.source_id)
+        if (
+            feature is None
+            or feature.geometry_type != "Point"
+            or not isinstance(feature.coordinates, list)
+            or len(feature.coordinates) < 2
+        ):
+            continue
+        station.lon = float(feature.coordinates[0])
+        station.lat = float(feature.coordinates[1])
+        station.coordinate_source = dataset.attribution or dataset.title
+        station.missing_fields = [
+            name for name in station.missing_fields if name not in ("lat", "lon")
+        ]
 
 
 def _warnings_from_cache(cache: SourceCache) -> list[Warning]:
@@ -1379,6 +1444,7 @@ def _station_list_item(station: Station) -> StationListItem:
         name=station.name,
         lat=station.lat,
         lon=station.lon,
+        coordinate_source=station.coordinate_source,
         region=station.region,
         watercourse=station.watercourse,
         latest_observed_at=latest_observed_at,
