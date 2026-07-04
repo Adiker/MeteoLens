@@ -26,10 +26,35 @@ vi.mock("maplibre-gl", () => ({
 
 describe("App", () => {
   beforeEach(() => {
-    // No backend in unit tests: queries fail gracefully.
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.reject(new Error("no backend"))),
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/api/v1/geometry/datasets")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () =>
+              Promise.resolve({
+                generated_at: "2026-07-04T00:00:00Z",
+                manifest_present: true,
+                datasets: [
+                  {
+                    key: "teryt_counties",
+                    title: "Powiaty",
+                    source: "PRG",
+                    license_note: "Reviewed",
+                    attribution: "Granice administracyjne: Państwowy Rejestr Granic (PRG), © GUGiK.",
+                    loaded: true,
+                    feature_count: 380,
+                    error: null,
+                  },
+                ],
+              }),
+          } as Response);
+        }
+        return Promise.reject(new Error("no backend"));
+      }),
     );
     window.history.replaceState(null, "", "/");
   });
@@ -45,7 +70,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "MeteoLens" })).toBeInTheDocument();
     expect(screen.getByLabelText("Mapa MeteoLens")).toBeInTheDocument();
     expect(screen.getByText("Źródło danych: IMGW-PIB.")).toBeInTheDocument();
-    expect(screen.getByText(/Granice administracyjne: PRG/)).toBeInTheDocument();
+    expect(await screen.findByText(/Państwowy Rejestr Granic/)).toBeInTheDocument();
     // Layer registry is rendered as toggles.
     expect(screen.getByLabelText("Warstwa Stacje synoptyczne")).toBeInTheDocument();
   });

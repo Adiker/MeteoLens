@@ -12,7 +12,7 @@ test("loads the map shell with attribution and layer toggles", async ({ page }) 
   await expect(page.getByRole("heading", { name: "MeteoLens" })).toBeVisible();
   await expect(page.getByLabel("Mapa MeteoLens")).toBeVisible();
   await expect(page.getByText("Źródło danych: IMGW-PIB.")).toBeVisible();
-  await expect(page.getByText(/Granice administracyjne: PRG/)).toBeVisible();
+  await expect(page.getByText(/Państwowy Rejestr Granic/)).toBeVisible();
   await expect(page.getByLabel("Warstwa Stacje synoptyczne")).toBeChecked();
 });
 

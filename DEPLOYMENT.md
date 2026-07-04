@@ -89,8 +89,13 @@ from `/usr/share/nginx/html`.
 ### Production assets
 
 - `docker-compose.prod.yml` — production services with restart policies and a
-  named volume for `/data`.
-- `backend/Dockerfile.prod` — installs runtime dependencies only (no pytest/ruff).
+  named volume for `/data`. The backend service builds from the repository root
+  so the image can include the reviewed `data/geometry/` seed files.
+- `backend/Dockerfile.prod` — installs runtime dependencies only (no pytest/ruff)
+  and bundles reviewed geometry seeds under `/app/bundled/geometry`.
+- `backend/docker-entrypoint.prod.sh` — on first startup, copies the bundled
+  reviewed geometry datasets into `/data/geometry` if the named volume does not
+  already contain `manifest.json`; existing imported geometry is left untouched.
 - `frontend/Dockerfile.prod` — multi-stage build + nginx runtime.
 - `deploy/nginx/frontend.conf` — static UI, API proxy, SPA fallback.
 - `deploy/caddy/Caddyfile.example` — TLS termination example in front of the stack.
@@ -108,6 +113,22 @@ METEOLENS_FRONTEND_ORIGIN=https://meteolens.example.com,https://www.meteolens.ex
 
 When nginx serves the UI and proxies `/api` on the same origin, CORS is mainly
 relevant for direct backend access during diagnostics.
+
+### Reviewed geometry data
+
+Production Compose stores runtime state in the `meteolens-data` named volume.
+Fresh volumes start empty, so the backend production image bundles the reviewed
+PRG geometry files from `data/geometry/` and seeds `/data/geometry` before
+starting the API when no manifest is present. This makes the Stage 13
+voivodeship/county polygons available on first deployment while preserving any
+later geometry imported into the volume with `python -m app.geometry.import_cli`.
+
+Check the active geometry state with:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
+  python -m app.geometry.import_cli status --geometry-dir /data/geometry
+```
 
 ### IMGW retry and backoff
 

@@ -1,14 +1,15 @@
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.prod
+      context: .
+      dockerfile: backend/Dockerfile.prod
     env_file:
       - .env.production
     environment:
       METEOLENS_ENV: production
       METEOLENS_DATABASE_URL: sqlite:////data/meteolens.sqlite3
       METEOLENS_CACHE_DIR: /data/cache
+      METEOLENS_GEOMETRY_DIR: /data/geometry
       METEOLENS_SYNC_ON_STARTUP: "${METEOLENS_SYNC_ON_STARTUP:-true}"
       METEOLENS_REFRESH_ENABLED: "${METEOLENS_REFRESH_ENABLED:-true}"
     volumes:

@@ -85,6 +85,38 @@ describe("MapShell", () => {
   });
 
   it("embeds the data attribution caption in the exported PNG canvas", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/api/v1/geometry/datasets")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              generated_at: "2026-07-04T00:00:00Z",
+              manifest_present: true,
+              datasets: [
+                {
+                  key: "teryt_counties",
+                  title: "Powiaty",
+                  source: "PRG",
+                  license_note: "Reviewed",
+                  attribution: "Granice administracyjne: Państwowy Rejestr Granic (PRG), © GUGiK.",
+                  loaded: true,
+                  feature_count: 380,
+                  error: null,
+                },
+              ],
+            }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ sources: [], layers: [] }),
+      } as Response);
+    });
+    vi.stubGlobal("fetch", fetchMock);
     // Legal requirement: PNG exports must carry visible attribution (see
     // LEGAL_ATTRIBUTION.md "Where Attribution Must Appear"). jsdom has no real
     // canvas backing, so stub the 2D context to capture what MapShell draws.
@@ -119,13 +151,19 @@ describe("MapShell", () => {
     });
 
     await renderMapShell();
-    window.dispatchEvent(new Event(CAPTURE_PNG_EVENT));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/v1/geometry/datasets")),
+    );
+    await waitFor(() => {
+      fillText.mockClear();
+      window.dispatchEvent(new Event(CAPTURE_PNG_EVENT));
+      expect(fillText).toHaveBeenCalledTimes(2);
+    });
 
-    expect(fillText).toHaveBeenCalledTimes(2);
     const text = fillText.mock.calls.map((call) => String(call[0])).join(" ");
     expect(text).toContain("Źródło danych: IMGW-PIB.");
     expect(text).toContain("Dane przetworzone przez MeteoLens");
-    expect(text).toContain("Granice administracyjne: PRG");
+    expect(text).toContain("Państwowy Rejestr Granic");
   });
 
   it("pushes warning polygons into the warnings map source when geometry exists", async () => {
