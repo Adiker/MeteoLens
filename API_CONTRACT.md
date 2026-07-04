@@ -322,7 +322,10 @@ Station CSV columns:
 
 Map GeoJSON includes point station features plus foreign members for
 `non_spatial_records`, `missing_geometry`, `cache`, `attribution`,
-`processed_notice`, and `generated_at`.
+`geometry_attributions`, `processed_notice`, and `generated_at`.
+`geometry_attributions` lists reviewed geometry dataset attribution strings
+used by exported features, for example PRG/GUGiK attribution for warning
+polygons or reviewed station-coordinate sources.
 
 ## Raw Expert Data
 

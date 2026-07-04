@@ -51,6 +51,7 @@ Station panel:
 - station type,
 - source ID,
 - coordinates if available,
+- reviewed coordinate source when coordinates come from a geometry dataset,
 - latest metrics,
 - measurement timestamp,
 - retrieval timestamp,
@@ -71,6 +72,8 @@ Warning panel:
 - affected area labels/codes,
 - content,
 - comment,
+- geometry status (resolved, partial, or missing) without hiding unresolved
+  area codes,
 - source/retrieval metadata,
 - expert raw data section.
 
@@ -201,6 +204,8 @@ Future stages must add explicit states for:
 ## Attribution Placement
 
 - Always visible map attribution.
+- Reviewed geometry attribution when administrative polygons or reviewed
+  coordinate datasets are displayed or exported.
 - Source line in every detail panel.
 - Source metadata in export dialogs.
 - Processed-data notice near derived or normalized data.
@@ -214,15 +219,17 @@ an official warning system.
 The map-first dashboard is implemented. Notable, intentional deviations from the
 target spec above, driven by current backend data:
 
-- Warnings have no area geometry yet, so warning layers render as a filterable
-  list in the control panel and as a details panel, not as map polygons. The
-  details panel states that spatial matching is unavailable.
+- Meteorological warnings render reviewed PRG county/voivodeship polygons where
+  TERYT codes resolve; unresolved areas stay visible in counts, list records,
+  and the details panel. Hydro basin warnings remain list-only until a reviewed
+  basin dataset is imported.
 - The IMGW cache exposes a single observation timestamp per station, so the
   station chart shows current metric values (missing values excluded) rather
   than a time series, and the bottom timeline/animation control is omitted until
   time-aware (archive/radar) data is available.
-- Quick filters implemented for MVP are warning level and phenomenon. Province
-  and time-range filters wait on area geometry and archive series.
+- Quick filters implemented for MVP include warning level, phenomenon, province,
+  county, and basin-code filtering where reviewed geometry or source area codes
+  support them. Time-range filters wait on archive series.
 - Layer legends are rendered as coloured swatches with on-map counts in the
   layer toggles; warning legend entries note the missing geometry.
 - The PNG export captures the current MapLibre canvas; CSV/JSON/GeoJSON exports

@@ -1020,6 +1020,7 @@ def export_map_geojson(
         "features": features,
         "generated_at": datetime.now(UTC),
         "attribution": ATTRIBUTION,
+        "geometry_attributions": _geometry_attributions_for_features(features),
         "processed_notice": PROCESSED_NOTICE,
         "cache": [state.model_dump(mode="json") for state in response.cache],
         "non_spatial_records": non_spatial_records,
@@ -1034,6 +1035,24 @@ def export_map_geojson(
 
 def _source_cache() -> SourceCache:
     return SourceCache(get_settings().cache_dir)
+
+
+def _geometry_attributions_for_features(features: list[dict[str, Any]]) -> list[str]:
+    store = get_geometry_store()
+    attributions: list[str] = []
+    for feature in features:
+        properties = feature.get("properties")
+        if not isinstance(properties, dict):
+            continue
+        dataset_key = properties.get("dataset_key")
+        if isinstance(dataset_key, str):
+            dataset = store.get_dataset(dataset_key)
+            if dataset is not None and dataset.attribution:
+                attributions.append(dataset.attribution)
+        coordinate_source = properties.get("coordinate_source")
+        if isinstance(coordinate_source, str) and coordinate_source:
+            attributions.append(coordinate_source)
+    return list(dict.fromkeys(attributions))
 
 
 def _cache_states(

@@ -118,6 +118,9 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
         <Field label="Współrzędne">
           {hasCoords ? `${station.lat?.toFixed(4)}, ${station.lon?.toFixed(4)}` : "brak"}
         </Field>
+        {station.coordinate_source && (
+          <Field label="Źródło współrz.">{station.coordinate_source}</Field>
+        )}
         {station.region && <Field label="Region">{station.region}</Field>}
         {station.watercourse && <Field label="Ciek">{station.watercourse}</Field>}
         <Field label="Pomiar">{formatTimestamp(latest_observed_at)}</Field>
@@ -227,10 +230,21 @@ function WarningDetails({ id, expert }: { id: string; expert: boolean }) {
       {warning.content && <p className="text-sm">{warning.content}</p>}
       {warning.comment && <p className="text-xs text-muted-foreground">{warning.comment}</p>}
 
-      <StateNotice tone="info" title="Brak geometrii obszaru">
-        Dokładne dopasowanie przestrzenne ostrzeżeń będzie możliwe po dodaniu zbiorów TERYT/zlewni
-        ({geometry_status}).
-      </StateNotice>
+      {geometry_status === "resolved" ? (
+        <StateNotice tone="info" title="Geometria obszaru dostępna">
+          Obszar ostrzeżenia został dopasowany do zatwierdzonych granic administracyjnych.
+        </StateNotice>
+      ) : geometry_status === "partial" ? (
+        <StateNotice tone="warning" title="Częściowa geometria obszaru">
+          Część obszarów ostrzeżenia została dopasowana do zatwierdzonej geometrii, a część
+          pozostaje nierozwiązana ({geometry_status}).
+        </StateNotice>
+      ) : (
+        <StateNotice tone="info" title="Brak geometrii obszaru">
+          Dokładne dopasowanie przestrzenne ostrzeżeń będzie możliwe po dodaniu zbiorów
+          TERYT/zlewni ({geometry_status}).
+        </StateNotice>
+      )}
 
       <MissingFields fields={warning.missing_fields} />
       {expert && <RawSection raw={warning.raw} />}

@@ -95,6 +95,7 @@ export interface StationListItem {
   name: string;
   lat: number | null;
   lon: number | null;
+  coordinate_source?: string | null;
   region?: string | null;
   watercourse?: string | null;
   latest_observed_at: string | null;
@@ -117,6 +118,7 @@ export interface StationDetail {
   name: string;
   lat: number | null;
   lon: number | null;
+  coordinate_source?: string | null;
   region?: string | null;
   watercourse?: string | null;
   observations: Observation[];

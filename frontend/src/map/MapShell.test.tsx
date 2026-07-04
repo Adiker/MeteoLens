@@ -84,7 +84,7 @@ describe("MapShell", () => {
     mapMocks.instances.length = 0;
   });
 
-  it("embeds the IMGW-PIB attribution caption in the exported PNG canvas", async () => {
+  it("embeds the data attribution caption in the exported PNG canvas", async () => {
     // Legal requirement: PNG exports must carry visible attribution (see
     // LEGAL_ATTRIBUTION.md "Where Attribution Must Appear"). jsdom has no real
     // canvas backing, so stub the 2D context to capture what MapShell draws.
@@ -121,10 +121,11 @@ describe("MapShell", () => {
     await renderMapShell();
     window.dispatchEvent(new Event(CAPTURE_PNG_EVENT));
 
-    expect(fillText).toHaveBeenCalledTimes(1);
-    const [text] = fillText.mock.calls[0];
+    expect(fillText).toHaveBeenCalledTimes(2);
+    const text = fillText.mock.calls.map((call) => String(call[0])).join(" ");
     expect(text).toContain("Źródło danych: IMGW-PIB.");
     expect(text).toContain("Dane przetworzone przez MeteoLens");
+    expect(text).toContain("Granice administracyjne: PRG");
   });
 
   it("pushes warning polygons into the warnings map source when geometry exists", async () => {

@@ -45,6 +45,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "MeteoLens" })).toBeInTheDocument();
     expect(screen.getByLabelText("Mapa MeteoLens")).toBeInTheDocument();
     expect(screen.getByText("Źródło danych: IMGW-PIB.")).toBeInTheDocument();
+    expect(screen.getByText(/Granice administracyjne: PRG/)).toBeInTheDocument();
     // Layer registry is rendered as toggles.
     expect(screen.getByLabelText("Warstwa Stacje synoptyczne")).toBeInTheDocument();
   });

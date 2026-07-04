@@ -29,13 +29,15 @@ function selectedFilter(id: string): maplibregl.FilterSpecification {
 
 const PNG_ATTRIBUTION =
   "Źródło danych: IMGW-PIB. Dane przetworzone przez MeteoLens. © OpenStreetMap";
+const PNG_GEOMETRY_ATTRIBUTION =
+  "Granice administracyjne: PRG, © GUGiK; kopia SHP: gis-support.pl; uproszczenie: MeteoLens.";
 
 function downloadCanvasPng(map: maplibregl.Map) {
   try {
     const mapCanvas = map.getCanvas();
     // The MapLibre/MeteoLens attribution is DOM outside the WebGL canvas, so draw
     // it onto a composite before export — every export must carry attribution.
-    const footerHeight = 28;
+    const footerHeight = 48;
     const out = document.createElement("canvas");
     out.width = mapCanvas.width;
     out.height = mapCanvas.height + footerHeight;
@@ -49,7 +51,8 @@ function downloadCanvasPng(map: maplibregl.Map) {
     ctx.fillStyle = "#ffffff";
     ctx.font = "13px sans-serif";
     ctx.textBaseline = "middle";
-    ctx.fillText(PNG_ATTRIBUTION, 10, mapCanvas.height + footerHeight / 2);
+    ctx.fillText(PNG_ATTRIBUTION, 10, mapCanvas.height + 16);
+    ctx.fillText(PNG_GEOMETRY_ATTRIBUTION, 10, mapCanvas.height + 34);
 
     const link = document.createElement("a");
     link.href = out.toDataURL("image/png");

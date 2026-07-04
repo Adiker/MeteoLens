@@ -50,6 +50,7 @@ const stationResponse: StationResponse = {
     name: "Przewoźniki",
     lat: 51.5253,
     lon: 14.8217,
+    coordinate_source: "MeteoLens reviewed station fixture",
     region: "lubuskie",
     watercourse: "Skroda",
     observations: [
@@ -143,6 +144,7 @@ describe("DetailsPanel", () => {
     renderWithClient();
 
     expect(await screen.findByText("Przewoźniki")).toBeInTheDocument();
+    expect(screen.getByText("MeteoLens reviewed station fixture")).toBeInTheDocument();
     expect(screen.getByText("Braki danych:", { exact: false })).toBeInTheDocument();
     // Missing value must render as an explicit "no data" label, never as 0.
     expect(screen.getByText("brak danych")).toBeInTheDocument();
@@ -167,6 +169,38 @@ describe("DetailsPanel", () => {
     expect(
       screen.getByText("Dane IMGW-PIB zostały przetworzone przez MeteoLens."),
     ).toBeInTheDocument();
+  });
+
+  it("shows resolved warning geometry without the missing-geometry notice", async () => {
+    mockFetchByPath({
+      "/warnings/warningsmeteo%3ASk1": {
+        status: 200,
+        body: {
+          ...warningResponse,
+          geometry_status: "resolved",
+          warning: {
+            ...warningResponse.warning,
+            geometry_status: "resolved",
+            resolved_areas: [
+              {
+                area_type: "teryt",
+                code: "1205",
+                label: "powiat myślenicki",
+                dataset_key: "teryt_counties",
+              },
+            ],
+            unresolved_areas: [],
+          },
+        },
+      },
+    });
+    useAppStore.setState({ selection: { kind: "warning", id: "warningsmeteo:Sk1" }, mode: "simple" });
+
+    renderWithClient();
+
+    expect(await screen.findByText("Burze")).toBeInTheDocument();
+    expect(screen.queryByText("Brak geometrii obszaru")).not.toBeInTheDocument();
+    expect(screen.getByText("Geometria obszaru dostępna")).toBeInTheDocument();
   });
 
   it("shows a cache-empty notice instead of masking the error as no-data", async () => {
