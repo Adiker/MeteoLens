@@ -1,6 +1,10 @@
 # MeteoLens production deployment checklist
 
-Use this checklist before exposing a public demo or production instance.
+Use this checklist before exposing a public demo or production instance. The
+boxes are intentionally unchecked: complete them per deployment on the target
+host. A reference run of the smoke-test items is recorded in
+`docs/release/SMOKE_TEST_2026-07-03.md`; the frontend checks can be repeated
+with `frontend/scripts/smoke.mjs`.
 
 ## Legal and attribution
 

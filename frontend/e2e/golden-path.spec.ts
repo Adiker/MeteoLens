@@ -27,8 +27,9 @@ test("searches for a station and shows its details honestly, including missing v
   await expect(panel.getByRole("heading", { name: "Przewoźniki" })).toBeVisible();
   // temperatura_wody is null in the seeded fixture — it must render as an
   // explicit missing value, never silently coerced to 0.
-  await expect(panel.getByText("brak danych")).toBeVisible();
-  await expect(panel.getByText("Braki danych:", { exact: false })).toBeVisible();
+  await expect(
+    panel.getByText("Braki danych: temperatura_wody, temperatura_wody_data_pomiaru"),
+  ).toBeVisible();
 
   const csvLink = panel.getByRole("link", { name: "CSV" });
   await expect(csvLink).toHaveAttribute(

@@ -5,6 +5,13 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   { ignores: ["dist", "public/sw.js"] },
+  {
+    // Node-run maintenance scripts (live smoke test), not app code.
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: { process: "readonly", console: "readonly", fetch: "readonly" }
+    }
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

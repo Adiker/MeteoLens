@@ -197,41 +197,54 @@ filters wait for area geometry and archive series.
 
 Goal: prepare the repository and app for an honest public alpha release.
 
-- [ ] Run and document a full local development smoke test with
+Smoke-test record: `docs/release/SMOKE_TEST_2026-07-03.md`. The recorded run
+used the supported `BACKEND_PORT`/`PUBLIC_HTTP_PORT` overrides because the
+default host ports were taken locally.
+
+- [x] Run and document a full local development smoke test with
   `docker compose up --build`.
-- [ ] Verify and record local smoke-test results for backend `/health`.
-- [ ] Verify and record local smoke-test results for backend `/api/v1/sources`.
-- [ ] Verify and record frontend map load against a populated live cache.
-- [ ] Verify and record station details behavior.
-- [ ] Verify and record warning details and warning list behavior.
-- [ ] Verify and record CSV, JSON, GeoJSON, and PNG exports.
-- [ ] Verify and record expert panel behavior.
-- [ ] Verify and record timeline shell behavior.
-- [ ] Run and document a production smoke test using
+- [x] Verify and record local smoke-test results for backend `/health`.
+- [x] Verify and record local smoke-test results for backend `/api/v1/sources`.
+- [x] Verify and record frontend map load against a populated live cache.
+- [x] Verify and record station details behavior.
+- [x] Verify and record warning details and warning list behavior.
+- [x] Verify and record CSV, JSON, GeoJSON, and PNG exports.
+- [x] Verify and record expert panel behavior.
+- [x] Verify and record timeline shell behavior. With no cached product frame
+  manifests the timeline stays hidden and `/api/v1/map/timeline` returns
+  `layers: []`; that documented empty state is what the smoke script asserts.
+- [x] Run and document a production smoke test using
   `cp deploy/.env.production.example .env.production` and
   `docker compose --env-file .env.production -f docker-compose.prod.yml up --build`.
-- [ ] Verify the configured public HTTP port opens during the production smoke
+  Required a small consistency fix: a root `.dockerignore` so the
+  repository-root build context of `frontend/Dockerfile.prod` no longer trips
+  over container-owned files in the `./data` bind mount.
+- [x] Verify the configured public HTTP port opens during the production smoke
   test.
-- [ ] Capture populated-cache screenshots from real IMGW-backed data, not
+- [x] Capture populated-cache screenshots from real IMGW-backed data, not
   fixtures.
-- [ ] Add screenshots to `docs/screenshots/` and reference them from
+- [x] Add screenshots to `docs/screenshots/` and reference them from
   `README.md`.
-- [ ] Add a clear public-alpha status badge or section to `README.md`.
-- [ ] Add a short `v0.1.0-alpha` release checklist.
-- [ ] Fix documentation drift where `TASKS.md`, `README.md`, `CHANGELOG.md`, and
+- [x] Add a clear public-alpha status badge or section to `README.md`.
+- [x] Add a short `v0.1.0-alpha` release checklist
+  (`docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md`).
+- [x] Fix documentation drift where `TASKS.md`, `README.md`, `CHANGELOG.md`, and
   `deploy/PRODUCTION_CHECKLIST.md` disagree.
-- [ ] Ensure screenshots visibly preserve IMGW-PIB attribution and
+- [x] Ensure screenshots visibly preserve IMGW-PIB attribution and
   processed-data notices.
-- [ ] Keep known limitations visible, including missing geometry, stale cache,
+- [x] Keep known limitations visible, including missing geometry, stale cache,
   and non-renderable product states.
 
 Acceptance criteria:
 
-- [ ] A reviewer can reproduce the local and production smoke-test checks from
-  documented commands.
-- [ ] README screenshots show real IMGW-backed data and visible attribution.
-- [ ] `README.md`, `TASKS.md`, `CHANGELOG.md`, and
+- [x] A reviewer can reproduce the local and production smoke-test checks from
+  documented commands (`docs/release/SMOKE_TEST_2026-07-03.md` plus
+  `frontend/scripts/smoke.mjs`).
+- [x] README screenshots show real IMGW-backed data and visible attribution.
+- [x] `README.md`, `TASKS.md`, `CHANGELOG.md`, and
   `deploy/PRODUCTION_CHECKLIST.md` describe the same alpha readiness state.
+  Tagging/publishing steps stay unchecked in the release checklist until the
+  release is actually cut.
 
 ## Stage 13 - Reviewed Geometry Dataset MVP
 

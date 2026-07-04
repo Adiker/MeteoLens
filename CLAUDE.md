@@ -7,11 +7,13 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
 
 - **What:** Web application for visualising public IMGW-PIB meteorological and
   hydrological data for Poland.
-- **Status:** Stages 0-11 are implemented and documented: FastAPI cache-backed
+- **Status:** Stages 0-12 are implemented and documented: FastAPI cache-backed
   APIs, IMGW client/parser/cache layer, React/Vite/MapLibre frontend,
   production Compose setup, local observation history, geometry pipeline shell,
-  product timeline metadata, PWA shell, and browser-local power-user tools.
-  Stages 12-16 are planned next and must not be treated as implemented.
+  product timeline metadata, PWA shell, browser-local power-user tools, and
+  public-alpha release polish (recorded smoke tests, populated-cache
+  screenshots, release checklist — see `docs/release/`). Stages 13-16 are
+  planned next and must not be treated as implemented.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
   GL, ECharts, TanStack Query, Zustand.
 - **Backend plan:** Python FastAPI, Pydantic, httpx, scheduler, cache, SQLite
@@ -86,7 +88,8 @@ and must stay test-only.
 - Keep raw source metadata available for expert mode.
 - Public cache refresh is handled by startup sync and the scheduler; there is no
   user-facing refresh endpoint yet.
-- Stage 12 is release-polish planning and smoke-test documentation; do not mark
-  screenshots, alpha release readiness, reviewed datasets, product rendering,
-  archive backfill, or generated SDK work complete until the repo contains the
-  implementation and matching docs/tests.
+- Stage 12 release polish is done (smoke-test record, screenshots, alpha
+  checklist under `docs/release/` and `docs/screenshots/`). Do not mark
+  Stage 13-16 work (reviewed datasets, product rendering, archive backfill,
+  generated SDK) complete until the repo contains the implementation and
+  matching docs/tests.

@@ -57,15 +57,16 @@ the future stages below.
 
 ## v4
 
-Stages 12-14 are the next practical path from implemented map shell to a more
-honest public alpha: first prove the current app can be smoke-tested and shown
-with real data, then add reviewed geometry data, then render one product layer
-only after source, format, legal, and cache constraints are clear.
+Stage 12 (done) proved the current app can be smoke-tested and shown with real
+data; Stages 13-14 continue the path: add reviewed geometry data, then render
+one product layer only after source, format, legal, and cache constraints are
+clear.
 
-- Stage 12 - Public alpha release polish: run and document local and production
-  smoke tests, capture populated-cache screenshots from real IMGW-backed data,
-  add a clear alpha status and `v0.1.0-alpha` checklist, align release docs, and
-  keep missing geometry, stale cache, and non-renderable products visible.
+- Stage 12 - Public alpha release polish (done, 2026-07-03): recorded local and
+  production smoke tests against live IMGW data
+  (`docs/release/SMOKE_TEST_2026-07-03.md`), populated-cache screenshots,
+  README alpha status, a `v0.1.0-alpha` checklist, and aligned release docs
+  that keep missing geometry, stale cache, and non-renderable products visible.
 - Stage 13 - Reviewed geometry dataset MVP: choose legally reviewed public
   geometry and station-coordinate sources, document licensing and redistribution
   implications, validate GeoJSON and identifier coverage, test geometry
