@@ -126,6 +126,31 @@ def test_refresh_http_error_records_error_entry(tmp_path) -> None:
     assert cached.error is not None
 
 
+def test_refresh_error_preserves_stale_manifest_files(tmp_path) -> None:
+    settings = _settings(tmp_path, product_refresh_ids="BROKEN_PRODUCT")
+    cache = ProductDetailCache(settings.cache_dir)
+    retrieved_at = datetime.now(UTC) - timedelta(hours=2)
+    files = [{"file": "202607040000_202607040300_lfff00030000", "url": "https://x/frame"}]
+    cache.write_success(
+        product_id="BROKEN_PRODUCT",
+        url="https://danepubliczne.imgw.pl/api/data/product/id/BROKEN_PRODUCT",
+        retrieved_at=retrieved_at,
+        files=files,
+    )
+
+    results = _run(
+        refresh_product_details(settings, transport=httpx.MockTransport(_detail_handler([])))
+    )
+
+    assert results[0].status == "error"
+    cached = cache.read("BROKEN_PRODUCT")
+    assert cached is not None
+    assert cached.files == files
+    assert cached.retrieved_at == retrieved_at
+    assert cached.error is not None
+    assert cached.last_error_at is not None
+
+
 def test_manifest_count_limit_evicts_oldest(tmp_path) -> None:
     settings = _settings(
         tmp_path,
