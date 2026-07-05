@@ -4,6 +4,7 @@ from typing import Any
 from app.core.config import Settings
 from app.imgw.cache import SourceCache
 from app.normalization.models import ATTRIBUTION, PROCESSED_NOTICE, ProductManifest, SourceMetadata
+from app.products import rendering
 from app.products.classification import RESEARCH_DATE, classify_product_id
 from app.products.detail_cache import ProductDetailCache
 from app.products.frames import build_frame_records
@@ -62,8 +63,10 @@ def product_detail(
     detail_cache = ProductDetailCache(settings.cache_dir)
     cached_detail = detail_cache.read(product_id)
     source = manifest.source if manifest else _fallback_source(settings, product_id)
+    renderable = rendering.renderable_descriptor(settings, product_id)
     if cached_detail is None:
         return {
+            "renderable": renderable,
             "generated_at": datetime.now(UTC),
             "product_id": product_id,
             "description": manifest.description if manifest else product_id,
@@ -93,9 +96,13 @@ def product_detail(
 
     all_frames = build_frame_records(product_id, cached_detail.files)
     page = all_frames[offset : offset + limit]
+    if renderable is not None:
+        for frame in page:
+            _annotate_render_state(settings, product_id, frame, renderable)
     missing_frames = sum(1 for frame in all_frames if frame["missing"])
     stale = _is_stale(cached_detail.retrieved_at, settings.product_detail_cache_seconds)
     return {
+        "renderable": renderable,
         "generated_at": datetime.now(UTC),
         "product_id": product_id,
         "description": manifest.description if manifest else product_id,
@@ -123,6 +130,26 @@ def product_detail(
         },
         "error": cached_detail.error,
     }
+
+
+def _annotate_render_state(
+    settings: Settings,
+    product_id: str,
+    frame: dict[str, Any],
+    renderable: dict[str, Any],
+) -> None:
+    state = rendering.frame_render_state(settings, product_id, frame["file"])
+    frame["renderable"] = state["renderable"]
+    frame["renderable_reason"] = state["reason"]
+    if not state["renderable"]:
+        return
+    variable = renderable["default_variable"]
+    frame["render_url"] = (
+        f"/api/v1/products/{product_id}/render/{frame['file']}?variable={variable}"
+    )
+    frame["render_ready"] = rendering.render_cache_path(
+        settings, product_id, frame["file"], variable
+    ).exists()
 
 
 def _detail_source(cached_detail) -> SourceMetadata:

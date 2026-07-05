@@ -8,13 +8,14 @@ starts empty). Reproducible local and production smoke-test records live in
 [docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-13 (research, documentation, backend
+hydrological data for Poland. Stages 0-14 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
 deployment, observation history, geometry datasets, product timeline,
-PWA/power-user features, public-alpha release polish, and the reviewed
-geometry dataset MVP with bundled PRG voivodeship/county polygons) are
-implemented. See [TASKS.md](TASKS.md) for the full staged backlog. Stages
-14-16 are planned next and are not implemented yet.
+PWA/power-user features, public-alpha release polish, the reviewed geometry
+dataset MVP with bundled PRG voivodeship/county polygons, and the product
+rendering MVP with the COSMO 2 m temperature map overlay) are implemented.
+See [TASKS.md](TASKS.md) for the full staged backlog. Stages 15-16 are
+planned next and are not implemented yet.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -103,11 +104,19 @@ Implemented now:
   the map until a reviewed coordinate dataset is imported — see
   `docs/geometry/GEOMETRY_SOURCES.md`.
 
+- Stage 14 product rendering MVP: the first real rendered product layer —
+  COSMO 2 m temperature decoded from public IMGW GRIB1 files server-side,
+  reprojected from the model's rotated grid, and drawn on the map as a
+  semi-transparent overlay with frame/run times, a legend, attribution, and a
+  processed-data notice (`/api/v1/products/{id}/render/{file}`). Rendering is
+  an explicit opt-in ("Pokaż na mapie" in the timeline bar) because each new
+  frame downloads a ~160 MB source file on the backend; rendered PNGs are
+  cached with retention limits. Radar composites stay metadata-only — IMGW
+  currently blocks public downloads of those files (documented in
+  `docs/products/PRODUCT_RESEARCH.md`).
+
 Planned next:
 
-- Stage 14 radar/product rendering MVP: one realistic renderable product layer
-  path, retention limits, renderable-layer API metadata, and timeline playback
-  that never labels metadata-only frames as rendered data.
 - Stage 15 historical archive backfill: opt-in, bounded, rate-limited archive
   import for at least one legally and technically clear IMGW observation source.
 - Stage 16 public API, SDK, and power-user exports: stabilized API docs,
@@ -288,8 +297,12 @@ data (see `AGENTS.md`).
   `METEOLENS_OBSERVATION_RETENTION_DAYS`.
 - **Timeline/animation for products.** When cached product frame manifests exist,
   the bottom timeline shows frame metadata with play/step controls and explicit
-  “metadata only / not renderable on map” labels. Binary radar/GRIB rendering on
-  the map is still deferred.
+  “metadata only / not renderable on map” labels. COSMO 2 m temperature frames
+  additionally render as a map overlay after the explicit "Pokaż na mapie"
+  opt-in; the first render of each frame downloads a ~160 MB GRIB file on the
+  backend and can take tens of seconds before the cached PNG makes playback
+  instant. Only leads up to `METEOLENS_PRODUCT_RENDER_MAX_LEAD_HOURS` every
+  `METEOLENS_PRODUCT_RENDER_LEAD_STEP_HOURS` hours are renderable.
 - **Basin filters only work with installed basin geometry.** Province and
   county filters work against the bundled PRG datasets; the basin filter
   matches only literal `kod_zlewni` values from warning metadata until a
@@ -299,11 +312,13 @@ data (see `AGENTS.md`).
   backend startup via `METEOLENS_SYNC_ON_STARTUP=true` and keeps it fresh with
   the periodic scheduler (`METEOLENS_REFRESH_ENABLED=true`); there is still no
   user-facing "refresh data" API call.
-- **Radar, GRIB, and other `product` API files are not parsed or rendered on the
-  map.** Stage 10 documents product IDs, exposes frame metadata APIs, and adds a
-  timeline shell. Binary format decoding, projections, and tile rendering remain
-  post-MVP work (see `docs/products/PRODUCT_RESEARCH.md` and
-  `docs/products/RASTER_PIPELINE.md`).
+- **Radar files are not downloadable from IMGW.** Verified 2026-07-05: every
+  radar composite file URL (binaries and PNG previews) 307-redirects to an
+  HTML page, so radar frames stay metadata-only
+  (`rendering_status: download_blocked`) until IMGW restores public file
+  delivery. Only the COSMO `*_00` 2 m temperature path renders on the map;
+  other GRIB variables remain undecoded (see
+  `docs/products/PRODUCT_RESEARCH.md` and `docs/products/RASTER_PIPELINE.md`).
 - **Some `product` IDs are listed but not retrievable.** Research on 2026-07-01
   found 32/42 manifest IDs returning 404 at the detail endpoint; see
   `docs/products/PRODUCT_RESEARCH.md` for the full classification.

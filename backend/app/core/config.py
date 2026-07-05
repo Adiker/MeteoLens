@@ -26,6 +26,18 @@ class Settings(BaseSettings):
     product_detail_cache_seconds: int = Field(default=3600, ge=300)
     product_file_retention_hours: int = Field(default=24, ge=1)
     product_max_cached_files: int = Field(default=500, ge=10)
+    product_refresh_enabled: bool = False
+    product_refresh_ids: str = (
+        "COSMO_HVD_00_00,COSMO_HVD_06_00,COSMO_HVD_12_00,COSMO_HVD_18_00"
+    )
+    product_max_detail_manifests: int = Field(default=50, ge=1)
+    product_binary_max_files: int = Field(default=4, ge=1)
+    product_download_timeout_seconds: float = Field(default=180.0, gt=0)
+    product_file_max_mb: int = Field(default=300, ge=1)
+    product_render_max_lead_hours: int = Field(default=24, ge=0)
+    product_render_lead_step_hours: int = Field(default=3, ge=1)
+    product_render_width: int = Field(default=700, ge=100, le=2000)
+    product_render_prefetch_frames: int = Field(default=0, ge=0)
     observation_retention_days: int = Field(default=30, ge=1)
     imgw_timeout_seconds: float = Field(default=20.0, gt=0)
     imgw_max_retries: int = Field(default=2, ge=0)
@@ -34,6 +46,10 @@ class Settings(BaseSettings):
     @property
     def frontend_origins(self) -> list[str]:
         return [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
+
+    @property
+    def product_refresh_id_list(self) -> list[str]:
+        return [pid.strip() for pid in self.product_refresh_ids.split(",") if pid.strip()]
 
 
 @lru_cache

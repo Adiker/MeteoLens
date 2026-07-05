@@ -3,7 +3,8 @@
 This document is an implementation guide, not legal advice. Users must verify
 the current IMGW-PIB terms before public, production, or commercial use.
 
-Research date: 2026-06-29.
+Research dates: 2026-06-29 (base IMGW terms), 2026-07-05 (COSMO product
+download verification).
 
 Source terms reviewed:
 [https://danepubliczne.imgw.pl/pl/regulations](https://danepubliczne.imgw.pl/pl/regulations).
@@ -140,6 +141,22 @@ these polygons must keep the processed-data notice. The full review (canonical
 URLs, terms, limitations) lives in `docs/geometry/GEOMETRY_SOURCES.md` and in
 the machine-readable manifest metadata exposed by `/api/v1/geometry/datasets`.
 
+### Reviewed Product Dataset (Stage 14)
+
+The Stage 14 product-rendering MVP uses public IMGW-PIB COSMO
+`COSMO_HVD_*_00` GRIB1 files downloaded through
+`danepubliczne.imgw.pl/api/data/product`. The product path was verified on
+2026-07-05: COSMO GRIB files download directly from IMGW, while radar
+composite file URLs redirect to HTML and remain blocked at the source. Full
+technical notes live in `docs/products/PRODUCT_RESEARCH.md` and
+`docs/products/RASTER_PIPELINE.md`.
+
+Rendered COSMO overlays are processed MeteoLens outputs: source GRIB values are
+decoded, converted from Kelvin to Celsius, resampled from the COSMO rotated
+grid, colorized, cached, and served as PNG images. Every rendered product view,
+PNG metadata payload, API response, screenshot, and export must keep the
+IMGW-PIB attribution and the processed-data notice.
+
 ## Implementation Requirements
 
 - API responses include `source`, `attribution`, and `processed_notice` fields
@@ -155,5 +172,6 @@ the machine-readable manifest metadata exposed by `/api/v1/geometry/datasets`.
   terms allow redistribution?
 - Do the WMO OSCAR/Surface terms allow importing synoptic station coordinates
   as a redistributable reviewed dataset?
-- Which product/radar/model files are high-value open data and which require
-  additional terms review?
+- Radar composite files are high-value, but current public file delivery is
+  blocked at the source. Re-review terms, projection metadata, and download
+  behavior before implementing radar rendering.

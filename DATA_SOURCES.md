@@ -121,16 +121,24 @@ Statuses:
 - Example products: COSMO GRIB model products, radar-like products such as
   CAPPI/SRI identifiers.
 - Update frequency: varies by product.
-- Stability: mixed. COSMO detail returned file lists during research. Some
-  listed radar-like IDs returned `Product could not be found`.
-- Limitations: GRIB/radar formats need dedicated parsers and probably a tiling
-  pipeline before map display.
-- Cache: product list 60 minutes; product file manifests 30-60 minutes.
-- Parser: `product_manifest`; GRIB/radar parsers are separate post-MVP work.
-- Normalized model: `ProductManifest`, later `RasterProduct` or
-  `ModelProduct`.
-- Status: `implemented` for the manifest parser; `risky` for individual
-  GRIB/radar file parsing and rendering.
+- Stability: mixed. COSMO detail returns file lists and the files download
+  correctly (verified 2026-07-05). Some listed radar-like IDs return
+  `Product could not be found`, and **all radar composite file URLs
+  307-redirect to an HTML page** — radar files are not publicly downloadable.
+- Limitations: COSMO hourly files are ~160 MB GRIB1 binaries; the server
+  ignores HTTP `Range`. Radar formats remain unparseable until IMGW restores
+  public file delivery.
+- Cache: product list 60 minutes; product file manifests
+  `METEOLENS_PRODUCT_DETAIL_CACHE_SECONDS` (3600 s) with a count cap;
+  downloaded GRIB binaries and rendered PNGs have per-product count and age
+  caps (see `docs/products/RASTER_PIPELINE.md`).
+- Parser: `product_manifest` for the list; `app/products/grib1.py` decodes the
+  narrow GRIB1 subset used by COSMO (simple packing, rotated lat/lon grid).
+- Normalized model: `ProductManifest`; rendered frames carry their own
+  metadata sidecars.
+- Status: `implemented` for the manifest parser and the COSMO `*_00`
+  2 m temperature rendering path; `blocked at source` for radar composite
+  files; `risky` for other GRIB variables.
 
 Stage 10 research must classify product IDs before any product layer is exposed:
 
@@ -140,17 +148,18 @@ Stage 10 research must classify product IDs before any product layer is exposed:
 - technically risky due to binary format, projection, file size, or cadence,
 - legally risky or requiring current terms review.
 
-Research results (2026-07-01): 10 stable/retrievable IDs (8× COSMO GRIB, composite
-SRI, composite CMAX), 32 listed-but-missing IDs, no distinct MERGE identifier in
-the manifest. Full tables live in
+Research results (2026-07-01, download verification 2026-07-05): 10
+stable/retrievable IDs (8× COSMO GRIB, composite SRI, composite CMAX), 32
+listed-but-missing IDs, no distinct MERGE identifier in the manifest. Full
+tables live in
 [`docs/products/PRODUCT_RESEARCH.md`](docs/products/PRODUCT_RESEARCH.md).
 
-Radar-like products such as CAPPI, SRI, and MERGE, and model/GRIB products such
-as COSMO files, remain research targets only. Do not implement binary parsing,
-tile generation, or map rendering until file formats, projection metadata,
-licensing, cache size, retention, and attribution requirements are documented.
-Stage 10 adds manifest classification APIs, cached frame metadata, a map timeline
-descriptor, and a frontend timeline shell — see
+Stage 14 implements the first rendering path: COSMO `*_00` 2 m temperature is
+decoded from GRIB1 (format and rotated grid documented by the product
+`readme.txt` and verified against live GDS sections), reprojected, and served
+as an attributed, processed-data-labelled PNG overlay. Radar-like products
+such as CAPPI, SRI, and MERGE stay metadata-only: their file downloads are
+blocked at the source (`rendering_status: download_blocked`). See
 [`docs/products/RASTER_PIPELINE.md`](docs/products/RASTER_PIPELINE.md).
 
 ## Archived Meteorological Warnings

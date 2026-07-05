@@ -1,14 +1,18 @@
-# Raster And Product Ingestion Pipeline Design
+# Raster And Product Ingestion Pipeline
 
-Stage 10 design only. **No binary parsing or map rendering is implemented yet.**
+Stage 10 designed this pipeline; Stage 14 implemented the first rendering
+path: **COSMO 2 m temperature** rendered server-side to a Web-Mercator-aligned
+PNG and drawn by MapLibre as an image source. Radar composites remain
+metadata-only because IMGW does not currently serve their files publicly (see
+[PRODUCT_RESEARCH.md](./PRODUCT_RESEARCH.md), "Stage 14 Download Verification").
 
 ## Goals
 
 1. Keep IMGW HTTP access in the backend only.
 2. Separate manifest metadata from large binary downloads.
 3. Make frame time, stale state, missing frames, and processed-data notice visible in
-   API and UI before any radar layer is drawn on the map.
-4. Cap disk usage for high-cadence radar products.
+   API and UI before any layer is drawn on the map.
+4. Cap disk usage for high-cadence and large-file products.
 
 ## Pipeline Stages
 
@@ -18,92 +22,103 @@ flowchart LR
   B --> C[Product detail manifest cache]
   C --> D[Frame metadata parser]
   D --> E[Timeline API]
-  C --> F[Binary fetch queue]
-  F --> G[Format parser GRIB or radar]
-  G --> H[Projection normalization]
-  H --> I[Tile or GeoTIFF renderer]
-  I --> J[MapLibre raster source]
+  C --> F[On-demand binary fetch]
+  F --> G[GRIB1 parser - app/products/grib1.py]
+  G --> H[Rotated grid to Web Mercator - app/products/rotated_grid.py]
+  H --> I[RGBA PNG renderer - app/products/rendering.py + png.py]
+  I --> J[MapLibre image source]
 ```
 
-Implemented in Stage 10: **A → D → E** (metadata path).
-
-Deferred: **F → J** (binary rendering path).
+Implemented: **A → E** (metadata path, Stage 10) and **F → J** (rendering
+path, Stage 14, COSMO `*_00` products / variable `t2m` only).
 
 ## Cache Layers
 
-| Layer | Location | TTL / retention | Contents |
+| Layer | Location | Limits | Contents |
 | --- | --- | --- | --- |
-| Product list | `data/cache/product.json` | 60 min (existing source refresh) | Normalized `ProductManifest` rows |
-| Product detail manifest | `data/cache/product_details/{id}.json` | `METEOLENS_PRODUCT_DETAIL_CACHE_SECONDS` (default 3600 s) | File list JSON from IMGW detail endpoint |
-| Binary files | `data/products/{id}/` (planned) | `METEOLENS_PRODUCT_FILE_RETENTION_HOURS` (default 24 h) | Downloaded `.grib`, `.sri`, `.cmax`, previews |
-| Render artifacts | `data/tiles/{id}/` (planned) | Same as binaries or shorter for tiles | PNG/WebP tiles or COG GeoTIFF |
+| Product list | `data/cache/product.json` | 60 min source refresh | Normalized `ProductManifest` rows |
+| Product detail manifest | `data/cache/product_details/{id}.json` | TTL `METEOLENS_PRODUCT_DETAIL_CACHE_SECONDS` (3600 s), count `METEOLENS_PRODUCT_MAX_DETAIL_MANIFESTS` (50) | File list JSON from IMGW detail endpoint |
+| GRIB binaries | `data/products/binaries/{id}/` | count `METEOLENS_PRODUCT_BINARY_MAX_FILES` (4/product), age `METEOLENS_PRODUCT_FILE_RETENTION_HOURS` (24 h), size `METEOLENS_PRODUCT_FILE_MAX_MB` (300 MB) | Downloaded COSMO GRIB1 files + `.meta.json` retrieval metadata |
+| Rendered frames | `data/products/renders/{id}/` | count `METEOLENS_PRODUCT_MAX_CACHED_FILES` (500/product), same age limit | `{file}.{variable}.png` + `.json` metadata sidecars |
 
-Stage 10 writes **detail manifest cache only** through tests/ops seeding helpers. A
-scheduled refresh job should be added before production radar use.
+Eviction is oldest-first by mtime; sidecar files are removed together with
+their primary file.
 
-## Frame Metadata Rules
+## Detail Manifest Refresh
 
-Filename parsers live in `backend/app/products/frames.py`:
+`app/products/refresh.py` refreshes manifests for
+`METEOLENS_PRODUCT_REFRESH_IDS` (default: the four renderable
+`COSMO_HVD_*_00` products) when `METEOLENS_PRODUCT_REFRESH_ENABLED=true`:
 
-- **COSMO GRIB manifests:** valid time from the second `YYYYMMDDHHmm` group.
-- **Radar composites:** first 14 digits before reflectivity suffix (`.sri`, `.cmax`).
-- **`readme.txt`:** metadata frame with no `frame_time`.
-- **`*_echoOnly.png`:** preview frame; do not treat as primary radar source.
+- on startup together with `METEOLENS_SYNC_ON_STARTUP`,
+- in the scheduler every `METEOLENS_PRODUCT_DETAIL_CACHE_SECONDS`,
+- sequentially, honouring the TTL (fresh manifests are skipped),
+- optionally pre-rendering the newest `METEOLENS_PRODUCT_RENDER_PREFETCH_FRAMES`
+  frames after a successful refresh (default 0 = off; one COSMO file is
+  ~160 MB, so prefetch is an explicit ops decision).
 
-API responses expose:
+## Rendering Path (Stage 14)
 
-- `frame_time`, `frame_kind`, `missing`, `rendering_status`
-- aggregate `missing_frames`, `stale`, `retrieved_at`
+- **Source:** COSMO `*_00` GRIB1 files. The `*_01` datasets lack the rendered
+  variable and stay metadata-only.
+- **Parser:** narrow pure-Python GRIB1 reader (`app/products/grib1.py`) —
+  sequential record scan, simple packing, bitmap support, rotated lat/lon GDS.
+  Anything else raises instead of guessing.
+- **Variable registry:** `app/products/rendering.py` maps variable keys to
+  GRIB selectors; `t2m` = parameter 11, level type 105, level 2, Kelvin → °C.
+- **Grid:** rotated pole (40 N, −170 E), first rotated point (−2.4, 0.65),
+  0.025° spacing, 380×405 points — verified against live GDS sections on
+  2026-07-05 (`EXPECTED_COSMO_GRID`). A render is **refused** with
+  `grid_mismatch` when a file stops matching, so overlays are never drawn at a
+  wrong position.
+- **Reprojection:** nearest-neighbour resample onto a Web-Mercator-aligned
+  lat/lon window (`resample_to_mercator`), NaN outside the model footprint.
+- **Output:** RGBA PNG (`app/products/png.py`, no external imaging deps) with
+  attribution, processed-data notice, frame/run/retrieval/render times stored
+  as iTXt chunks; a `.json` sidecar carries the same metadata for the API.
+- **Missing frames:** IMGW answers HTTP 200 with an HTML page for missing
+  files, so the `GRIB` magic check is the missing-frame signal (`frame_missing`,
+  404). Redirects mean the product path is not publicly downloadable
+  (`download_blocked`).
+- **Concurrency:** downloads and renders are serialized by a process-wide lock
+  so parallel requests cannot multiply IMGW load; the first render of a frame
+  downloads ~160 MB and takes seconds to tens of seconds, subsequent requests
+  are cache hits.
 
-## MapLibre Rendering Strategy (Deferred)
+## API Surface
 
-Evaluate in order:
+- `GET /api/v1/products/{id}/frames` — frame metadata; renderable products get
+  a `renderable` descriptor plus per-frame `renderable`, `renderable_reason`,
+  `render_ready`, `render_url`.
+- `GET /api/v1/products/{id}/render/{file}?variable=t2m` — the rendered PNG.
+- `GET /api/v1/map/timeline` — layer descriptors; `frames_renderable=true` and
+  the `renderable` block appear **only** for genuinely renderable products.
 
-1. **Pre-generated XYZ/PNG tiles** — simplest for radar previews if IMGW PNG echo
-   files are legally and technically accessible; requires georeferencing metadata.
-2. **COG GeoTIFF + MapLibre `raster` source** — better for model grids once GRIB is
-   decoded and reprojected to EPSG:3857 or EPSG:4326 bounds.
-3. **Dynamic server-side rendering** — fallback when tile prep is too heavy; must be
-   rate-limited and cached aggressively.
+The render window is bounded: only leads up to
+`METEOLENS_PRODUCT_RENDER_MAX_LEAD_HOURS` (24) on a
+`METEOLENS_PRODUCT_RENDER_LEAD_STEP_HOURS` (3) step are renderable; other
+frames stay explicit metadata-only with a reason.
 
-Do not fetch full 4 000+ frame manifests into browser memory. Paginate with
-`limit`/`offset` (already exposed) and let the timeline request windows of frames.
+## Timeline UI
 
-## Timeline UI Requirements
+`TimelineBar` + `MapShell` (shared state via `useTimelineFrames`):
 
-The Stage 10 frontend shell (`TimelineBar`) shows when `/api/v1/map/timeline`
-returns product layers. Labels distinguish:
+- layer picker labels renderable layers, with play/pause/step and speed,
+- the overlay is an explicit opt-in button ("Pokaż na mapie") because the
+  first render of each frame triggers a large backend download,
+- frame time and model run time are shown; metadata-only, constant-field,
+  out-of-window, and blocked-download states are labelled explicitly,
+- overlay image failures surface as a visible error, never silently,
+- the temperature legend, attribution, and processed-data notice are always
+  visible while a rendered layer is active.
 
-- frame time vs source/retrieval time,
-- stale manifest state,
-- missing frame timestamps,
-- metadata-only mode when `frames_renderable=false`.
+Keyboard shortcuts (when the timeline is focused): `Space` play/pause,
+`ArrowLeft`/`ArrowRight` step.
 
-Keyboard shortcuts (when timeline focused):
+## Deferred
 
-- `Space` — play/pause
-- `ArrowLeft` / `ArrowRight` — step frames
-
-## Retention Policy
-
-Defaults (`backend/app/core/config.py`):
-
-- `METEOLENS_PRODUCT_DETAIL_CACHE_SECONDS=3600`
-- `METEOLENS_PRODUCT_FILE_RETENTION_HOURS=24`
-- `METEOLENS_PRODUCT_MAX_CACHED_FILES=500`
-
-Recommended ops rules once binaries are enabled:
-
-1. Never retain more than `PRODUCT_MAX_CACHED_FILES` per product ID.
-2. Evict oldest frames first (LRU by `frame_time`).
-3. Refuse download when free disk < configured safety margin.
-4. Log every binary fetch with `source_key`, product ID, bytes, and status.
-
-## Next Implementation Steps
-
-1. Background job to refresh detail manifests for `stable_retrievable` IDs only.
-2. Probe binary download headers and document final file URLs for SRI/CMAX/COSMO.
-3. Spike parser on one small COSMO lead file and one radar preview PNG.
-4. Choose MapLibre raster strategy based on spike results.
-5. Add tile endpoint `GET /api/v1/tiles/{product_id}/{z}/{x}/{y}` after rendering
-   path is chosen.
+- Radar composite rendering — blocked at the source (public downloads
+  307-redirect to HTML); re-probe after IMGW changes file delivery.
+- More variables (precipitation needs accumulation differencing), tile
+  pyramids, GeoTIFF export, HTTP range-based partial GRIB reads (the server
+  ignores `Range`).

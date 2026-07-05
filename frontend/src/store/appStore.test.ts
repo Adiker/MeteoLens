@@ -17,6 +17,15 @@ function reset() {
       onlyStaleCache: false,
     },
     mapView: POLAND_VIEW,
+    timeline: {
+      activeLayerKey: null,
+      frameIndex: 0,
+      playing: false,
+      speed: 1,
+      focused: false,
+      overlayEnabled: false,
+      overlayError: null,
+    },
   });
   useAppStore.getState().setActiveLayers([
     "synop_stations",
@@ -120,5 +129,24 @@ describe("appStore", () => {
 
     useAppStore.getState().setShortcutHelpOpen(true);
     expect(useAppStore.getState().shortcutHelpOpen).toBe(true);
+  });
+
+  it("toggles the rendered product overlay and clears its error state", () => {
+    expect(useAppStore.getState().timeline.overlayEnabled).toBe(false);
+
+    useAppStore.getState().toggleTimelineOverlay();
+    expect(useAppStore.getState().timeline.overlayEnabled).toBe(true);
+
+    useAppStore.getState().setTimelineOverlayError("Nie udało się wczytać ramki.");
+    expect(useAppStore.getState().timeline.overlayError).toBe("Nie udało się wczytać ramki.");
+
+    // Toggling and switching layers must not carry stale overlay errors over.
+    useAppStore.getState().toggleTimelineOverlay();
+    expect(useAppStore.getState().timeline.overlayError).toBeNull();
+
+    useAppStore.getState().setTimelineOverlayError("Błąd.");
+    useAppStore.getState().setTimelineLayer("product:COSMO_HVD_00_00");
+    expect(useAppStore.getState().timeline.overlayError).toBeNull();
+    expect(useAppStore.getState().timeline.frameIndex).toBe(0);
   });
 });

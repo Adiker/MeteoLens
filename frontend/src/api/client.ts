@@ -290,9 +290,35 @@ export interface ProductFrame {
   file: string;
   url: string;
   frame_time: string | null;
+  run_time?: string | null;
   frame_kind: string;
   rendering_status: string;
   missing: boolean;
+  renderable?: boolean;
+  renderable_reason?: string | null;
+  render_url?: string;
+  render_ready?: boolean;
+}
+
+export interface RenderableVariable {
+  key: string;
+  title: string;
+  unit: string;
+  legend: Array<{ value: number; color: string }>;
+}
+
+export interface RenderableDescriptor {
+  variables: RenderableVariable[];
+  default_variable: string;
+  bounds: [number, number, number, number];
+  /** MapLibre image-source corners: TL, TR, BR, BL as [lon, lat]. */
+  image_coordinates: [[number, number], [number, number], [number, number], [number, number]];
+  render_url_template: string;
+  max_lead_hours: number;
+  lead_step_hours: number;
+  grid_note: string;
+  attribution: string;
+  processed_notice: string;
 }
 
 export interface ProductFramesResponse {
@@ -312,6 +338,7 @@ export interface ProductFramesResponse {
   offset: number;
   missing_frames: number;
   stale: boolean;
+  renderable: RenderableDescriptor | null;
   attribution: string;
   processed_notice: string;
   empty_state: EmptyState | null;
@@ -328,6 +355,7 @@ export interface TimelineLayer {
   frame_count: number;
   missing_frames: number;
   frames_renderable: boolean;
+  renderable: RenderableDescriptor | null;
   source_time: string | null;
   first_frame_time: string | null;
   last_frame_time: string | null;
@@ -497,6 +525,11 @@ export function fetchProductFrames(
 
 export function fetchMapTimeline() {
   return getJson<MapTimelineResponse>("/api/v1/map/timeline");
+}
+
+/** Absolute URL of a rendered product frame PNG (MapLibre image source). */
+export function productRenderUrl(renderUrl: string): string {
+  return `${API_BASE_URL}${renderUrl}`;
 }
 
 export interface SourceFreshnessItem {

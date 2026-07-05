@@ -3,8 +3,9 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
 import { useEffect, useMemo, useRef } from "react";
 
-import type { StationFeature } from "../api/client";
+import { productRenderUrl, type StationFeature } from "../api/client";
 import { useGeometryDatasetsQuery, useMapLayersQuery, useSourcesQuery } from "../api/queries";
+import { useTimelineFrames } from "../hooks/useTimelineFrames";
 import { staleSourceKeys } from "../lib/alertRules";
 import { loadedGeometryAttributions } from "../lib/geometryAttribution";
 import { CAPTURE_PNG_EVENT, FLY_TO_EVENT, type FlyToDetail } from "../lib/mapBus";
@@ -19,6 +20,45 @@ const SELECTED_LAYER = "stations-selected";
 const WARNINGS_SOURCE = "warnings";
 const WARNINGS_FILL_LAYER = "warnings-fill";
 const WARNINGS_OUTLINE_LAYER = "warnings-outline";
+const PRODUCT_SOURCE = "product-render";
+const PRODUCT_LAYER = "product-render-raster";
+
+interface ProductOverlay {
+  url: string;
+  coordinates: [[number, number], [number, number], [number, number], [number, number]];
+}
+
+function applyProductOverlay(map: maplibregl.Map, overlay: ProductOverlay | null) {
+  const source = map.getSource(PRODUCT_SOURCE) as maplibregl.ImageSource | undefined;
+  if (!overlay) {
+    if (map.getLayer(PRODUCT_LAYER)) {
+      map.setLayoutProperty(PRODUCT_LAYER, "visibility", "none");
+    }
+    return;
+  }
+  if (!source) {
+    map.addSource(PRODUCT_SOURCE, {
+      type: "image",
+      url: overlay.url,
+      coordinates: overlay.coordinates,
+    });
+    map.addLayer(
+      {
+        id: PRODUCT_LAYER,
+        type: "raster",
+        source: PRODUCT_SOURCE,
+        paint: { "raster-opacity": 0.75, "raster-fade-duration": 0 },
+      },
+      // Rendered product data sits under station markers and warning polygons.
+      map.getLayer(STATIONS_LAYER) ? STATIONS_LAYER : undefined,
+    );
+    return;
+  }
+  source.updateImage({ url: overlay.url, coordinates: overlay.coordinates });
+  if (map.getLayer(PRODUCT_LAYER)) {
+    map.setLayoutProperty(PRODUCT_LAYER, "visibility", "visible");
+  }
+}
 
 function collection(features: StationFeature[]): GeoJSON.FeatureCollection {
   return { type: "FeatureCollection", features } as unknown as GeoJSON.FeatureCollection;
@@ -73,6 +113,7 @@ export function MapShell() {
   const selection = useAppStore((state) => state.selection);
   const maxDataDelayMinutes = useAppStore((state) => state.filters.maxDataDelayMinutes);
   const onlyStaleCache = useAppStore((state) => state.filters.onlyStaleCache);
+  const overlayEnabled = useAppStore((state) => state.timeline.overlayEnabled);
 
   const activeMapLayerKeys = LAYERS.filter((layer) => activeLayers[layer.key]).map((layer) => layer.key);
   const mapQuery = useMapLayersQuery(activeMapLayerKeys);
@@ -103,10 +144,26 @@ export function MapShell() {
         .flatMap((layer) => layer.geojson.features),
     [mapQuery.data],
   );
+  const { activeLayer: timelineLayer, currentFrame } = useTimelineFrames();
+  const productOverlay = useMemo<ProductOverlay | null>(() => {
+    if (!overlayEnabled) {
+      return null;
+    }
+    const descriptor = timelineLayer?.renderable;
+    if (!descriptor || !currentFrame?.renderable || !currentFrame.render_url) {
+      return null;
+    }
+    return {
+      url: productRenderUrl(currentFrame.render_url),
+      coordinates: descriptor.image_coordinates,
+    };
+  }, [overlayEnabled, timelineLayer, currentFrame]);
+
   const featuresRef = useRef(stationFeatures);
   const warningFeaturesRef = useRef(warningFeatures);
   const geometryAttributionsRef = useRef(geometryAttributions);
   const selectionRef = useRef(selection);
+  const productOverlayRef = useRef(productOverlay);
 
   // --- Map lifecycle (mount once) -----------------------------------------
   useEffect(() => {
@@ -239,6 +296,18 @@ export function MapShell() {
         map.getCanvas().style.cursor = "";
       });
 
+      applyProductOverlay(map, productOverlayRef.current);
+      map.on("error", (event) => {
+        // Surface rendered-frame load failures instead of hiding them.
+        if ((event as { sourceId?: string }).sourceId === PRODUCT_SOURCE) {
+          useAppStore
+            .getState()
+            .setTimelineOverlayError(
+              "Nie udało się wczytać wyrenderowanej ramki produktu.",
+            );
+        }
+      });
+
       loadedRef.current = true;
     });
 
@@ -293,6 +362,16 @@ export function MapShell() {
       map.setLayoutProperty(WARNINGS_OUTLINE_LAYER, "visibility", visibility);
     }
   }, [warningFeatures]);
+
+  // --- Rendered product overlay (Stage 14) ---------------------------------
+  useEffect(() => {
+    productOverlayRef.current = productOverlay;
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) {
+      return;
+    }
+    applyProductOverlay(map, productOverlay);
+  }, [productOverlay]);
 
   // --- Reflect selection as a highlight ring ------------------------------
   useEffect(() => {

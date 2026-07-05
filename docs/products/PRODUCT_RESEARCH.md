@@ -1,10 +1,52 @@
 # IMGW Product And Radar Research
 
-Research date: **2026-07-01**
+Research dates: **2026-07-01** (catalog classification), **2026-07-05**
+(download-path verification for Stage 14)
 
-This document classifies public IMGW-PIB `api/data/product` identifiers before any
-binary parser or map rendering work begins. MeteoLens currently exposes manifest
-metadata, parsed frame timestamps, and a timeline UI shell only.
+This document classifies public IMGW-PIB `api/data/product` identifiers and
+records which product paths are actually downloadable. As of Stage 14 MeteoLens
+renders one product path (COSMO 2 m temperature) as a real map layer; all other
+products remain metadata/timeline only.
+
+## Stage 14 Download Verification (2026-07-05)
+
+Live probes against `danepubliczne.imgw.pl` produced two decisive findings:
+
+1. **Radar composite files are not publicly downloadable.** Every
+   `getfiledown` URL from the `COMPO_SRI.comp.sri` and
+   `COMPO_CMAX_250.comp.cmax` detail manifests — including the
+   `*_echoOnly.png` previews — responds `307 Temporary Redirect` to the HTML
+   datastore page, with or without a `ci_session` cookie, browser headers,
+   referer, or the datastore regulations flow (which is purely client-side
+   `localStorage`). The datastore's own file listing
+   (`POST /pl/datastore/getFilesList`) emits malformed relative links
+   (`datastore/getfiledownOper/...`, missing slash) that return CodeIgniter
+   404 pages. Treat the radar composite path as **blocked at the source** until
+   IMGW fixes public file delivery; rendering status is `download_blocked`.
+2. **COSMO GRIB files download correctly.** The same `getfiledown` route
+   serves `Oper/COSMO/...` files with HTTP 200: `readme.txt` as `text/plain`
+   and forecast files as `application/*` GRIB1 binaries (verified magic
+   `GRIB`, edition 1; the constant-field file `lfff00000000c` was ~19.7 MB).
+
+The COSMO `readme.txt` fully documents the format and grid, which unblocks the
+Stage 14 rendering guardrail (documented format + projection):
+
+- Format: **GRIB1**, one record per field/level, simple packing.
+- Grid: **rotated lat/lon** (GRIB1 data representation type 10), pole at
+  lon **-170°**, lat **32.5°**, origin lon 10°E / lat 57.5°N, first rotated
+  point lon **-10°** / lat **-19°**, `dlon = dlat = 0.0625°`,
+  **415 × 460** points, 40 model levels.
+- Record catalog is enumerated in the readme; the Stage 14 MVP renders
+  **2 m air temperature** (record 365: parameter 11, level type 105, level 2).
+- Runs at 00/06/12/18 UTC, 60 h length, hourly steps; filenames encode
+  `run_time`, `valid_time`, and the `lfffDDHHMMSS` lead (plus a `...c`
+  constant-field file per run that must not be treated as a forecast frame).
+
+Legal basis recorded from `danepubliczne.imgw.pl/pl/apiinfo`: data are made
+available under the Polish open-data act (ustawa z 11.08.2021 o otwartych
+danych) with IMGW-PIB as the distributing institute; reuse is permitted with
+source attribution, which MeteoLens shows together with the processed-data
+notice on every rendered view.
 
 ## Summary
 
@@ -63,15 +105,18 @@ model fields or derived tiles.
 Sample radar filename: `2026062803300000dBR.sri`
 
 - Frame time is encoded in the first 14 digits (`YYYYMMDDHHmmss`).
-- Public HEAD/GET responses for `.sri`/`.cmax` URLs returned `text/html` during
-  research, so direct file access may require additional path/session checks before
-  production download.
+- **2026-07-05 update:** direct downloads are confirmed blocked — every file
+  URL (binaries and PNG previews alike) 307-redirects to the datastore HTML
+  page regardless of session, referer, or browser-like headers. See
+  "Stage 14 Download Verification" above. Rendering status is
+  `download_blocked`.
 
 Technical risks:
 
 - Proprietary formats; no open parser in MeteoLens yet.
 - High cadence and large manifests require pagination and cache caps.
-- PNG previews may be easier to prototype but still need projection metadata.
+- PNG previews cannot be prototyped until IMGW restores public file delivery,
+  and they still need projection metadata.
 
 ## Listed But Missing At Detail Endpoint (`listed_missing`)
 
@@ -98,20 +143,24 @@ The manifest did not expose a distinct `MERGE` product ID on 2026-07-01. Composi
 products use `COMPO_*` prefixes instead. Re-check the manifest after IMGW catalog
 changes.
 
-## MeteoLens Stage 10 Behavior
+## MeteoLens Behavior (Stage 10 + Stage 14)
 
 Implemented now:
 
 - `GET /api/v1/products` — manifest + research classification
 - `GET /api/v1/products/{id}/frames` — frame metadata parsed from cached manifest files
-- `GET /api/v1/map/timeline` — time-aware layer descriptors for cached products
-- Frontend timeline shell with explicit metadata-only / non-renderable labels
+- `GET /api/v1/products/{id}/render/{file}` — rendered PNG overlay for
+  renderable COSMO frames (2 m temperature), server-side download + render
+  cache with retention limits
+- `GET /api/v1/map/timeline` — time-aware layer descriptors; COSMO layers
+  carry `frames_renderable=true` plus image bounds and a render URL template
+- Scheduled refresh of detail manifests for configured product IDs
+- Frontend timeline with play/pause/step and a MapLibre image overlay for
+  renderable frames; explicit metadata-only labels remain for everything else
 
-Deferred until formats, projection, licensing, and cache policy are complete:
+Still deferred:
 
-- Binary GRIB / radar parsing
-- Tile generation or GeoTIFF rendering for MapLibre
-- Automatic IMGW product-detail refresh on every API request (manual/ops seeding or
-  scheduled job TBD)
+- Radar composite rendering (blocked at the source; see download verification)
+- Full multi-variable GRIB decoding, tile pyramids, GeoTIFF exports
 
 See also: [RASTER_PIPELINE.md](./RASTER_PIPELINE.md).

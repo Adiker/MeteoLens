@@ -1,13 +1,29 @@
-import { ChevronLeft, ChevronRight, Loader2, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Layers, Loader2, Pause, Play } from "lucide-react";
 import { useEffect, useMemo } from "react";
 
-import { useMapTimelineQuery, useProductFramesQuery } from "../api/queries";
 import { formatTimestamp } from "../lib/format";
 import { cn } from "../lib/utils";
 import { useAppStore, type TimelineSpeed } from "../store/appStore";
+import { useTimelineFrames } from "../hooks/useTimelineFrames";
 
 const SPEED_OPTIONS: TimelineSpeed[] = [0.5, 1, 2, 4];
-const FRAME_PAGE_SIZE = 500;
+
+const RENDERING_STATUS_LABEL: Record<string, string> = {
+  renderable: "warstwa renderowalna",
+  parser_not_implemented: "tylko metadane",
+  download_blocked: "pliki niedostępne publicznie u źródła",
+  metadata_only: "tylko metadane",
+  rendering_not_implemented: "render niezaimplementowany",
+  unsupported_format: "format nieobsługiwany",
+  unavailable: "produkt niedostępny",
+};
+
+const FRAME_REASON_LABEL: Record<string, string> = {
+  constant_field_file: "plik pól stałych (bez renderu)",
+  not_a_forecast_frame: "ramka bez prognozy (bez renderu)",
+  lead_beyond_render_window: "poza oknem renderowania (tylko metadane)",
+  lead_not_on_render_step: "poza krokiem renderowania (tylko metadane)",
+};
 
 export function TimelineBar() {
   const timeline = useAppStore((state) => state.timeline);
@@ -16,47 +32,20 @@ export function TimelineBar() {
   const toggleTimelinePlaying = useAppStore((state) => state.toggleTimelinePlaying);
   const setTimelineSpeed = useAppStore((state) => state.setTimelineSpeed);
   const setTimelineFocused = useAppStore((state) => state.setTimelineFocused);
+  const toggleTimelineOverlay = useAppStore((state) => state.toggleTimelineOverlay);
 
-  const timelineQuery = useMapTimelineQuery();
-  const layers = useMemo(() => timelineQuery.data?.layers ?? [], [timelineQuery.data?.layers]);
-  const activeLayer =
-    layers.find((layer) => layer.key === timeline.activeLayerKey) ?? layers[0] ?? null;
-
-  useEffect(() => {
-    if (layers.length === 0) {
-      if (!timelineQuery.isLoading && timeline.activeLayerKey) {
-        setTimelineLayer(null);
-      }
-      return;
-    }
-    if (!timeline.activeLayerKey || !layers.some((layer) => layer.key === timeline.activeLayerKey)) {
-      setTimelineLayer(layers[0].key);
-    }
-  }, [layers, setTimelineLayer, timeline.activeLayerKey, timelineQuery.isLoading]);
-
-  const provisionalFrameCount = activeLayer?.frame_count ?? 0;
-  const provisionalClampedIndex = Math.min(
-    timeline.frameIndex,
-    Math.max(provisionalFrameCount - 1, 0),
-  );
-  const framePageOffset =
-    Math.floor(provisionalClampedIndex / FRAME_PAGE_SIZE) * FRAME_PAGE_SIZE;
-  const framesQuery = useProductFramesQuery(
-    activeLayer?.product_id ?? null,
-    FRAME_PAGE_SIZE,
-    framePageOffset,
-  );
-  const frames = framesQuery.data?.frames ?? [];
-  const frameCount = framesQuery.data?.frame_count ?? provisionalFrameCount;
-  const clampedIndex = Math.min(timeline.frameIndex, Math.max(frameCount - 1, 0));
-  const currentPageOffset = framesQuery.data?.offset ?? framePageOffset;
-  const currentFrame = frames[clampedIndex - currentPageOffset] ?? null;
-
-  useEffect(() => {
-    if (activeLayer && frameCount > 0 && clampedIndex !== timeline.frameIndex) {
-      setTimelineFrameIndex(clampedIndex);
-    }
-  }, [activeLayer, clampedIndex, frameCount, setTimelineFrameIndex, timeline.frameIndex]);
+  const {
+    layers,
+    activeLayer,
+    frameCount,
+    clampedIndex,
+    currentFrame,
+    timelineLoading,
+    framesLoading,
+    framesStale,
+    missingFrames,
+    retrievedAt,
+  } = useTimelineFrames();
 
   useEffect(() => {
     if (!timeline.playing || frameCount <= 1) {
@@ -76,25 +65,42 @@ export function TimelineBar() {
     return () => window.clearInterval(timer);
   }, [frameCount, timeline.playing, timeline.speed]);
 
+  const renderableVariable = activeLayer?.renderable?.variables[0] ?? null;
+
   const statusLabel = useMemo(() => {
-    if (timelineQuery.isLoading) {
+    if (timelineLoading) {
       return "Ładowanie osi czasu…";
     }
     if (layers.length === 0) {
       return null;
     }
-    if (framesQuery.isLoading) {
+    if (framesLoading) {
       return "Ładowanie ramek produktu…";
     }
     if (activeLayer && !activeLayer.frames_renderable) {
       return "Metadane ramek — renderowanie mapy niedostępne";
     }
     return null;
-  }, [activeLayer, framesQuery.isLoading, layers.length, timelineQuery.isLoading]);
+  }, [activeLayer, framesLoading, layers.length, timelineLoading]);
 
-  if (layers.length === 0 && !timelineQuery.isLoading) {
+  if (layers.length === 0 && !timelineLoading) {
     return null;
   }
+
+  const frameRenderLabel = (() => {
+    if (!activeLayer?.frames_renderable || !currentFrame) {
+      return null;
+    }
+    if (currentFrame.renderable) {
+      return currentFrame.render_ready
+        ? "Ramka wyrenderowana (cache)"
+        : "Ramka renderowana na żądanie";
+    }
+    return (
+      FRAME_REASON_LABEL[currentFrame.renderable_reason ?? ""] ??
+      "Ramka nierenderowalna (tylko metadane)"
+    );
+  })();
 
   return (
     <section
@@ -120,16 +126,41 @@ export function TimelineBar() {
               {layers.map((layer) => (
                 <option key={layer.key} value={layer.key}>
                   {layer.title}
+                  {layer.frames_renderable ? " (render)" : ""}
                 </option>
               ))}
             </select>
           ) : (
             <span className="text-xs text-foreground">{activeLayer?.title}</span>
           )}
+          {activeLayer?.frames_renderable && (
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs",
+                timeline.overlayEnabled
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background hover:bg-muted",
+              )}
+              aria-pressed={timeline.overlayEnabled}
+              aria-label={
+                timeline.overlayEnabled ? "Ukryj warstwę z mapy" : "Pokaż warstwę na mapie"
+              }
+              onClick={toggleTimelineOverlay}
+            >
+              <Layers aria-hidden className="size-3.5" />
+              {timeline.overlayEnabled ? "Warstwa włączona" : "Pokaż na mapie"}
+            </button>
+          )}
           {statusLabel && (
             <span className="text-xs text-muted-foreground">{statusLabel}</span>
           )}
-          {(timelineQuery.isLoading || framesQuery.isLoading) && (
+          {timeline.overlayError && (
+            <span className="text-xs text-red-600" role="alert">
+              {timeline.overlayError}
+            </span>
+          )}
+          {(timelineLoading || framesLoading) && (
             <Loader2 aria-hidden className="size-3.5 animate-spin text-muted-foreground" />
           )}
         </div>
@@ -205,41 +236,65 @@ export function TimelineBar() {
                   ? formatTimestamp(currentFrame.frame_time)
                   : currentFrame?.frame_kind === "metadata"
                     ? "Metadane (readme)"
-                    : "Brak czasu ramki"}
+                    : currentFrame?.frame_kind === "constant"
+                      ? "Pola stałe modelu"
+                      : "Brak czasu ramki"}
+                {currentFrame?.run_time && (
+                  <span className="ml-1 text-muted-foreground">
+                    (start: {formatTimestamp(currentFrame.run_time)})
+                  </span>
+                )}
               </dd>
             </div>
             <div>
               <dt className="uppercase">Czas źródła</dt>
               <dd className="text-foreground">
-                {framesQuery.data?.retrieved_at
-                  ? formatTimestamp(framesQuery.data.retrieved_at)
-                  : activeLayer.source_time
-                    ? formatTimestamp(activeLayer.source_time)
-                    : "—"}
+                {retrievedAt ? formatTimestamp(retrievedAt) : "—"}
               </dd>
             </div>
             <div>
               <dt className="uppercase">Ramki</dt>
               <dd className="text-foreground">
                 {frameCount > 0 ? `${clampedIndex + 1} / ${frameCount}` : "Brak ramek"}
-                {framesQuery.data?.missing_frames ? (
-                  <span className="ml-1 text-amber-600">
-                    ({framesQuery.data.missing_frames} bez czasu)
-                  </span>
+                {missingFrames ? (
+                  <span className="ml-1 text-amber-600">({missingFrames} bez czasu)</span>
                 ) : null}
               </dd>
             </div>
             <div>
               <dt className="uppercase">Status</dt>
               <dd className="text-foreground">
-                {activeLayer.stale || framesQuery.data?.stale ? "Przestarzałe" : "Aktualne"}
+                {framesStale ? "Przestarzałe" : "Aktualne"}
                 {" · "}
-                {activeLayer.rendering_status === "parser_not_implemented"
-                  ? "tylko metadane"
-                  : activeLayer.rendering_status}
+                {RENDERING_STATUS_LABEL[activeLayer.rendering_status] ??
+                  activeLayer.rendering_status}
+                {frameRenderLabel ? ` · ${frameRenderLabel}` : ""}
               </dd>
             </div>
           </dl>
+        )}
+
+        {activeLayer?.renderable && renderableVariable && (
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            <span className="text-foreground">
+              {renderableVariable.title} [{renderableVariable.unit}]
+            </span>
+            <span aria-hidden className="flex items-center overflow-hidden rounded-sm">
+              {renderableVariable.legend.map((stop) => (
+                <span
+                  key={stop.value}
+                  className="inline-block h-2.5 w-6"
+                  style={{ backgroundColor: stop.color }}
+                  title={`${stop.value} ${renderableVariable.unit}`}
+                />
+              ))}
+            </span>
+            <span>
+              {renderableVariable.legend[0]?.value}–
+              {renderableVariable.legend[renderableVariable.legend.length - 1]?.value}{" "}
+              {renderableVariable.unit}
+            </span>
+          </div>
         )}
 
         {activeLayer && (

@@ -17,13 +17,15 @@ ProductAvailability = Literal[
 ]
 RenderingStatus = Literal[
     "metadata_only",
+    "renderable",
     "parser_not_implemented",
     "rendering_not_implemented",
     "unsupported_format",
+    "download_blocked",
     "unavailable",
 ]
 
-RESEARCH_DATE = "2026-07-01"
+RESEARCH_DATE = "2026-07-05"
 
 
 @dataclass(frozen=True)
@@ -39,17 +41,25 @@ class ProductClassification:
 
 def classify_product_id(product_id: str) -> ProductClassification:
     if product_id.startswith("COSMO_HVD_"):
+        renderable_dataset = product_id.endswith("_00")
         return ProductClassification(
             product_id=product_id,
             category="grib_model",
             availability="stable_retrievable",
             format_notes=(
-                "GRIB2-like binary files referenced by JSON manifest; "
-                "projection and variables undocumented in API."
+                "GRIB1 binaries on a rotated lat/lon grid documented by the "
+                "product readme; verified downloadable on 2026-07-05."
             ),
-            rendering_status="parser_not_implemented",
+            rendering_status="renderable" if renderable_dataset else "parser_not_implemented",
             high_value=True,
-            notes="Detail endpoint returns ~63 forecast lead files per run.",
+            notes=(
+                "Detail endpoint returns ~63 forecast lead files per run. "
+                + (
+                    "The 00 dataset carries 2 m temperature and renders as a map layer."
+                    if renderable_dataset
+                    else "The 01 dataset lacks the currently renderable variables."
+                )
+            ),
         )
 
     if product_id in {"COMPO_SRI.comp.sri", "COMPO_CMAX_250.comp.cmax"}:
@@ -59,11 +69,15 @@ def classify_product_id(product_id: str) -> ProductClassification:
             category="radar_composite",
             availability="stable_retrievable",
             format_notes=(
-                f"Proprietary {kind} binary plus occasional PNG echo previews in manifest."
+                f"Proprietary {kind} binary plus PNG echo previews in manifest; "
+                "all file downloads 307-redirect to an HTML page (2026-07-05)."
             ),
-            rendering_status="parser_not_implemented",
+            rendering_status="download_blocked",
             high_value=True,
-            notes="Detail endpoint returns thousands of recent frames.",
+            notes=(
+                "Detail endpoint returns thousands of recent frames, but IMGW "
+                "does not currently serve the files publicly."
+            ),
         )
 
     if product_id.startswith("COMPO_"):
