@@ -38,6 +38,25 @@ def query_station_history(
     )
 
 
+def series_origin_summary(
+    *,
+    station_id: str,
+    metric: str | None = None,
+    observed_from: datetime | None = None,
+    observed_to: datetime | None = None,
+) -> dict[str, Any]:
+    return _repository.series_origin_summary(
+        station_id=station_id,
+        metric=metric,
+        observed_from=observed_from,
+        observed_to=observed_to,
+    )
+
+
+def station_history_summary(station_id: str) -> dict[str, Any] | None:
+    return _repository.station_history_summary(station_id)
+
+
 def snapshot_observations(station: Station) -> list[dict[str, Any]]:
     return [
         _observation_payload(observation, station.source.retrieved_at)

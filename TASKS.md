@@ -375,43 +375,48 @@ Acceptance criteria:
 Goal: add optional historical backfill so station charts and rankings do not
 depend only on data collected after this deployment starts.
 
-- [ ] Research current IMGW public archive formats for synop observations.
-- [ ] Research current IMGW public archive formats for hydro observations.
-- [ ] Research current IMGW public archive formats for meteo observations.
-- [ ] Document archive endpoints or directories, file formats, update cadence,
+- [x] Research current IMGW public archive formats for synop observations.
+- [x] Research current IMGW public archive formats for hydro observations.
+- [x] Research current IMGW public archive formats for meteo observations.
+- [x] Document archive endpoints or directories, file formats, update cadence,
   and legal notes.
-- [ ] Design an opt-in, bounded-time-range backfill process.
-- [ ] Ensure the backfill process is rate-limited and resumable.
-- [ ] Add clear progress and error reporting for backfill runs.
-- [ ] Keep archive fetching server-side; do not add direct browser-to-IMGW
+- [x] Design an opt-in, bounded-time-range backfill process.
+- [x] Ensure the backfill process is rate-limited and resumable.
+- [x] Add clear progress and error reporting for backfill runs.
+- [x] Keep archive fetching server-side; do not add direct browser-to-IMGW
   archive calls.
-- [ ] Add backend import logic for at least one archive source if legally and
+- [x] Add backend import logic for at least one archive source if legally and
   technically clear.
-- [ ] Normalize archive records into the existing observation-history schema.
-- [ ] Preserve source timestamp, retrieval/import timestamp, source attribution,
+- [x] Normalize archive records into the existing observation-history schema.
+- [x] Preserve source timestamp, retrieval/import timestamp, source attribution,
   processed-data notice, and missing/null values.
-- [ ] Add API metadata distinguishing live refresh history, imported archive
+- [x] Add API metadata distinguishing live refresh history, imported archive
   history, and mixed series.
-- [ ] Add frontend labels for imported historical data.
-- [ ] Add tests for parser correctness.
-- [ ] Add tests for duplicate handling.
-- [ ] Add tests for null handling.
-- [ ] Add tests for time-range queries.
-- [ ] Add tests for retention interaction.
-- [ ] Add tests for mixed live/archive series.
-- [ ] Update `DATA_SOURCES.md`.
-- [ ] Update `API_CONTRACT.md`.
-- [ ] Update `README.md`.
-- [ ] Update `TASKS.md`.
-- [ ] Update `TROUBLESHOOTING.md`.
+- [x] Add frontend labels for imported historical data.
+- [x] Add tests for parser correctness.
+- [x] Add tests for duplicate handling.
+- [x] Add tests for null handling.
+- [x] Add tests for time-range queries.
+- [x] Add tests for retention interaction.
+- [x] Add tests for mixed live/archive series.
+- [x] Update `DATA_SOURCES.md`.
+- [x] Update `API_CONTRACT.md`.
+- [x] Update `README.md`.
+- [x] Update `TASKS.md`.
+- [x] Update `TROUBLESHOOTING.md`.
 
 Acceptance criteria:
 
-- [ ] A fresh deployment can optionally import a bounded historical time range
+- [x] A fresh deployment can optionally import a bounded historical time range
   for at least one supported source.
-- [ ] Charts can show multi-point historical data immediately after a successful
+- [x] Charts can show multi-point historical data immediately after a successful
   backfill.
-- [ ] Imported data is clearly labelled as processed IMGW-PIB data.
+- [x] Imported data is clearly labelled as processed IMGW-PIB data.
+
+Stage 15 implementation note: daily SYNOP archives are implemented first through
+`POST /api/v1/archive/backfill/synop-daily`. Hydrological archives and broader
+meteorological archive families are researched and documented, but remain
+planned parser/importer work.
 
 ## Stage 16 - Public API, SDK, And Power-User Exports
 

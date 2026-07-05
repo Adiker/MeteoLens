@@ -89,6 +89,8 @@ const observationsResponse: ObservationResponse = {
   station_id: "hydro:151140030",
   source: stationResponse.station.source,
   series_kind: "snapshot",
+  series_origin: "live_refresh",
+  origin_counts: { live_refresh: 2 },
   interval: "raw",
   empty_state: null,
   observations: stationResponse.station.observations,

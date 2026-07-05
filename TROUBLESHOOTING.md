@@ -49,6 +49,30 @@ IMGW responses can contain `null` fields or omit fields. MeteoLens must display
 missing values and list missing fields in expert mode. Do not convert missing
 values to zero.
 
+## Archive Backfill
+
+Symptoms:
+
+- `POST /api/v1/archive/backfill/synop-daily` returns `422`,
+- station chart still shows a snapshot after an import,
+- imported rows disappear after a cleanup run.
+
+Actions:
+
+- Confirm the requested range is within `METEOLENS_ARCHIVE_BACKFILL_MAX_DAYS`.
+- Confirm the archive range does not exceed
+  `METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`; current-year daily SYNOP imports are
+  monthly ZIPs, while older years can resolve to many station-code ZIPs.
+- Check the response `status`, `files_processed`, `parser_warnings`, and
+  `errors`; failed runs are recorded in `archive_import_runs`.
+- Query `/api/v1/stations/{id}/observations?metric=temperature` for a stable
+  station ID such as `synop:349190600`; map/list discovery still requires live
+  cache data and reviewed coordinates.
+- Remember that imported rows use the same SQLite retention policy as live
+  history. `METEOLENS_OBSERVATION_RETENTION_DAYS` can prune old archive rows.
+- Do not call IMGW archive ZIPs from the browser. Archive fetching is backend
+  only.
+
 ## Synop Stations Without Coordinates
 
 `api/data/synop` currently does not include `lat/lon`. The synop map layer needs

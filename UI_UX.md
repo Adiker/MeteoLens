@@ -237,9 +237,10 @@ target spec above, driven by current backend data:
   and the details panel. Hydro basin warnings remain list-only until a reviewed
   basin dataset is imported.
 - The IMGW cache exposes a single observation timestamp per station, so the
-  station chart shows current metric values (missing values excluded) rather
-  than a time series, and the bottom timeline/animation control is omitted until
-  time-aware (archive/radar) data is available.
+  station chart shows current metric values (missing values excluded) when no
+  history exists. Stage 8 live refresh history and Stage 15 SYNOP archive
+  backfill can render real multi-point line series; imported and mixed series
+  are labelled near the chart.
 - Quick filters implemented for MVP include warning level, phenomenon, province,
   county, and basin-code filtering where reviewed geometry or source area codes
   support them. Time-range filters wait on archive series.
@@ -247,6 +248,9 @@ target spec above, driven by current backend data:
   layer toggles; warning legend entries note the missing geometry.
 - The PNG export captures the current MapLibre canvas; CSV/JSON/GeoJSON exports
   are backend downloads.
+- Stage 15 labels station history as live-refresh, archive-import, or mixed
+  data. Expert mode also shows archive import markers in observation raw-field
+  metadata; exported history includes the import run and archive source URL.
 
 ## Planned Future UX
 
@@ -264,3 +268,6 @@ target spec above, driven by current backend data:
   local alert rules with an official-warning disclaimer, freshness monitor,
   warning-vs-station comparison, expert filters, and a minimal PWA shell. Trend/
   anomaly automation and generated API clients remain documented future work.
+- Stage 15 adds imported-history labels for daily SYNOP archive backfill. Future
+  archive UI controls may expose date-range import progress, but the current
+  MVP keeps the import as an explicit backend/API operation.

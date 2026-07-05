@@ -165,6 +165,13 @@ timestamp, retrieval timestamp, data delay, missing/null state, attribution, and
 processed-data notice metadata. A local retention policy is required before this
 cache is allowed to grow unbounded.
 
+Stage 15 adds an opt-in server-side archive importer for daily SYNOP archives.
+`app/imgw/archive.py` discovers bounded archive ZIPs, decodes CP1250/CSV daily
+SYNOP rows, preserves status-driven missing/null values, and writes through the
+observation-history repository. Imports are limited by date range and file count,
+rate-limited between files, and resumable through upserts on
+`station_id + metric + observed_at`.
+
 Stage 10 defines a separate cache policy for large product, radar-like,
 and GRIB files. Detail manifest cache lives under `cache/product_details/`
 (TTL plus a manifest-count cap, refreshed by the scheduler when
@@ -203,6 +210,13 @@ query dimensions include station, metric, observed time range, aggregation
 interval, and result limit. The first implementation may stay on SQLite, but
 schema and repository boundaries should leave room for PostgreSQL/PostGIS and
 TimescaleDB.
+
+Stage 15 extends `observation_history` with `origin`, `import_run_id`, and
+`import_source_url`. Live refresh rows use `origin='live_refresh'`; imported
+archive rows use `origin='archive_import'`; aggregated API responses may report
+`mixed`. `archive_import_runs` records run status, observed range, file progress,
+insert/update/unchanged counts, warnings, errors, attribution, and processed-data
+notice.
 
 Stage 9 geometry design should add imported geometry metadata without mixing
 external dataset ingestion into IMGW parsers. Candidate tables include:
@@ -271,6 +285,10 @@ Planned public API changes:
 - Stage 11 should add saved views, dashboards, local alert rules, and generated
   API client planning only after the data ownership and official-warning
   disclaimer requirements are documented.
+
+Stage 15 adds `POST /api/v1/archive/backfill/synop-daily` for manual bounded
+imports and extends station observation responses/exports with
+`series_origin`, `origin_counts`, and per-point archive import metadata.
 
 ## Map Layers
 

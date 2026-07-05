@@ -81,6 +81,16 @@ function MissingFields({ fields }: { fields: string[] }) {
   );
 }
 
+function seriesOriginLabel(origin?: "live_refresh" | "archive_import" | "mixed") {
+  if (origin === "archive_import") {
+    return "Seria z importu archiwalnego IMGW-PIB";
+  }
+  if (origin === "mixed") {
+    return "Seria mieszana: live refresh + import archiwalny";
+  }
+  return "Seria z odświeżeń live IMGW-PIB";
+}
+
 function StationDetails({ id, expert }: { id: string; expert: boolean }) {
   const stationQuery = useStationQuery(id);
   const observationsQuery = useObservationsQuery(id);
@@ -98,6 +108,7 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
 
   const { station, latest_observed_at, data_delay_seconds } = stationQuery.data;
   const observations = observationsQuery.data?.observations ?? station.observations;
+  const seriesOrigin = observationsQuery.data?.series_origin ?? "live_refresh";
   const hasCoords = station.lat != null && station.lon != null;
 
   const tabClass = (active: boolean) =>
@@ -129,6 +140,10 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
 
       <MissingFields fields={station.missing_fields} />
 
+      {observationsQuery.data?.series_kind === "history" && (
+        <p className="text-xs text-muted-foreground">{seriesOriginLabel(seriesOrigin)}</p>
+      )}
+
       <div className="flex gap-3 border-b border-border">
         <button type="button" className={tabClass(tab === "data")} onClick={() => setTab("data")}>
           <ListTree aria-hidden className="size-3.5" /> Pomiary
@@ -141,11 +156,17 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
       {tab === "data" ? (
         <ul className="divide-y divide-border rounded-md border border-border">
           {observations.map((obs) => (
-            <li key={obs.metric} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+            <li
+              key={`${obs.metric}:${obs.observed_at ?? "snapshot"}:${obs.origin ?? "live"}`}
+              className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+            >
               <span>
                 <span className="block">{metricLabel(obs.metric)}</span>
                 {expert && (
-                  <span className="block text-[11px] text-muted-foreground">{obs.raw_field}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {obs.raw_field}
+                    {obs.origin === "archive_import" ? " · import archiwalny" : ""}
+                  </span>
                 )}
               </span>
               <span className={cn("font-medium", obs.value === null && "text-muted-foreground")}>

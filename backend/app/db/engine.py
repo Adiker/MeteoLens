@@ -23,6 +23,9 @@ CREATE TABLE IF NOT EXISTS observation_history (
     retrieved_at TEXT NOT NULL,
     missing INTEGER NOT NULL DEFAULT 0,
     raw_field TEXT NOT NULL,
+    origin TEXT NOT NULL DEFAULT 'live_refresh',
+    import_run_id TEXT,
+    import_source_url TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     UNIQUE(station_id, metric, observed_at)
 );
@@ -35,7 +38,49 @@ CREATE INDEX IF NOT EXISTS idx_obs_metric_time
 
 CREATE INDEX IF NOT EXISTS idx_obs_station_type
     ON observation_history(station_type);
+
+CREATE INDEX IF NOT EXISTS idx_obs_origin
+    ON observation_history(origin);
+
+CREATE TABLE IF NOT EXISTS archive_import_runs (
+    id TEXT PRIMARY KEY,
+    source_key TEXT NOT NULL,
+    archive_kind TEXT NOT NULL,
+    status TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    observed_from TEXT NOT NULL,
+    observed_to TEXT NOT NULL,
+    files_total INTEGER NOT NULL DEFAULT 0,
+    files_processed INTEGER NOT NULL DEFAULT 0,
+    rows_seen INTEGER NOT NULL DEFAULT 0,
+    observations_seen INTEGER NOT NULL DEFAULT 0,
+    observations_inserted INTEGER NOT NULL DEFAULT 0,
+    observations_updated INTEGER NOT NULL DEFAULT 0,
+    observations_unchanged INTEGER NOT NULL DEFAULT 0,
+    parser_warnings TEXT NOT NULL DEFAULT '[]',
+    errors TEXT NOT NULL DEFAULT '[]',
+    attribution TEXT NOT NULL,
+    processed_notice TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
 """
+
+MIGRATIONS: tuple[tuple[str, str], ...] = (
+    (
+        "observation_history",
+        "ALTER TABLE observation_history "
+        "ADD COLUMN origin TEXT NOT NULL DEFAULT 'live_refresh'",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN import_run_id TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN import_source_url TEXT",
+    ),
+)
 
 
 def database_path_from_url(database_url: str) -> Path:
@@ -69,6 +114,13 @@ def get_engine() -> sqlite3.Connection:
 def init_db() -> None:
     connection = get_engine()
     connection.executescript(SCHEMA_SQL)
+    for table_name, statement in MIGRATIONS:
+        existing_columns = {
+            row["name"] for row in connection.execute(f"PRAGMA table_info({table_name})")
+        }
+        column_name = statement.rsplit("ADD COLUMN ", maxsplit=1)[1].split()[0]
+        if column_name not in existing_columns:
+            connection.execute(statement)
     connection.commit()
 
 
