@@ -423,30 +423,40 @@ planned parser/importer work.
 Goal: make MeteoLens easier to integrate, automate, and use as a data
 exploration tool.
 
-- [ ] Stabilize and document the public API surface.
-- [ ] Generate or prepare a TypeScript API client from OpenAPI.
-- [ ] Add example scripts for listing stations.
-- [ ] Add example scripts for fetching station observations.
-- [ ] Add example scripts for exporting station time ranges.
-- [ ] Add example scripts for checking source freshness.
-- [ ] Add example scripts for getting active warnings for a location.
-- [ ] Add stronger station time-range CSV export support.
-- [ ] Add stronger station time-range JSON export support.
-- [ ] Add warning GeoJSON export support.
-- [ ] Add map state JSON export support.
-- [ ] Plan optional report-like PDF export without presenting it as implemented.
-- [ ] Add API versioning notes and a backwards-compatibility policy.
-- [ ] Add rate-limit and responsible-use notes for deployed instances.
-- [ ] Add tests for generated or exported API examples where practical.
-- [ ] Update `API_CONTRACT.md`.
-- [ ] Update `README.md`.
-- [ ] Update `ROADMAP.md`.
-- [ ] Update `TASKS.md`.
-- [ ] Update `CHANGELOG.md`.
+- [x] Stabilize and document the public API surface.
+- [x] Generate or prepare a TypeScript API client from OpenAPI.
+- [x] Add example scripts for listing stations.
+- [x] Add example scripts for fetching station observations.
+- [x] Add example scripts for exporting station time ranges.
+- [x] Add example scripts for checking source freshness.
+- [x] Add example scripts for getting active warnings for a location.
+- [x] Add stronger station time-range CSV export support.
+- [x] Add stronger station time-range JSON export support.
+- [x] Add warning GeoJSON export support.
+- [x] Add map state JSON export support.
+- [x] Plan optional report-like PDF export without presenting it as implemented.
+- [x] Add API versioning notes and a backwards-compatibility policy.
+- [x] Add rate-limit and responsible-use notes for deployed instances.
+- [x] Add tests for generated or exported API examples where practical.
+- [x] Update `API_CONTRACT.md`.
+- [x] Update `README.md`.
+- [x] Update `ROADMAP.md`.
+- [x] Update `TASKS.md`.
+- [x] Update `CHANGELOG.md`.
 
 Acceptance criteria:
 
-- [ ] A developer can understand the supported API without reading backend code.
-- [ ] Exported files include attribution and processed-data notices.
-- [ ] The frontend and generated client do not drift from the backend API
+- [x] A developer can understand the supported API without reading backend code.
+- [x] Exported files include attribution and processed-data notices.
+- [x] The frontend and generated client do not drift from the backend API
   contract.
+
+Stage 16 implementation note: `API_CONTRACT.md` now documents the supported
+`/api/v1` surface, compatibility policy, and responsible-use/rate-limit
+guidance. `packages/meteolens-api-client/` contains a lightweight TypeScript
+client with OpenAPI-generated metadata from
+`scripts/api/generate_ts_client.py`. Runnable Node examples live under
+`examples/api/`. New exports include `GET /api/v1/export/warnings.geojson` and
+`GET /api/v1/export/map-state.json`; station observation range CSV/JSON exports
+remain the supported time-range export path. PDF reports remain planned only in
+`docs/power-user/PDF_EXPORT_PLAN.md`.

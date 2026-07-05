@@ -27,6 +27,8 @@ describe("ExportMenu", () => {
 
     expect(screen.getByRole("menu")).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: /Widoczna mapa — GeoJSON/ })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: /Stan mapy — JSON/ })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: /Ostrzeżenia — GeoJSON/ })).toBeEnabled();
   });
 
   it("disables the map GeoJSON export when no layers are active", () => {
@@ -36,6 +38,8 @@ describe("ExportMenu", () => {
     fireEvent.click(screen.getByLabelText("Eksport danych"));
 
     expect(screen.getByRole("menuitem", { name: /Widoczna mapa — GeoJSON/ })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: /Stan mapy — JSON/ })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: /Ostrzeżenia — GeoJSON/ })).toBeDisabled();
   });
 
   it("shows station export links only when a station is selected", () => {
@@ -49,6 +53,22 @@ describe("ExportMenu", () => {
 
     expect(screen.getByRole("menuitem", { name: "Stacja — CSV" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Stacja — JSON" })).toBeInTheDocument();
+  });
+
+  it("builds export links from the current filters and view", () => {
+    useAppStore.getState().setFilter("warningLevel", 2);
+    useAppStore.getState().setFilter("province", "12");
+    useAppStore.getState().setMapView({ lng: 19.1, lat: 52.2, zoom: 6 });
+    render(<ExportMenu />);
+
+    fireEvent.click(screen.getByLabelText("Eksport danych"));
+
+    const stateLink = screen.getByRole("menuitem", { name: /Stan mapy — JSON/ });
+    const warningLink = screen.getByRole("menuitem", { name: /Ostrzeżenia — GeoJSON/ });
+    expect(stateLink).toHaveAttribute("href", expect.stringContaining("lng=19.1"));
+    expect(stateLink).toHaveAttribute("href", expect.stringContaining("warning_level=2"));
+    expect(warningLink).toHaveAttribute("href", expect.stringContaining("level=2"));
+    expect(warningLink).toHaveAttribute("href", expect.stringContaining("province=12"));
   });
 
   it("triggers a PNG capture and closes the menu", () => {

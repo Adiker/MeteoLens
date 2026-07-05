@@ -1,4 +1,5 @@
 import type { LayerKey, StationType, WarningType } from "../lib/layers";
+import type { Filters, MapView, Selection, ThemePreference, ViewMode } from "../store/appStore";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL !== undefined
@@ -596,4 +597,44 @@ export function stationJsonUrl(id: string): string {
 
 export function mapGeoJsonUrl(layers: LayerKey[]): string {
   return `${API_BASE_URL}/api/v1/export/map.geojson${query({ layers: layers.join(",") })}`;
+}
+
+export function warningsGeoJsonUrl(params: {
+  type?: WarningType;
+  level?: number | null;
+  phenomenon?: string;
+  province?: string;
+  county?: string;
+  basin?: string;
+}): string {
+  return `${API_BASE_URL}/api/v1/export/warnings.geojson${query(params)}`;
+}
+
+export function mapStateJsonUrl(params: {
+  layers: LayerKey[];
+  mapView: MapView;
+  mode: ViewMode;
+  theme: ThemePreference;
+  selection: Selection | null;
+  filters: Filters;
+  timelineLayer?: string | null;
+  timelineFrameIndex?: number | null;
+}): string {
+  return `${API_BASE_URL}/api/v1/export/map-state.json${query({
+    layers: params.layers.join(","),
+    lng: params.mapView.lng,
+    lat: params.mapView.lat,
+    zoom: params.mapView.zoom,
+    mode: params.mode,
+    theme: params.theme,
+    selection_kind: params.selection?.kind,
+    selection_id: params.selection?.id,
+    warning_level: params.filters.warningLevel,
+    phenomenon: params.filters.phenomenon,
+    province: params.filters.province,
+    county: params.filters.county,
+    basin: params.filters.basin,
+    timeline_layer: params.timelineLayer,
+    timeline_frame_index: params.timelineFrameIndex,
+  })}`;
 }

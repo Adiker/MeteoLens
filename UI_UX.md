@@ -247,7 +247,10 @@ target spec above, driven by current backend data:
 - Layer legends are rendered as coloured swatches with on-map counts in the
   layer toggles; warning legend entries note the missing geometry.
 - The PNG export captures the current MapLibre canvas; CSV/JSON/GeoJSON exports
-  are backend downloads.
+  are backend downloads. Stage 16 adds explicit menu entries for visible-map
+  GeoJSON, warning GeoJSON, and map-state JSON. Warning GeoJSON is enabled only
+  when a warning layer is visible; map-data exports are disabled when all layers
+  are hidden so the UI never silently exports hidden data.
 - Stage 15 labels station history as live-refresh, archive-import, or mixed
   data. Expert mode also shows archive import markers in observation raw-field
   metadata; exported history includes the import run and archive source URL.
@@ -267,7 +270,9 @@ target spec above, driven by current backend data:
 - Stage 11 adds saved locations/views (browser-local), dashboard widget toggles,
   local alert rules with an official-warning disclaimer, freshness monitor,
   warning-vs-station comparison, expert filters, and a minimal PWA shell. Trend/
-  anomaly automation and generated API clients remain documented future work.
+  anomaly automation remains documented future work.
 - Stage 15 adds imported-history labels for daily SYNOP archive backfill. Future
   archive UI controls may expose date-range import progress, but the current
   MVP keeps the import as an explicit backend/API operation.
+- Stage 16 adds public API/SDK and power-user export affordances without adding
+  new map chrome beyond the compact export menu.

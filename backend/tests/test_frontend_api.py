@@ -258,6 +258,59 @@ def test_station_csv_export_distinguishes_real_zero_from_missing(monkeypatch, tm
     assert missing_rows["pressure"]["missing"] == "True"
 
 
+def test_warning_geojson_export_includes_attribution_and_missing_geometry(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_cache(tmp_path, ("warningsmeteo",))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
+
+    response = TestClient(app).get("/api/v1/export/warnings.geojson?type=meteo&level=2")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/geo+json")
+    payload = response.json()
+    assert payload["type"] == "FeatureCollection"
+    assert payload["attribution"] == "Źródło danych: IMGW-PIB."
+    assert payload["processed_notice"] == "Dane IMGW-PIB zostały przetworzone przez MeteoLens."
+    assert payload["non_spatial_records"][0]["area_codes"] == ["1205", "1207", "2461"]
+    assert payload["missing_geometry"][0]["reason"] in {
+        "missing_area_geometry_dataset",
+        "geometry_not_found",
+    }
+
+
+def test_map_state_export_records_visible_layers_and_cache(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("hydro", "warningsmeteo"))
+    monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
+    apply_test_settings(monkeypatch, _settings(tmp_path))
+
+    response = TestClient(app).get(
+        "/api/v1/export/map-state.json"
+        "?layers=hydro_stations,warnings_meteo"
+        "&lng=19.1&lat=52.2&zoom=6&mode=expert&warning_level=2"
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["active_layers"] == ["hydro_stations", "warnings_meteo"]
+    assert payload["view"] == {
+        "lng": 19.1,
+        "lat": 52.2,
+        "zoom": 6.0,
+        "bbox": None,
+    }
+    assert payload["filters"]["warning_level"] == 2
+    assert payload["attribution"] == "Źródło danych: IMGW-PIB."
+    assert payload["processed_notice"] == "Dane IMGW-PIB zostały przetworzone przez MeteoLens."
+    assert {summary["key"] for summary in payload["layer_summaries"]} == {
+        "hydro_stations",
+        "warnings_meteo",
+    }
+    assert payload["cache"]
+
+
 def test_map_layers_rejects_unsupported_layer_key(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(v1, "get_settings", lambda: _settings(tmp_path))
     apply_test_settings(monkeypatch, _settings(tmp_path))
