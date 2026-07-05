@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 from app.db.engine import get_engine, init_db
 from app.imgw.parsers.utils import SOURCE_TIMEZONE
 from app.normalization.models import Station
 
 Interval = Literal["raw", "10m", "1h", "1d"]
+ObservationOrigin = Literal["live_refresh", "archive_import", "mixed"]
 
 RANKING_METRICS: dict[str, tuple[str, ...]] = {
     "temperature": ("temperature", "air_temperature", "ground_temperature"),
@@ -18,6 +19,28 @@ RANKING_METRICS: dict[str, tuple[str, ...]] = {
     "precipitation": ("precipitation_sum", "precipitation_10min"),
     "water_level": ("water_level",),
 }
+
+
+class ArchiveObservationRow(TypedDict):
+    station_id: str
+    station_name: str
+    source_key: str
+    station_type: str
+    metric: str
+    value: float | None
+    unit: str | None
+    observed_at: datetime
+    retrieved_at: datetime
+    missing: bool
+    raw_field: str
+    import_run_id: str
+    import_source_url: str
+
+
+class ArchivePersistSummary(TypedDict):
+    inserted: int
+    updated: int
+    unchanged: int
 
 
 def _iso(dt: datetime) -> str:
@@ -45,8 +68,8 @@ class ObservationRepository:
                 INSERT INTO observation_history (
                     station_id, station_name, source_key, station_type,
                     metric, value, unit, observed_at, retrieved_at,
-                    missing, raw_field
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    missing, raw_field, origin, import_run_id, import_source_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(station_id, metric, observed_at) DO UPDATE SET
                     station_name = excluded.station_name,
                     source_key = excluded.source_key,
@@ -55,7 +78,10 @@ class ObservationRepository:
                     unit = excluded.unit,
                     retrieved_at = excluded.retrieved_at,
                     missing = excluded.missing,
-                    raw_field = excluded.raw_field
+                    raw_field = excluded.raw_field,
+                    origin = excluded.origin,
+                    import_run_id = excluded.import_run_id,
+                    import_source_url = excluded.import_source_url
                 """,
                 (
                     station.id,
@@ -69,12 +95,92 @@ class ObservationRepository:
                     _iso(station.source.retrieved_at),
                     1 if observation.missing else 0,
                     observation.raw_field,
+                    "live_refresh",
+                    None,
+                    station.source.url,
                 ),
             )
             if cursor.rowcount:
                 inserted += 1
         connection.commit()
         return inserted
+
+    def persist_archive_observations(
+        self,
+        observations: list[ArchiveObservationRow],
+    ) -> ArchivePersistSummary:
+        init_db()
+        connection = get_engine()
+        summary: ArchivePersistSummary = {"inserted": 0, "updated": 0, "unchanged": 0}
+        for observation in observations:
+            key = (
+                observation["station_id"],
+                observation["metric"],
+                _iso(observation["observed_at"]),
+            )
+            existing = connection.execute(
+                """
+                SELECT value, unit, retrieved_at, missing, raw_field, origin,
+                       import_run_id, import_source_url
+                FROM observation_history
+                WHERE station_id = ? AND metric = ? AND observed_at = ?
+                """,
+                key,
+            ).fetchone()
+            cursor = connection.execute(
+                """
+                INSERT INTO observation_history (
+                    station_id, station_name, source_key, station_type,
+                    metric, value, unit, observed_at, retrieved_at,
+                    missing, raw_field, origin, import_run_id, import_source_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(station_id, metric, observed_at) DO UPDATE SET
+                    station_name = excluded.station_name,
+                    source_key = excluded.source_key,
+                    station_type = excluded.station_type,
+                    value = excluded.value,
+                    unit = excluded.unit,
+                    retrieved_at = excluded.retrieved_at,
+                    missing = excluded.missing,
+                    raw_field = excluded.raw_field,
+                    origin = excluded.origin,
+                    import_run_id = excluded.import_run_id,
+                    import_source_url = excluded.import_source_url
+                WHERE
+                    value IS NOT excluded.value OR
+                    unit IS NOT excluded.unit OR
+                    retrieved_at IS NOT excluded.retrieved_at OR
+                    missing IS NOT excluded.missing OR
+                    raw_field IS NOT excluded.raw_field OR
+                    origin IS NOT excluded.origin OR
+                    import_run_id IS NOT excluded.import_run_id OR
+                    import_source_url IS NOT excluded.import_source_url
+                """,
+                (
+                    observation["station_id"],
+                    observation["station_name"],
+                    observation["source_key"],
+                    observation["station_type"],
+                    observation["metric"],
+                    observation["value"],
+                    observation["unit"],
+                    key[2],
+                    _iso(observation["retrieved_at"]),
+                    1 if observation["missing"] else 0,
+                    observation["raw_field"],
+                    "archive_import",
+                    observation["import_run_id"],
+                    observation["import_source_url"],
+                ),
+            )
+            if existing is None:
+                summary["inserted"] += 1
+            elif cursor.rowcount:
+                summary["updated"] += 1
+            else:
+                summary["unchanged"] += 1
+        connection.commit()
+        return summary
 
     def prune_older_than(self, *, retention_days: int) -> int:
         if retention_days <= 0:
@@ -119,7 +225,7 @@ class ObservationRepository:
             f"""
             SELECT station_id, station_name, source_key, station_type,
                    metric, value, unit, observed_at, retrieved_at,
-                   missing, raw_field
+                   missing, raw_field, origin, import_run_id, import_source_url
             FROM observation_history
             WHERE {where}
             ORDER BY observed_at {order_direction}
@@ -188,7 +294,7 @@ class ObservationRepository:
             f"""
             SELECT station_id, station_name, source_key, station_type,
                    metric, value, unit, observed_at, retrieved_at,
-                   missing, raw_field
+                   missing, raw_field, origin, import_run_id, import_source_url
             FROM observation_history
             WHERE {where}
             ORDER BY observed_at DESC
@@ -219,6 +325,73 @@ class ObservationRepository:
         )
         return ranked[:limit]
 
+    def series_origin_summary(
+        self,
+        *,
+        station_id: str,
+        metric: str | None = None,
+        observed_from: datetime | None = None,
+        observed_to: datetime | None = None,
+    ) -> dict[str, Any]:
+        init_db()
+        clauses = ["station_id = ?"]
+        params: list[Any] = [station_id]
+        if metric is not None:
+            clauses.append("metric = ?")
+            params.append(metric)
+        if observed_from is not None:
+            clauses.append("observed_at >= ?")
+            params.append(_iso(observed_from))
+        if observed_to is not None:
+            clauses.append("observed_at <= ?")
+            params.append(_iso(observed_to))
+
+        rows = get_engine().execute(
+            f"""
+            SELECT origin, COUNT(*) AS count
+            FROM observation_history
+            WHERE {" AND ".join(clauses)}
+            GROUP BY origin
+            """,
+            params,
+        ).fetchall()
+        counts = {row["origin"]: row["count"] for row in rows}
+        if len(counts) > 1:
+            series_origin: ObservationOrigin = "mixed"
+        elif "archive_import" in counts:
+            series_origin = "archive_import"
+        else:
+            series_origin = "live_refresh"
+        return {"series_origin": series_origin, "origin_counts": counts}
+
+    def station_history_summary(self, station_id: str) -> dict[str, Any] | None:
+        init_db()
+        row = get_engine().execute(
+            """
+            SELECT station_id, station_name, source_key, station_type,
+                   MIN(observed_at) AS first_observed_at,
+                   MAX(observed_at) AS latest_observed_at,
+                   COUNT(*) AS observation_count
+            FROM observation_history
+            WHERE station_id = ?
+            GROUP BY station_id, station_name, source_key, station_type
+            ORDER BY MAX(observed_at) DESC
+            LIMIT 1
+            """,
+            (station_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "station_id": row["station_id"],
+            "station_name": row["station_name"],
+            "source_key": row["source_key"],
+            "station_type": row["station_type"],
+            "first_observed_at": row["first_observed_at"],
+            "latest_observed_at": row["latest_observed_at"],
+            "observation_count": row["observation_count"],
+        }
+
 
 def _row_to_observation(row: Any) -> dict[str, Any]:
     observed_at = _parse_iso(row["observed_at"])
@@ -234,6 +407,9 @@ def _row_to_observation(row: Any) -> dict[str, Any]:
         ),
         "missing": bool(row["missing"]),
         "raw_field": row["raw_field"],
+        "origin": row["origin"],
+        "import_run_id": row["import_run_id"],
+        "import_source_url": row["import_source_url"],
         "station_id": row["station_id"],
         "station_name": row["station_name"],
         "station_type": row["station_type"],
@@ -272,6 +448,8 @@ def _aggregate_observations(
         if not values:
             continue
         latest = points[-1]
+        origins = {point.get("origin") for point in points}
+        origin = "mixed" if len(origins) > 1 else latest.get("origin", "live_refresh")
         aggregated.append(
             {
                 **latest,
@@ -279,6 +457,11 @@ def _aggregate_observations(
                 "observed_at": bucket_key,
                 "aggregated_from": len(points),
                 "interval": interval,
+                "origin": origin,
+                "import_run_id": None if origin == "mixed" else latest.get("import_run_id"),
+                "import_source_url": None
+                if origin == "mixed"
+                else latest.get("import_source_url"),
             }
         )
     return aggregated[-limit:]

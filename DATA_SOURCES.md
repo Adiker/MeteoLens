@@ -200,25 +200,48 @@ blocked at the source (`rendering_status: download_blocked`). See
 - Subdirectories: `dane_meteorologiczne`, `dane_hydrologiczne`,
   `dane_aktynometryczne`, `Biuletyn_PSHM`, `Roczniki`.
 - Meteorological reference files observed: `Opis.txt`, `wykaz_stacji.csv`,
-  map PDFs, daily/monthly/term directories.
+  `lista_zmian.txt`, map PDFs, daily/monthly/term directories.
+- Daily SYNOP archive directory:
+  `dane_meteorologiczne/dobowe/synop/`.
+- Daily SYNOP reference files: `s_d_format.txt` and `s_d_nagłówek.csv`.
+- Daily SYNOP format verified on 2026-07-05: ZIP files contain headerless CSV
+  rows encoded as CP1250 in current samples, comma-separated with dot decimal
+  separator. Current-year files are monthly all-station ZIPs such as
+  `2026_05_s.zip`; completed recent years are station-year/station-code ZIPs
+  such as `2025_100_s.zip`; pre-2001 paths are grouped in five-year
+  directories.
+- Daily SYNOP update cadence: IMGW documentation says synoptic-station data is
+  published around the fifth working day after the measured month ends; current
+  year files may be replaced with corrected versions and noted in
+  `lista_zmian.txt`.
+- Daily SYNOP statuses: blank means measured value, `8` means missing
+  measurement, and `9` means no phenomenon. MeteoLens preserves `8` as
+  `missing=true`/`value=null` and preserves blank `9` phenomenon fields as
+  `value=null` without silently converting them to zero.
 - Hydrological reference files observed: `lista_stacji_hydro.csv`,
   `hydrologia_info_ogolne.txt`, daily/monthly/annual directories.
+- Hydrological archive format verified on 2026-07-05: files are grouped by
+  hydrological year; daily file names use `codz_RRRR_WW.csv`, monthly files use
+  `mies_RRRR.csv`, and semi-annual files use `polr_x_RRRR.csv`. The
+  hydrological year starts on 1 November of the previous calendar year.
 - Format: CSV/TXT/PDF and nested directories; encodings may require detection.
 - Update frequency: archive-specific.
 - Stability: useful but larger than MVP.
 - Limitations: encoding, schema variants, archive volume, and station list
   reconciliation.
 - Cache: manifest-based refresh, file checksum, and parser version.
-- Parser: `archive_observations`.
+- Parser: `synop_daily_archive` implemented for bounded daily SYNOP imports;
+  hydrological and non-SYNOP meteorological archives remain researched/planned.
 - Normalized model: `Station`, `Observation`, `ArchiveManifest`.
-- Status: `planned` for post-MVP, with station metadata potentially useful for
-  MVP synop geometry.
+- Status: Stage 15 implements opt-in bounded daily SYNOP backfill into the
+  existing observation-history SQLite schema. Hydrological and broader
+  meteorological archive backfill remain `planned`.
 
-Stage 8 should use repeated current-source fetches and/or legally usable archive
-files to build real observation history. Historical ingestion must preserve
-observed timestamp, retrieval timestamp, data delay, missing/null values, source
-attribution, and processed-data notices. Retention policy must be documented
-before local caches grow without bounds.
+Historical ingestion must preserve observed timestamp, import/retrieval
+timestamp, data delay, missing/null values, source attribution, processed-data
+notices, archive source URL, and import-run ID. Stage 15 imports are server-side
+only, bounded by configured date/file limits, rate-limited between files, and
+resumable through upserts on `station_id + metric + observed_at`.
 
 ## External Geometry Dependencies
 

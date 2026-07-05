@@ -190,11 +190,63 @@ Query parameters:
 Returns observation values for charts and exports. The implementation reads
 persisted observation history when available and falls back to the latest cache
 snapshot when history is empty. Responses include `series_kind` (`history` or
-`snapshot`) and the requested `interval`.
+`snapshot`), `series_origin` (`live_refresh`, `archive_import`, or `mixed`),
+`origin_counts`, and the requested `interval`. If the current station cache is
+empty but archive history exists for the requested stable station ID, this
+endpoint may return archive history with source metadata pointing at the archive
+directory; map/list station discovery still depends on current cache data and
+reviewed geometry.
 
 Each observation preserves `null` values and includes `missing`,
 `raw_field`, `observed_at`, `retrieved_at`, `data_delay_seconds`, and
-unit metadata where available.
+unit metadata where available. Historical observations may also include
+`origin`, `import_run_id`, and `import_source_url`.
+
+`POST /api/v1/archive/backfill/synop-daily`
+
+Query parameters:
+
+- `from`: required date (`YYYY-MM-DD`), inclusive.
+- `to`: required date (`YYYY-MM-DD`), inclusive.
+
+Runs an opt-in server-side import from the public IMGW daily SYNOP archive into
+the existing observation-history schema. The endpoint is bounded by
+`METEOLENS_ARCHIVE_BACKFILL_MAX_DAYS` and
+`METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`, waits
+`METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS` between files, and never asks
+the browser to fetch IMGW archive files directly. Duplicate records are handled
+by upsert on `station_id + metric + observed_at`; repeated runs refresh import
+metadata without creating duplicate observations.
+
+Response shape:
+
+```json
+{
+  "id": "uuid",
+  "source_key": "synop",
+  "archive_kind": "synop_daily",
+  "status": "completed",
+  "started_at": "2026-07-05T12:00:00+00:00",
+  "finished_at": "2026-07-05T12:00:02+00:00",
+  "observed_from": "2026-05-01",
+  "observed_to": "2026-05-07",
+  "files_total": 1,
+  "files_processed": 1,
+  "rows_seen": 62,
+  "observations_seen": 620,
+  "observations_inserted": 620,
+  "observations_updated": 0,
+  "observations_unchanged": 0,
+  "parser_warnings": [],
+  "errors": [],
+  "attribution": "Źródło danych: IMGW-PIB.",
+  "processed_notice": "Dane IMGW-PIB zostały przetworzone przez MeteoLens."
+}
+```
+
+Errors use the standard error envelope with codes such as
+`archive_range_too_large`, `archive_file_limit_exceeded`,
+`invalid_time_range`, or `archive_backfill_failed`.
 
 `GET /api/v1/stations/compare`
 
@@ -223,9 +275,9 @@ Planned ranking parameters:
 - `station_type`: optional station type filter.
 - `limit`: optional result limit.
 
-Stage 8 ranking responses must preserve source metadata, missing-field metadata,
-and processed-data notices. Ranking logic must not replace missing values with
-zero.
+Ranking responses preserve source metadata, missing-field metadata, processed-
+data notices, and observation origin metadata where history rows include it.
+Ranking logic must not replace missing values with zero.
 
 ## Warnings
 

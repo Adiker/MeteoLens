@@ -4,6 +4,12 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 15 historical archive backfill: bounded server-side daily SYNOP
+  archive import (`POST /api/v1/archive/backfill/synop-daily`) with date/file
+  limits, per-file rate limiting, resumable upserts, import-run progress/error
+  reporting, origin metadata for live/archive/mixed series, frontend labels for
+  imported history, and backend tests for parser correctness, duplicates,
+  null/status handling, time ranges, retention, and mixed series.
 - Added Stage 13 reviewed geometry dataset MVP: a format_version 2 geometry
   manifest with full source/legal review metadata enforced by the loader,
   strict GeoJSON validation (structure, geometry types, required properties,

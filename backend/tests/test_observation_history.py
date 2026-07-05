@@ -33,6 +33,41 @@ def _prepare(tmp_path: Path, monkeypatch) -> None:
     init_db()
 
 
+def test_init_db_migrates_legacy_history_before_origin_index(monkeypatch, tmp_path) -> None:
+    reset_engine_cache()
+    settings = _settings(tmp_path)
+    apply_test_settings(monkeypatch, settings)
+    connection = get_engine()
+    connection.executescript(
+        """
+        CREATE TABLE observation_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            station_id TEXT NOT NULL,
+            station_name TEXT NOT NULL,
+            source_key TEXT NOT NULL,
+            station_type TEXT NOT NULL,
+            metric TEXT NOT NULL,
+            value REAL,
+            unit TEXT,
+            observed_at TEXT NOT NULL,
+            retrieved_at TEXT NOT NULL,
+            missing INTEGER NOT NULL DEFAULT 0,
+            raw_field TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+            UNIQUE(station_id, metric, observed_at)
+        );
+        """
+    )
+    connection.commit()
+
+    init_db()
+
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(observation_history)")}
+    indexes = {row["name"] for row in connection.execute("PRAGMA index_list(observation_history)")}
+    assert {"origin", "import_run_id", "import_source_url"} <= columns
+    assert "idx_obs_origin" in indexes
+
+
 def _seed_station_cache(cache: SourceCache, source_key: str = "hydro") -> Station:
     metadata = SourceMetadata(
         source_key=source_key,

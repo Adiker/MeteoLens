@@ -1,5 +1,5 @@
 import csv
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from io import StringIO
 from math import asin, cos, radians, sin, sqrt
 from typing import Annotated, Any, Literal, NoReturn
@@ -16,6 +16,7 @@ from app.geometry.spatial import (
     warning_matches_spatial_filters,
     warnings_matching_point,
 )
+from app.imgw.archive import ArchiveBackfillError, SynopDailyArchiveBackfiller
 from app.imgw.cache import CachedSourcePayload, CacheStatus, SourceCache
 from app.imgw.parsers.utils import SOURCE_TIMEZONE
 from app.imgw.sources import SOURCE_BY_KEY, SOURCE_DEFINITIONS
@@ -141,8 +142,32 @@ class ObservationResponse(BaseModel):
     source: SourceMetadata
     observations: list[dict[str, Any]]
     series_kind: Literal["history", "snapshot"] = "snapshot"
+    series_origin: Literal["live_refresh", "archive_import", "mixed"] = "live_refresh"
+    origin_counts: dict[str, int] = Field(default_factory=dict)
     interval: str = "raw"
     empty_state: EmptyState | None = None
+
+
+class ArchiveBackfillResponse(BaseModel):
+    id: str
+    source_key: str
+    archive_kind: str
+    status: str
+    started_at: datetime
+    finished_at: datetime
+    observed_from: date
+    observed_to: date
+    files_total: int
+    files_processed: int
+    rows_seen: int
+    observations_seen: int
+    observations_inserted: int
+    observations_updated: int
+    observations_unchanged: int
+    parser_warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    attribution: str = ATTRIBUTION
+    processed_notice: str = PROCESSED_NOTICE
 
 
 class CompareResponse(BaseModel):
@@ -348,6 +373,31 @@ def list_sources() -> SourcesResponse:
     return SourcesResponse(retrieved_at=datetime.now(UTC), sources=sources)
 
 
+@router.post("/archive/backfill/synop-daily", response_model=ArchiveBackfillResponse)
+def backfill_synop_daily_archive(
+    observed_from: Annotated[date, Query(alias="from")],
+    observed_to: Annotated[date, Query(alias="to")],
+) -> ArchiveBackfillResponse:
+    """Import a bounded server-side slice of public IMGW daily SYNOP archives."""
+    try:
+        result = SynopDailyArchiveBackfiller(get_settings()).run(
+            observed_from=observed_from,
+            observed_to=observed_to,
+        )
+    except ArchiveBackfillError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": {
+                    "code": exc.code,
+                    "message": str(exc),
+                    "source_key": "synop",
+                }
+            },
+        ) from exc
+    return ArchiveBackfillResponse(**result.model_dump())
+
+
 @router.get("/geometry/datasets", response_model=GeometryDatasetsResponse)
 def list_geometry_datasets() -> GeometryDatasetsResponse:
     settings = get_settings()
@@ -512,7 +562,7 @@ def compare_warning_station(station_id: str) -> WarningStationComparisonResponse
     ]
     return WarningStationComparisonResponse(
         generated_at=now,
-        station_id=station.id,
+        station_id=station_id,
         station=station.model_dump(mode="json"),
         observations=observations,
         warnings=warnings,
@@ -740,7 +790,7 @@ def get_station_observations(
     interval: Literal["raw", "10m", "1h", "1d"] = "raw",
     limit: Annotated[int, Query(ge=1, le=5000)] = 500,
 ) -> ObservationResponse:
-    station = _get_station_or_404(station_id)
+    station, history_summary, source = _station_context_for_observations(station_id)
     history = history_service.query_station_history(
         station_id=station_id,
         metric=metric,
@@ -750,6 +800,12 @@ def get_station_observations(
         limit=limit,
     )
     if history:
+        origin_summary = history_service.series_origin_summary(
+            station_id=station_id,
+            metric=metric,
+            observed_from=observed_from,
+            observed_to=observed_to,
+        )
         observations = [
             point
             for point in history
@@ -761,7 +817,9 @@ def get_station_observations(
             )
         ]
         series_kind: Literal["history", "snapshot"] = "history"
-    else:
+        series_origin = origin_summary["series_origin"]
+        origin_counts = origin_summary["origin_counts"]
+    elif station is not None:
         observations = [
             _observation_payload(observation, station.source.retrieved_at)
             for observation in station.observations
@@ -773,20 +831,33 @@ def get_station_observations(
             )
         ]
         series_kind = "snapshot"
+        series_origin = "live_refresh"
+        origin_counts = {"live_refresh": len(observations)} if observations else {}
+    else:
+        observations = []
+        series_kind = "history"
+        series_origin = "archive_import"
+        origin_counts = {}
 
     return ObservationResponse(
         generated_at=datetime.now(UTC),
-        station_id=station.id,
-        source=station.source,
+        station_id=station_id,
+        source=source,
         observations=observations,
         series_kind=series_kind,
+        series_origin=series_origin,
+        origin_counts=origin_counts,
         interval=interval,
         empty_state=None
         if observations
         else EmptyState(
             code="no_observations",
             message="No observations matched the requested filters.",
-            source_keys=[station.source_key],
+            source_keys=[
+                station.source_key
+                if station is not None
+                else str(history_summary.get("source_key", "synop"))
+            ],
         ),
     )
 
@@ -934,7 +1005,12 @@ def export_station_observations_csv(
         interval=interval,
         limit=limit,
     )
-    station = _get_station_or_404(station_id)
+    station, history_summary, source = _station_context_for_observations(station_id)
+    station_name = (
+        station.name
+        if station is not None
+        else str(history_summary.get("station_name") or station_id)
+    )
     buffer = StringIO()
     writer = csv.DictWriter(
         buffer,
@@ -949,6 +1025,9 @@ def export_station_observations_csv(
             "data_delay_seconds",
             "missing",
             "raw_field",
+            "origin",
+            "import_run_id",
+            "import_source_url",
             "source_key",
             "attribution",
             "processed_notice",
@@ -960,20 +1039,23 @@ def export_station_observations_csv(
     for observation in response.observations:
         writer.writerow(
             {
-                "station_id": station.id,
-                "station_name": station.name,
+                "station_id": station_id,
+                "station_name": station_name,
                 "metric": observation.get("metric"),
                 "value": "" if observation.get("value") is None else observation["value"],
                 "unit": "" if observation.get("unit") is None else observation["unit"],
                 "observed_at": observation.get("observed_at") or "",
                 "retrieved_at": observation.get("retrieved_at")
-                or station.source.retrieved_at.isoformat(),
+                or source.retrieved_at.isoformat(),
                 "data_delay_seconds": observation.get("data_delay_seconds"),
                 "missing": observation.get("missing"),
                 "raw_field": observation.get("raw_field"),
-                "source_key": station.source_key,
-                "attribution": station.source.attribution,
-                "processed_notice": station.source.processed_notice,
+                "origin": observation.get("origin", response.series_origin),
+                "import_run_id": observation.get("import_run_id") or "",
+                "import_source_url": observation.get("import_source_url") or "",
+                "source_key": source.source_key,
+                "attribution": source.attribution,
+                "processed_notice": source.processed_notice,
                 "series_kind": response.series_kind,
                 "interval": response.interval,
             }
@@ -982,7 +1064,7 @@ def export_station_observations_csv(
         buffer.getvalue(),
         media_type="text/csv; charset=utf-8",
         headers={
-            "Content-Disposition": f'attachment; filename="{station.id}-observations.csv"'
+            "Content-Disposition": f'attachment; filename="{station_id}-observations.csv"'
         },
     )
 
@@ -1004,21 +1086,26 @@ def export_station_observations_json(
         interval=interval,
         limit=limit,
     )
-    station = _get_station_or_404(station_id)
+    station, history_summary, source = _station_context_for_observations(station_id)
     return JSONResponse(
         content=jsonable_encoder(
             {
                 "generated_at": datetime.now(UTC),
-                "attribution": station.source.attribution,
-                "processed_notice": station.source.processed_notice,
-                "station_id": station.id,
+                "attribution": source.attribution,
+                "processed_notice": source.processed_notice,
+                "station_id": station_id,
+                "station_name": station.name
+                if station is not None
+                else history_summary.get("station_name"),
                 "series_kind": response.series_kind,
+                "series_origin": response.series_origin,
+                "origin_counts": response.origin_counts,
                 "interval": response.interval,
                 "observations": response.observations,
             }
         ),
         headers={
-            "Content-Disposition": f'attachment; filename="{station.id}-observations.json"'
+            "Content-Disposition": f'attachment; filename="{station_id}-observations.json"'
         },
     )
 
@@ -1302,6 +1389,31 @@ def _get_station_or_404(station_id: str) -> Station:
         if station.id == station_id:
             return station
     _raise_not_found_or_empty(station_id, stations, STATION_SOURCE_KEYS, "station")
+
+
+def _station_context_for_observations(
+    station_id: str,
+) -> tuple[Station | None, dict[str, Any], SourceMetadata]:
+    try:
+        station = _get_station_or_404(station_id)
+        return station, {}, station.source
+    except HTTPException as exc:
+        history_summary = history_service.station_history_summary(station_id)
+        if history_summary is None:
+            raise exc
+        source_key = str(history_summary.get("source_key") or "synop")
+        return (
+            None,
+            history_summary,
+            SourceMetadata(
+                source_key=source_key,
+                url=(
+                    f"{str(get_settings().imgw_base_url).rstrip('/')}"
+                    "/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/"
+                ),
+                retrieved_at=datetime.now(UTC),
+            ),
+        )
 
 
 def _get_warning_or_404(warning_id: str) -> Warning:

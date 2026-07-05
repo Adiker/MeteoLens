@@ -4,7 +4,7 @@ This document is an implementation guide, not legal advice. Users must verify
 the current IMGW-PIB terms before public, production, or commercial use.
 
 Research dates: 2026-06-29 (base IMGW terms), 2026-07-05 (COSMO product
-download verification).
+download verification and daily SYNOP archive format verification).
 
 Source terms reviewed:
 [https://danepubliczne.imgw.pl/pl/regulations](https://danepubliczne.imgw.pl/pl/regulations).
@@ -121,6 +121,15 @@ Do not add unofficial or legally unclear geometry, radar, product, GRIB, or
 station-coordinate sources as implemented sources. If a source is technically
 useful but unclear, mark it as requiring legal/source review in
 `DATA_SOURCES.md`.
+
+### Reviewed IMGW Archive Dataset (Stage 15)
+
+Stage 15 uses the same IMGW-PIB public data service for daily SYNOP archive
+CSV/ZIP files under
+`/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/`.
+No new non-IMGW provider is introduced. Imported rows must keep IMGW-PIB
+attribution, the MeteoLens processed-data notice, observed timestamp,
+import/retrieval timestamp, archive source URL, and missing/null status.
 
 ### Reviewed Geometry Datasets (Stage 13)
 

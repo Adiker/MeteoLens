@@ -85,6 +85,9 @@ export interface Observation {
   raw_field: string;
   missing: boolean;
   data_delay_seconds?: number | null;
+  origin?: "live_refresh" | "archive_import" | "mixed";
+  import_run_id?: string | null;
+  import_source_url?: string | null;
 }
 
 export interface StationListItem {
@@ -141,6 +144,8 @@ export interface ObservationResponse {
   source: SourceMetadata;
   observations: Observation[];
   series_kind: "history" | "snapshot";
+  series_origin: "live_refresh" | "archive_import" | "mixed";
+  origin_counts: Record<string, number>;
   interval: string;
   empty_state: EmptyState | null;
 }

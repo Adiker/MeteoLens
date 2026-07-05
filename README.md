@@ -8,14 +8,14 @@ starts empty). Reproducible local and production smoke-test records live in
 [docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-14 (research, documentation, backend
+hydrological data for Poland. Stages 0-15 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
 deployment, observation history, geometry datasets, product timeline,
 PWA/power-user features, public-alpha release polish, the reviewed geometry
 dataset MVP with bundled PRG voivodeship/county polygons, and the product
-rendering MVP with the COSMO 2 m temperature map overlay) are implemented.
-See [TASKS.md](TASKS.md) for the full staged backlog. Stages 15-16 are
-planned next and are not implemented yet.
+rendering MVP with the COSMO 2 m temperature map overlay, and bounded SYNOP
+daily archive backfill) are implemented. See [TASKS.md](TASKS.md) for the full
+staged backlog. Stage 16 is planned next and is not implemented yet.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -115,10 +115,18 @@ Implemented now:
   currently blocks public downloads of those files (documented in
   `docs/products/PRODUCT_RESEARCH.md`).
 
+- Stage 15 historical archive backfill: an opt-in server-side importer for
+  bounded daily SYNOP archive ranges
+  (`POST /api/v1/archive/backfill/synop-daily?from=YYYY-MM-DD&to=YYYY-MM-DD`).
+  Imported observations are written into the existing SQLite observation
+  history with `origin: "archive_import"`, import-run metadata, IMGW-PIB
+  attribution, processed-data notices, missing/null preservation, duplicate
+  upserts, and retention interaction. The station observations API labels
+  `live_refresh`, `archive_import`, and `mixed` series so charts can show
+  multi-point historical data immediately after a successful import.
+
 Planned next:
 
-- Stage 15 historical archive backfill: opt-in, bounded, rate-limited archive
-  import for at least one legally and technically clear IMGW observation source.
 - Stage 16 public API, SDK, and power-user exports: stabilized API docs,
   TypeScript client preparation, example scripts, stronger exports, and
   responsible-use/versioning notes.
@@ -180,6 +188,17 @@ the configured live IMGW sources and writes the normalized file cache before the
 frontend is marked ready. It also enables `METEOLENS_REFRESH_ENABLED=true`, so
 the backend keeps re-fetching each source on its configured
 `METEOLENS_REFRESH_*_SECONDS` interval while it runs.
+
+Optional daily SYNOP archive backfill is manual and bounded:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/archive/backfill/synop-daily?from=2026-05-01&to=2026-05-07"
+```
+
+Limits are controlled with `METEOLENS_ARCHIVE_BACKFILL_MAX_DAYS`,
+`METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`, and
+`METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS`. Archive fetching always runs
+server-side; the browser never calls IMGW archive files directly.
 
 Local URLs:
 
@@ -289,12 +308,14 @@ data (see `AGENTS.md`).
   `coordinate_source` once a dataset is imported), but the coordinate source
   itself (candidate: WMO OSCAR/Surface) is still `planned` in
   `docs/geometry/GEOMETRY_SOURCES.md`, pending terms review.
-- **Observation history starts empty and is local-only.** Time series are
-  persisted to SQLite from this deployment's own IMGW refreshes; there is no
-  backfill from the IMGW measurement archives. Fresh deployments serve
-  single-point snapshots (`series_kind: "snapshot"`) until enough refresh
-  cycles accumulate, and retention is capped by
-  `METEOLENS_OBSERVATION_RETENTION_DAYS`.
+- **Observation history is local-only.** Time series are persisted to SQLite
+  from this deployment's own IMGW refreshes, and Stage 15 can optionally
+  backfill bounded daily SYNOP archive ranges. Other measurement archives
+  (hydro daily/monthly/annual and non-SYNOP meteorological archive families)
+  remain documented but not imported. Fresh deployments without a live cache can
+  still serve imported station observations by stable station ID, but map/list
+  station discovery still depends on current cache data and reviewed geometry.
+  Retention is capped by `METEOLENS_OBSERVATION_RETENTION_DAYS`.
 - **Timeline/animation for products.** When cached product frame manifests exist,
   the bottom timeline shows frame metadata with play/step controls and explicit
   “metadata only / not renderable on map” labels. COSMO 2 m temperature frames
