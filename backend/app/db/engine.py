@@ -39,9 +39,6 @@ CREATE INDEX IF NOT EXISTS idx_obs_metric_time
 CREATE INDEX IF NOT EXISTS idx_obs_station_type
     ON observation_history(station_type);
 
-CREATE INDEX IF NOT EXISTS idx_obs_origin
-    ON observation_history(origin);
-
 CREATE TABLE IF NOT EXISTS archive_import_runs (
     id TEXT PRIMARY KEY,
     source_key TEXT NOT NULL,
@@ -64,6 +61,11 @@ CREATE TABLE IF NOT EXISTS archive_import_runs (
     processed_notice TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+"""
+
+POST_MIGRATION_SQL = """
+CREATE INDEX IF NOT EXISTS idx_obs_origin
+    ON observation_history(origin);
 """
 
 MIGRATIONS: tuple[tuple[str, str], ...] = (
@@ -121,6 +123,7 @@ def init_db() -> None:
         column_name = statement.rsplit("ADD COLUMN ", maxsplit=1)[1].split()[0]
         if column_name not in existing_columns:
             connection.execute(statement)
+    connection.executescript(POST_MIGRATION_SQL)
     connection.commit()
 
 

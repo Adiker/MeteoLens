@@ -5,6 +5,7 @@ from io import BytesIO, StringIO
 from pathlib import Path
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
@@ -12,6 +13,7 @@ from app.db.engine import get_engine, init_db, reset_engine_cache
 from app.db.repository import ObservationRepository
 from app.imgw.archive import (
     SYNOP_DAILY_COLUMNS,
+    ArchiveBackfillError,
     SynopDailyArchiveBackfiller,
     parse_synop_daily_zip,
 )
@@ -87,6 +89,13 @@ def _transport(zip_bytes: bytes) -> httpx.MockTransport:
     return httpx.MockTransport(handler)
 
 
+def _failing_directory_transport() -> httpx.MockTransport:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, text="missing")
+
+    return httpx.MockTransport(handler)
+
+
 def test_synop_daily_archive_parser_preserves_values_nulls_and_statuses() -> None:
     rows, warnings = parse_synop_daily_zip(
         _synop_zip([_row("01")]),
@@ -143,6 +152,22 @@ def test_synop_daily_backfill_applies_time_range_filter(monkeypatch, tmp_path) -
     assert [record["observed_at"] for record in records] == [
         "2026-05-02T00:00:00+00:00"
     ]
+
+
+def test_synop_daily_backfill_records_failed_discovery(monkeypatch, tmp_path) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    backfiller = SynopDailyArchiveBackfiller(
+        settings,
+        transport=_failing_directory_transport(),
+    )
+
+    with pytest.raises(ArchiveBackfillError):
+        backfiller.run(observed_from=date(2026, 5, 1), observed_to=date(2026, 5, 1))
+
+    row = get_engine().execute("SELECT * FROM archive_import_runs").fetchone()
+    assert row["status"] == "failed"
+    assert row["files_total"] == 0
+    assert "404" in row["errors"]
 
 
 def test_archive_rows_follow_retention_pruning(monkeypatch, tmp_path) -> None:

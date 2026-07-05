@@ -208,34 +208,7 @@ class SynopDailyArchiveBackfiller:
 
         run_id = str(uuid4())
         started_at = datetime.now(UTC)
-        files = self._discover_files(observed_from=observed_from, observed_to=observed_to)
-        if len(files) > self.settings.archive_backfill_max_files:
-            raise ArchiveBackfillError(
-                (
-                    "Archive range resolves to too many files. "
-                    f"Limit is {self.settings.archive_backfill_max_files} files."
-                ),
-                code="archive_file_limit_exceeded",
-            )
-
-        self._write_run(
-            run_id=run_id,
-            status="running",
-            started_at=started_at,
-            finished_at=None,
-            observed_from=observed_from,
-            observed_to=observed_to,
-            files_total=len(files),
-            files_processed=0,
-            rows_seen=0,
-            observations_seen=0,
-            observations_inserted=0,
-            observations_updated=0,
-            observations_unchanged=0,
-            parser_warnings=[],
-            errors=[],
-        )
-
+        files: list[ArchiveFile] = []
         rows_seen = 0
         observations_seen = 0
         inserted = 0
@@ -245,7 +218,51 @@ class SynopDailyArchiveBackfiller:
         errors: list[str] = []
         files_processed = 0
 
+        self._write_run(
+            run_id=run_id,
+            status="running",
+            started_at=started_at,
+            finished_at=None,
+            observed_from=observed_from,
+            observed_to=observed_to,
+            files_total=0,
+            files_processed=files_processed,
+            rows_seen=rows_seen,
+            observations_seen=observations_seen,
+            observations_inserted=inserted,
+            observations_updated=updated,
+            observations_unchanged=unchanged,
+            parser_warnings=parser_warnings,
+            errors=errors,
+        )
+
         try:
+            files = self._discover_files(observed_from=observed_from, observed_to=observed_to)
+            if len(files) > self.settings.archive_backfill_max_files:
+                raise ArchiveBackfillError(
+                    (
+                        "Archive range resolves to too many files. "
+                        f"Limit is {self.settings.archive_backfill_max_files} files."
+                    ),
+                    code="archive_file_limit_exceeded",
+                )
+            self._write_run(
+                run_id=run_id,
+                status="running",
+                started_at=started_at,
+                finished_at=None,
+                observed_from=observed_from,
+                observed_to=observed_to,
+                files_total=len(files),
+                files_processed=files_processed,
+                rows_seen=rows_seen,
+                observations_seen=observations_seen,
+                observations_inserted=inserted,
+                observations_updated=updated,
+                observations_unchanged=unchanged,
+                parser_warnings=parser_warnings,
+                errors=errors,
+            )
             with httpx.Client(
                 timeout=self.settings.imgw_timeout_seconds,
                 headers={
@@ -316,6 +333,8 @@ class SynopDailyArchiveBackfiller:
                 parser_warnings=parser_warnings,
                 errors=errors,
             )
+            if isinstance(exc, ArchiveBackfillError):
+                raise
             raise ArchiveBackfillError(str(exc)) from exc
 
         finished_at = datetime.now(UTC)
