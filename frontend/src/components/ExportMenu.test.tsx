@@ -67,6 +67,7 @@ describe("ExportMenu", () => {
     const warningLink = screen.getByRole("menuitem", { name: /Ostrzeżenia — GeoJSON/ });
     expect(stateLink).toHaveAttribute("href", expect.stringContaining("lng=19.1"));
     expect(stateLink).toHaveAttribute("href", expect.stringContaining("warning_level=2"));
+    expect(warningLink).toHaveAttribute("href", expect.stringContaining("active_at="));
     expect(warningLink).toHaveAttribute("href", expect.stringContaining("level=2"));
     expect(warningLink).toHaveAttribute("href", expect.stringContaining("province=12"));
   });

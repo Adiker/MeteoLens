@@ -8,6 +8,7 @@ import {
   stationJsonUrl,
   warningsGeoJsonUrl,
 } from "../api/client";
+import { useActiveAt } from "../hooks/useActiveAt";
 import { WARNING_LAYERS, type WarningType } from "../lib/layers";
 import { captureMapPng } from "../lib/mapBus";
 import { activeLayerKeys, useAppStore } from "../store/appStore";
@@ -26,6 +27,7 @@ export function ExportMenu() {
   const theme = useAppStore((state) => state.theme);
   const timeline = useAppStore((state) => state.timeline);
   const stationId = selection?.kind === "station" ? selection.id : null;
+  const activeAt = useActiveAt();
   const activeWarningTypes = WARNING_LAYERS.filter((layer) =>
     activeLayers.includes(layer.key),
   ).map((layer) => layer.warningType)
@@ -34,6 +36,7 @@ export function ExportMenu() {
     activeWarningTypes.length === 1 ? activeWarningTypes[0] : undefined;
   const warningExportUrl = warningsGeoJsonUrl({
     type: warningTypeFilter,
+    active_at: activeAt,
     level: filters.warningLevel,
     phenomenon: filters.phenomenon,
     province: filters.province,

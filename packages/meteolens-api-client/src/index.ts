@@ -26,6 +26,26 @@ export interface EmptyState {
   source_keys: string[];
 }
 
+export interface CacheStatus {
+  status: string;
+  last_success_at?: string | null;
+  age_seconds?: number | null;
+  record_count?: number | null;
+  parser_warnings: string[];
+  error?: string | null;
+}
+
+export interface CacheSourceState {
+  source_key: string;
+  status: CacheStatus;
+}
+
+export interface ApiEnvelope {
+  generated_at: string;
+  cache: CacheSourceState[];
+  empty_state: EmptyState | null;
+}
+
 export interface StationListItem {
   id: string;
   source_id: string;
@@ -42,9 +62,7 @@ export interface StationListItem {
   raw_available: boolean;
 }
 
-export interface StationsResponse {
-  generated_at: string;
-  empty_state: EmptyState | null;
+export interface StationsResponse extends ApiEnvelope {
   stations: StationListItem[];
 }
 
@@ -116,14 +134,12 @@ export interface WarningRecord {
   source: SourceMetadata;
 }
 
-export interface LocationSummaryResponse {
-  generated_at: string;
+export interface LocationSummaryResponse extends ApiEnvelope {
   location: { lat: number; lon: number };
   radius_km: number;
   nearest_stations: Array<StationListItem & { distance_km: number }>;
   warnings: WarningRecord[];
   notes: string[];
-  empty_state: EmptyState | null;
 }
 
 export interface ApiErrorPayload {
