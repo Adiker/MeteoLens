@@ -9,6 +9,7 @@ const mapMocks = vi.hoisted(() => ({
   instances: [] as Array<{
     fire: (event: string) => void;
     sourceData: Map<string, unknown[]>;
+    updateImageCalls: Array<{ id: string; options: unknown }>;
   }>,
 }));
 
@@ -16,6 +17,7 @@ vi.mock("maplibre-gl", () => {
   class FakeMap {
     handlers: Record<string, Array<(...args: unknown[]) => void>> = {};
     sourceData = new Map<string, unknown[]>();
+    updateImageCalls: Array<{ id: string; options: unknown }> = [];
     constructor() {
       mapMocks.instances.push(this as unknown as (typeof mapMocks.instances)[number]);
     }
@@ -36,6 +38,9 @@ vi.mock("maplibre-gl", () => {
     getSource = vi.fn((id: string) => ({
       setData: (data: { features?: unknown[] }) => {
         this.sourceData.set(id, data.features ?? []);
+      },
+      updateImage: (options: unknown) => {
+        this.updateImageCalls.push({ id, options });
       },
     }));
     getLayer = vi.fn(() => ({}));
@@ -288,6 +293,140 @@ describe("MapShell", () => {
       ).setLayoutProperty;
       expect(setLayoutProperty).toHaveBeenCalledWith("warnings-fill", "visibility", "none");
       expect(fakeMap!.sourceData.get("warnings") ?? []).toEqual([]);
+    });
+  });
+
+  it("draws the rendered product frame as a map image overlay when enabled", async () => {
+    const renderableTimeline = {
+      generated_at: "2026-07-05T10:00:00Z",
+      empty_state: null,
+      layers: [
+        {
+          key: "product:COSMO_HVD_00_00",
+          product_id: "COSMO_HVD_00_00",
+          title: "COSMO 00/00",
+          kind: "product_frames",
+          category: "grib_model",
+          rendering_status: "renderable",
+          frame_count: 1,
+          missing_frames: 0,
+          frames_renderable: true,
+          renderable: {
+            variables: [{ key: "t2m", title: "Temperatura 2 m", unit: "°C", legend: [] }],
+            default_variable: "t2m",
+            bounds: [10.963, 46.597, 28.376, 57.695],
+            image_coordinates: [
+              [10.963, 57.695],
+              [28.376, 57.695],
+              [28.376, 46.597],
+              [10.963, 46.597],
+            ],
+            render_url_template:
+              "/api/v1/products/COSMO_HVD_00_00/render/{file}?variable={variable}",
+            max_lead_hours: 24,
+            lead_step_hours: 3,
+            grid_note: "",
+            attribution: "Źródło danych: IMGW-PIB.",
+            processed_notice: "Dane przetworzone.",
+          },
+          source_time: "2026-07-05T08:00:00Z",
+          first_frame_time: "2026-07-04T00:00:00+00:00",
+          last_frame_time: "2026-07-04T00:00:00+00:00",
+          stale: false,
+          attribution: "Źródło danych: IMGW-PIB.",
+          processed_notice: "Dane przetworzone.",
+          notes: [],
+        },
+      ],
+    };
+    const framesPayload = {
+      generated_at: "2026-07-05T10:00:00Z",
+      product_id: "COSMO_HVD_00_00",
+      description: "COSMO 00/00",
+      category: "grib_model",
+      availability: "stable_retrievable",
+      rendering_status: "renderable",
+      format_notes: "GRIB1",
+      research_date: "2026-07-05",
+      source: {
+        provider: "IMGW-PIB",
+        source_key: "product",
+        url: "https://danepubliczne.imgw.pl/api/data/product/id/COSMO_HVD_00_00",
+        retrieved_at: "2026-07-05T08:00:00Z",
+        attribution: "Źródło danych: IMGW-PIB.",
+        processed_notice: "Dane przetworzone.",
+      },
+      retrieved_at: "2026-07-05T08:00:00Z",
+      frames: [
+        {
+          index: 0,
+          file: "202607040000_202607040000_lfff00000000",
+          url: "https://x/0",
+          frame_time: "2026-07-04T00:00:00+00:00",
+          run_time: "2026-07-04T00:00:00+00:00",
+          frame_kind: "forecast_lead",
+          rendering_status: "renderable",
+          missing: false,
+          renderable: true,
+          renderable_reason: null,
+          render_url:
+            "/api/v1/products/COSMO_HVD_00_00/render/202607040000_202607040000_lfff00000000?variable=t2m",
+          render_ready: true,
+        },
+      ],
+      frame_count: 1,
+      limit: 500,
+      offset: 0,
+      missing_frames: 0,
+      stale: false,
+      renderable: renderableTimeline.layers[0].renderable,
+      attribution: "Źródło danych: IMGW-PIB.",
+      processed_notice: "Dane przetworzone.",
+      empty_state: null,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input);
+        const payload = url.includes("/api/v1/map/timeline")
+          ? renderableTimeline
+          : url.includes("/api/v1/products/COSMO_HVD_00_00/frames")
+            ? framesPayload
+            : { sources: [], layers: [] };
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(payload),
+        } as Response);
+      }),
+    );
+    useAppStore.setState({
+      timeline: {
+        activeLayerKey: "product:COSMO_HVD_00_00",
+        frameIndex: 0,
+        playing: false,
+        speed: 1,
+        focused: false,
+        overlayEnabled: true,
+        overlayError: null,
+      },
+    });
+
+    await renderMapShell();
+    const fakeMap = mapMocks.instances[mapMocks.instances.length - 1];
+    fakeMap!.fire("load");
+
+    await waitFor(() => {
+      const calls = fakeMap!.updateImageCalls.filter((call) => call.id === "product-render");
+      expect(calls.length).toBeGreaterThan(0);
+      const options = calls[calls.length - 1].options as {
+        url: string;
+        coordinates: number[][];
+      };
+      expect(options.url).toContain(
+        "/api/v1/products/COSMO_HVD_00_00/render/202607040000_202607040000_lfff00000000",
+      );
+      expect(options.coordinates[0]).toEqual([10.963, 57.695]);
     });
   });
 

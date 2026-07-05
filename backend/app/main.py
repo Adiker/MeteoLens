@@ -13,6 +13,7 @@ from app.core.logging import configure_logging, log_api_error
 from app.db.engine import init_db
 from app.imgw.refresh import refresh_sources
 from app.imgw.scheduler import RefreshScheduler
+from app.products.refresh import refresh_product_details
 from app.services.observation_history import prune_history
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,15 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
                     result.source_key,
                     result.error,
                 )
+        if settings.product_refresh_enabled:
+            detail_results = await refresh_product_details(settings)
+            for detail_result in detail_results:
+                if detail_result.status == "error":
+                    logger.warning(
+                        "Failed to refresh product detail %s: %s",
+                        detail_result.product_id,
+                        detail_result.error,
+                    )
     scheduler: RefreshScheduler | None = None
     if settings.refresh_enabled:
         scheduler = RefreshScheduler(settings=settings)

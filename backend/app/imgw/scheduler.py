@@ -7,6 +7,7 @@ from app.imgw.cache import SourceCache
 from app.imgw.client import ImgwClient
 from app.imgw.refresh import SourceRefreshResult, refresh_source
 from app.imgw.sources import SOURCE_DEFINITIONS, SourceDefinition
+from app.products.refresh import refresh_product_details
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,36 @@ async def run_source_refresh_loop(
             logger.warning(
                 "Scheduled refresh of %s failed: %s", source_key, result.error
             )
+
+
+async def run_product_detail_refresh_loop(
+    *,
+    settings: Settings,
+    stop_event: asyncio.Event,
+) -> None:
+    # Startup freshness is covered by METEOLENS_SYNC_ON_STARTUP; the loop
+    # waits one full interval first, mirroring run_source_refresh_loop.
+    while True:
+        try:
+            await asyncio.wait_for(
+                stop_event.wait(),
+                timeout=settings.product_detail_cache_seconds,
+            )
+            return
+        except TimeoutError:
+            pass
+        try:
+            results = await refresh_product_details(settings)
+        except Exception:
+            logger.exception("Scheduled product detail refresh crashed.")
+            continue
+        for result in results:
+            if result.status == "error":
+                logger.warning(
+                    "Scheduled product detail refresh of %s failed: %s",
+                    result.product_id,
+                    result.error,
+                )
 
 
 class RefreshScheduler:
@@ -95,6 +126,22 @@ class RefreshScheduler:
             )
             logger.info(
                 "Scheduled %s refresh every %s seconds.", source.key, interval
+            )
+
+        if settings.product_refresh_enabled and settings.product_refresh_id_list:
+            self._tasks.append(
+                asyncio.create_task(
+                    run_product_detail_refresh_loop(
+                        settings=settings,
+                        stop_event=self._stop_event,
+                    ),
+                    name="refresh-product-details",
+                )
+            )
+            logger.info(
+                "Scheduled product detail refresh for %s every %s seconds.",
+                ",".join(settings.product_refresh_id_list),
+                settings.product_detail_cache_seconds,
             )
 
     async def stop(self) -> None:

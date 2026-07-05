@@ -316,45 +316,59 @@ Acceptance criteria:
 Goal: turn the current product metadata/timeline shell into the first real
 rendered product layer on the map.
 
-- [ ] Pick one technically realistic high-value product path first, such as a
+- [x] Pick one technically realistic high-value product path first, such as a
   legally usable radar composite preview or a simple raster/tile pipeline for
-  one stable product.
-- [ ] Avoid full GRIB or radar binary decoding in one large step unless the
-  format is fully documented.
-- [ ] Add product-detail refresh support so selected product frame manifests can
-  be refreshed automatically with retention limits.
-- [ ] Add cache limits for product detail manifests and downloaded renderable
-  files.
-- [ ] Add explicit source time, frame time, retrieval time, stale status,
+  one stable product. (Chosen: COSMO `*_00` GRIB1 2 m temperature — format and
+  grid documented by the product readme and verified live on 2026-07-05. Radar
+  composites are blocked at the source: every public file URL 307-redirects to
+  an HTML page; documented in `docs/products/PRODUCT_RESEARCH.md`.)
+- [x] Avoid full GRIB or radar binary decoding in one large step unless the
+  format is fully documented. (Narrow GRIB1 reader: simple packing plus
+  rotated lat/lon GDS only; a single variable is decoded per render.)
+- [x] Add product-detail refresh support so selected product frame manifests can
+  be refreshed automatically with retention limits
+  (`METEOLENS_PRODUCT_REFRESH_ENABLED`, `METEOLENS_PRODUCT_REFRESH_IDS`,
+  startup sync + scheduler loop).
+- [x] Add cache limits for product detail manifests and downloaded renderable
+  files (`METEOLENS_PRODUCT_MAX_DETAIL_MANIFESTS`,
+  `METEOLENS_PRODUCT_BINARY_MAX_FILES`, `METEOLENS_PRODUCT_MAX_CACHED_FILES`,
+  age-based eviction via `METEOLENS_PRODUCT_FILE_RETENTION_HOURS`).
+- [x] Add explicit source time, frame time, retrieval time, stale status,
   missing frame status, rendering status, attribution, and processed-data notice
-  metadata.
-- [ ] Add backend API support for a renderable map layer descriptor only when
-  frames are actually renderable.
-- [ ] Add frontend support for selecting a renderable product layer.
-- [ ] Add frontend support for displaying frame time.
-- [ ] Add frontend support for play, pause, and step controls across frames.
-- [ ] Add frontend labels for metadata-only or not-renderable frames when map
-  rendering is unavailable.
-- [ ] Add tests for frame metadata parsing.
-- [ ] Add tests for retention policy.
-- [ ] Add tests for missing frame handling.
-- [ ] Add tests for stale frame handling.
-- [ ] Add tests for frontend timeline state.
-- [ ] Update `docs/products/PRODUCT_RESEARCH.md`.
-- [ ] Update `docs/products/RASTER_PIPELINE.md`.
-- [ ] Update `API_CONTRACT.md`.
-- [ ] Update `DATA_SOURCES.md`.
-- [ ] Update `README.md`.
-- [ ] Update `TASKS.md`.
+  metadata (frames API, render metadata sidecars, PNG iTXt chunks, response
+  headers).
+- [x] Add backend API support for a renderable map layer descriptor only when
+  frames are actually renderable (`renderable` block on timeline layers and
+  the frames endpoint; metadata-only products keep `renderable: null`).
+- [x] Add frontend support for selecting a renderable product layer (timeline
+  layer picker plus an explicit "Pokaż na mapie" overlay opt-in).
+- [x] Add frontend support for displaying frame time (frame time plus model
+  run time).
+- [x] Add frontend support for play, pause, and step controls across frames.
+- [x] Add frontend labels for metadata-only or not-renderable frames when map
+  rendering is unavailable (per-frame render window/step reasons, blocked
+  radar downloads, overlay load errors).
+- [x] Add tests for frame metadata parsing.
+- [x] Add tests for retention policy.
+- [x] Add tests for missing frame handling.
+- [x] Add tests for stale frame handling.
+- [x] Add tests for frontend timeline state.
+- [x] Update `docs/products/PRODUCT_RESEARCH.md`.
+- [x] Update `docs/products/RASTER_PIPELINE.md`.
+- [x] Update `API_CONTRACT.md`.
+- [x] Update `DATA_SOURCES.md`.
+- [x] Update `README.md`.
+- [x] Update `TASKS.md`.
 
 Acceptance criteria:
 
-- [ ] At least one product path can be represented as a real map-renderable
+- [x] At least one product path can be represented as a real map-renderable
   layer, or the docs clearly explain why the stage remains blocked by format or
-  legal constraints.
-- [ ] The UI never presents metadata-only frames as rendered radar or model data.
-- [ ] All rendered or exported product views include IMGW-PIB attribution and a
-  processed-data notice.
+  legal constraints. (COSMO 2 m temperature renders as a MapLibre image
+  overlay; the radar path is documented as blocked at the source.)
+- [x] The UI never presents metadata-only frames as rendered radar or model data.
+- [x] All rendered or exported product views include IMGW-PIB attribution and a
+  processed-data notice (timeline bar, layer descriptor, PNG iTXt metadata).
 
 ## Stage 15 - Historical Archive Backfill
 

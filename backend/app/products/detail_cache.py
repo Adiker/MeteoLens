@@ -13,6 +13,7 @@ class ProductDetailCacheEntry(BaseModel):
     retrieved_at: datetime
     files: list[dict[str, Any]] = Field(default_factory=list)
     error: str | None = None
+    last_error_at: datetime | None = None
 
 
 class ProductDetailCache:
@@ -42,12 +43,25 @@ class ProductDetailCache:
         write_text_atomic(self._path_for(product_id), payload.model_dump_json(indent=2))
 
     def write_error(self, *, product_id: str, url: str, error: str) -> None:
+        existing = self.read(product_id)
+        if existing is not None and existing.files:
+            payload = existing.model_copy(
+                update={
+                    "url": url,
+                    "error": error,
+                    "last_error_at": datetime.now(UTC),
+                }
+            )
+            write_text_atomic(self._path_for(product_id), payload.model_dump_json(indent=2))
+            return
+
         payload = ProductDetailCacheEntry(
             product_id=product_id,
             url=url,
             retrieved_at=datetime.now(UTC),
             files=[],
             error=error,
+            last_error_at=datetime.now(UTC),
         )
         write_text_atomic(self._path_for(product_id), payload.model_dump_json(indent=2))
 

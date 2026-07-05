@@ -336,15 +336,20 @@ mode and debugging, not for primary UI rendering.
 
 ## Product And Timeline APIs
 
-Stage 10 exposes product classification and frame metadata only. Binary download,
-parsing, and tile rendering remain deferred.
+Stage 10 exposed product classification and frame metadata; Stage 14 adds the
+first real rendering path (COSMO `*_00` 2 m temperature as a PNG map overlay).
+Radar composites stay metadata-only (`rendering_status: download_blocked`)
+because IMGW does not currently serve their files publicly.
 
 ### `GET /api/v1/products`
 
 Returns IMGW product manifest entries enriched with research classification:
 
 - `category`, `availability`, `rendering_status`, `high_value`, `format_notes`
-- `research_date` (currently `2026-07-01`)
+- `rendering_status` values include `renderable` (COSMO `*_00`),
+  `parser_not_implemented`, `download_blocked` (radar composites),
+  `unsupported_format`, `unavailable`
+- `research_date` (currently `2026-07-05`)
 - `missing_fields` (source fields IMGW omitted, e.g. `id`/`url`/`opis`)
 - per-product `source` metadata and attribution/processed notice at collection level
 - `retrieved_at` is `null` when the product manifest cache is empty (never synthesized)
@@ -355,9 +360,37 @@ Query parameters: `limit` (1-500, default 120), `offset` (default 0).
 
 Returns cached product detail manifest slices with parsed frame metadata:
 
-- `frame_time`, `frame_kind`, `missing`, `rendering_status`
+- `frame_time`, `run_time` (model run for GRIB products), `frame_kind`
+  (`forecast_lead`, `observation`, `preview`, `metadata`, `constant`),
+  `missing`, `rendering_status`
 - aggregate `frame_count`, `missing_frames`, `stale`, `retrieved_at`
+- `renderable` — descriptor object for renderable products, otherwise `null`:
+  `variables` (key/title/unit/legend), `default_variable`, `bounds`
+  (west/south/east/north), `image_coordinates` (MapLibre TL/TR/BR/BL corners),
+  `render_url_template`, `max_lead_hours`, `lead_step_hours`, `grid_note`,
+  `attribution`, `processed_notice`
+- per-frame render state on renderable products: `renderable` (bool),
+  `renderable_reason` (`constant_field_file`, `not_a_forecast_frame`,
+  `lead_beyond_render_window`, `lead_not_on_render_step`), and — for
+  renderable frames — `render_url` and `render_ready` (PNG already cached)
 - `empty_state.code` may be `cache_empty`, `product_unavailable`, or `frame_missing`
+
+### `GET /api/v1/products/{product_id}/render/{file}?variable=t2m`
+
+Serves the rendered PNG overlay for one renderable frame (`image/png`). The
+first request downloads the source GRIB server-side (can take seconds to tens
+of seconds; downloads are serialized), then the cached PNG is served.
+
+- Response headers: `X-MeteoLens-Frame-Time`, `X-MeteoLens-Run-Time`,
+  `X-MeteoLens-Retrieved-At`, `X-MeteoLens-Rendered-At`, `X-MeteoLens-Variable`
+- The PNG embeds attribution, the processed-data notice, and timing metadata
+  as iTXt chunks; a JSON metadata sidecar backs `render_ready`
+- Errors (`detail.error.code`): `not_renderable` (404), `frame_not_renderable`
+  (404), `cache_empty` (503), `frame_missing` (404 — also used when IMGW
+  returns an HTML page instead of a GRIB file), `download_blocked` (502),
+  `download_failed` (502), `file_too_large` (502), `grid_mismatch` (502 —
+  the file stopped matching the reviewed COSMO grid; rendering is refused
+  rather than drawn at a wrong position), `variable_missing` (502)
 
 ### `GET /api/v1/map/timeline`
 
@@ -365,12 +398,13 @@ Returns time-aware layers derived from cached product detail manifests. Each lay
 includes:
 
 - `first_frame_time`, `last_frame_time`, `source_time`
-- `frames_renderable` (currently always `false`)
+- `frames_renderable` — `true` only when frames actually render as a map layer
+- `renderable` — same descriptor as on the frames endpoint (or `null`)
 - `stale`, `missing_frames`, attribution, processed notice, and explanatory `notes`
 
 ### Planned tile endpoint
 
-Binary rendering is not implemented. A future contract may add:
+Tile pyramids are not implemented. A future contract may add:
 
 - `GET /api/v1/tiles/{product_id}/{z}/{x}/{y}`
 

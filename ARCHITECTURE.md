@@ -166,10 +166,19 @@ processed-data notice metadata. A local retention policy is required before this
 cache is allowed to grow unbounded.
 
 Stage 10 defines a separate cache policy for large product, radar-like,
-and GRIB files. Detail manifest cache lives under `cache/product_details/`.
-Binary download directories and tile output remain unimplemented until product
-IDs, file formats, projections, licensing, file sizes, and cache eviction rules
-are documented in `docs/products/RASTER_PIPELINE.md`.
+and GRIB files. Detail manifest cache lives under `cache/product_details/`
+(TTL plus a manifest-count cap, refreshed by the scheduler when
+`METEOLENS_PRODUCT_REFRESH_ENABLED=true`). Stage 14 adds the binary and render
+caches: downloaded COSMO GRIB files under `data/products/binaries/{id}/` and
+rendered PNG frames plus metadata sidecars under `data/products/renders/{id}/`,
+both with count and age eviction. The rendering pipeline lives in
+`app/products/` — `grib1.py` (narrow pure-Python GRIB1 reader), `rotated_grid.py`
+(rotated-pole transforms and Web-Mercator resampling), `png.py` (dependency-free
+RGBA PNG writer with iTXt metadata), `rendering.py` (variable registry,
+download with size cap and redirect/HTML detection, grid verification against
+the reviewed COSMO grid, palette, retention), and `refresh.py` (detail-manifest
+refresh with optional prefetch). Limits and behavior are documented in
+`docs/products/RASTER_PIPELINE.md`.
 
 ## Database Schema
 

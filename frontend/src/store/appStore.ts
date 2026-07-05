@@ -56,6 +56,10 @@ export interface TimelineState {
   playing: boolean;
   speed: TimelineSpeed;
   focused: boolean;
+  /** User opt-in for drawing the rendered product overlay on the map. */
+  overlayEnabled: boolean;
+  /** Last overlay image load failure, surfaced in the timeline bar. */
+  overlayError: string | null;
 }
 
 export const POLAND_VIEW: MapView = { lng: 19.1451, lat: 51.9194, zoom: 5.4 };
@@ -100,6 +104,8 @@ export interface AppState {
   setTimelineSpeed: (speed: TimelineSpeed) => void;
   stepTimelineFrame: (delta: number) => void;
   setTimelineFocused: (focused: boolean) => void;
+  toggleTimelineOverlay: () => void;
+  setTimelineOverlayError: (error: string | null) => void;
   setPowerPanelOpen: (open: boolean) => void;
   togglePowerPanel: () => void;
   addSavedLocation: (location: SavedLocation) => void;
@@ -139,6 +145,10 @@ const DEFAULT_TIMELINE: TimelineState = {
   playing: false,
   speed: 1,
   focused: false,
+  // Off by default: the first render of a frame downloads a large GRIB file
+  // on the backend, so drawing the overlay is an explicit user choice.
+  overlayEnabled: false,
+  overlayError: null,
 };
 
 export const useAppStore = create<AppState>((set) => ({
@@ -182,7 +192,13 @@ export const useAppStore = create<AppState>((set) => ({
   setShortcutHelpOpen: (open) => set({ shortcutHelpOpen: open }),
   setTimelineLayer: (layerKey) =>
     set((state) => ({
-      timeline: { ...state.timeline, activeLayerKey: layerKey, frameIndex: 0, playing: false },
+      timeline: {
+        ...state.timeline,
+        activeLayerKey: layerKey,
+        frameIndex: 0,
+        playing: false,
+        overlayError: null,
+      },
     })),
   setTimelineFrameIndex: (index) =>
     set((state) => ({ timeline: { ...state.timeline, frameIndex: Math.max(0, index) } })),
@@ -200,6 +216,16 @@ export const useAppStore = create<AppState>((set) => ({
     })),
   setTimelineFocused: (focused) =>
     set((state) => ({ timeline: { ...state.timeline, focused } })),
+  toggleTimelineOverlay: () =>
+    set((state) => ({
+      timeline: {
+        ...state.timeline,
+        overlayEnabled: !state.timeline.overlayEnabled,
+        overlayError: null,
+      },
+    })),
+  setTimelineOverlayError: (error) =>
+    set((state) => ({ timeline: { ...state.timeline, overlayError: error } })),
   setPowerPanelOpen: (open) => set({ powerPanelOpen: open }),
   togglePowerPanel: () => set((state) => ({ powerPanelOpen: !state.powerPanelOpen })),
   addSavedLocation: (location) =>

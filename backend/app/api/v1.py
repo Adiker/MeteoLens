@@ -6,7 +6,7 @@ from typing import Annotated, Any, Literal, NoReturn
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from app.core.config import get_settings
@@ -28,7 +28,9 @@ from app.normalization.models import (
     Station,
     Warning,
 )
+from app.products import rendering
 from app.products.catalog import list_products, product_detail
+from app.products.detail_cache import ProductDetailCache
 from app.products.timeline import build_map_timeline
 from app.services import observation_history as history_service
 from app.services.freshness import ALERTING_DISCLAIMER, build_freshness_report
@@ -250,6 +252,7 @@ class ProductFramesResponse(BaseModel):
     offset: int
     missing_frames: int
     stale: bool
+    renderable: dict[str, Any] | None = None
     attribution: str
     processed_notice: str
     empty_state: EmptyState | None = None
@@ -266,6 +269,7 @@ class TimelineLayer(BaseModel):
     frame_count: int
     missing_frames: int
     frames_renderable: bool
+    renderable: dict[str, Any] | None = None
     source_time: datetime | None = None
     first_frame_time: str | None = None
     last_frame_time: str | None = None
@@ -370,6 +374,95 @@ def get_product_frames(
 ) -> ProductFramesResponse:
     payload = product_detail(get_settings(), product_id, limit=limit, offset=offset)
     return ProductFramesResponse(**payload)
+
+
+@router.get("/products/{product_id}/render/{filename}")
+def get_product_render(
+    product_id: str,
+    filename: str,
+    variable: str = "t2m",
+) -> FileResponse:
+    """Serve a rendered PNG overlay for one renderable product frame.
+
+    Renders (and downloads the source GRIB) on first request, then serves the
+    cached PNG. Non-renderable products or frames return explicit errors —
+    metadata-only frames are never dressed up as rendered data.
+    """
+    settings = get_settings()
+    if not rendering.product_is_renderable(product_id):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "not_renderable",
+                    "message": "This product has no renderable map layer.",
+                    "product_id": product_id,
+                }
+            },
+        )
+    cached_detail = ProductDetailCache(settings.cache_dir).read(product_id)
+    if cached_detail is None:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": {
+                    "code": "cache_empty",
+                    "message": "Product frame manifest is not cached yet.",
+                    "source_keys": ["product"],
+                }
+            },
+        )
+    row = next(
+        (
+            item
+            for item in cached_detail.files
+            if isinstance(item, dict) and item.get("file") == filename
+        ),
+        None,
+    )
+    if row is None or not str(row.get("url") or ""):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "frame_missing",
+                    "message": "The requested frame is not present in the manifest.",
+                    "product_id": product_id,
+                    "file": filename,
+                }
+            },
+        )
+    try:
+        result = rendering.render_frame(
+            settings,
+            product_id=product_id,
+            filename=filename,
+            url=str(row["url"]),
+            variable_key=variable,
+        )
+    except rendering.RenderError as exc:
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail={
+                "error": {
+                    "code": exc.code,
+                    "message": str(exc),
+                    "product_id": product_id,
+                    "file": filename,
+                }
+            },
+        ) from exc
+
+    metadata = result.metadata
+    headers = {
+        "Cache-Control": "public, max-age=3600",
+        "X-MeteoLens-Frame-Time": str(metadata.get("frame_time") or ""),
+        "X-MeteoLens-Run-Time": str(metadata.get("run_time") or ""),
+        "X-MeteoLens-Retrieved-At": str(metadata.get("retrieved_at") or ""),
+        "X-MeteoLens-Rendered-At": str(metadata.get("rendered_at") or ""),
+        "X-MeteoLens-Variable": str(metadata.get("variable") or ""),
+    }
+    return FileResponse(result.png_path, media_type="image/png", headers=headers)
 
 
 @router.get("/map/timeline", response_model=MapTimelineResponse)

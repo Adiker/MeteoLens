@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.core.config import Settings
+from app.products import rendering
 from app.products.catalog import product_detail
 from app.products.classification import classify_product_id
 
@@ -21,6 +22,7 @@ def build_map_timeline(settings: Settings) -> dict[str, Any]:
             offset=max(detail["frame_count"] - 1, 0),
         )
         last_frame = last_detail["frames"][0] if last_detail["frames"] else None
+        renderable = rendering.renderable_descriptor(settings, product_id)
         layers.append(
             {
                 "key": f"product:{product_id}",
@@ -31,17 +33,15 @@ def build_map_timeline(settings: Settings) -> dict[str, Any]:
                 "rendering_status": classification.rendering_status,
                 "frame_count": detail["frame_count"],
                 "missing_frames": detail["missing_frames"],
-                "frames_renderable": False,
+                "frames_renderable": renderable is not None,
+                "renderable": renderable,
                 "source_time": detail["retrieved_at"],
                 "first_frame_time": first_frame["frame_time"] if first_frame else None,
                 "last_frame_time": last_frame["frame_time"] if last_frame else None,
                 "stale": detail["stale"],
                 "attribution": detail["attribution"],
                 "processed_notice": detail["processed_notice"],
-                "notes": [
-                    "Frame timestamps are parsed from public manifest filenames only.",
-                    "Binary product parsing and map rendering are not implemented yet.",
-                ],
+                "notes": _layer_notes(classification.rendering_status, renderable),
             }
         )
 
@@ -56,6 +56,23 @@ def build_map_timeline(settings: Settings) -> dict[str, Any]:
             "source_keys": ["product"],
         },
     }
+
+
+def _layer_notes(rendering_status: str, renderable: dict[str, Any] | None) -> list[str]:
+    notes = ["Frame timestamps are parsed from public manifest filenames."]
+    if renderable is not None:
+        notes.append(
+            "Frames render server-side as processed IMGW-PIB data "
+            "(2 m temperature overlay)."
+        )
+    elif rendering_status == "download_blocked":
+        notes.append(
+            "IMGW does not currently serve these files publicly; "
+            "frames stay metadata-only."
+        )
+    else:
+        notes.append("Binary product parsing and map rendering are not implemented yet.")
+    return notes
 
 
 def _timeline_product_ids(settings: Settings) -> tuple[str, ...]:

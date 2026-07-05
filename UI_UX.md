@@ -126,16 +126,29 @@ Controls:
 Stage 8 should enable the timeline for historical observation series where real
 multi-point data exists. Stage 10 extends the same control pattern to radar/product
 frames using cached manifest metadata. The timeline appears when
-`/api/v1/map/timeline` returns layers. Map rendering stays disabled until binary
-parsers and a raster strategy are implemented; the UI must label metadata-only mode.
+`/api/v1/map/timeline` returns layers.
+
+Stage 14 adds the first rendered layer: for renderable products (COSMO `*_00`
+2 m temperature) the timeline offers an explicit "Pokaż na mapie" toggle that
+draws the rendered frame as a semi-transparent map overlay (image source under
+station markers and warning polygons). The overlay is opt-in because the first
+render of each frame triggers a large backend download. While a rendered layer
+is active the timeline shows the variable name, unit, a colour legend, the
+attribution line, and the processed-data notice. Frames outside the render
+window/step, constant-field files, and readme entries carry explicit
+non-renderable labels; overlay image load failures surface as a visible error
+message in the timeline bar. Non-renderable products (including radar
+composites with source-blocked downloads) keep metadata-only labels and never
+draw anything on the map.
 
 Timeline labels must distinguish:
 
 - source time,
-- frame or observation time,
+- frame or observation time (plus model run time for forecast products),
 - retrieval time,
 - stale frames,
 - missing frames,
+- renderable vs metadata-only frames (with the non-renderable reason),
 - processed-data notice.
 
 ## Permalinks
