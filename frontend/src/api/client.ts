@@ -601,6 +601,7 @@ export function mapGeoJsonUrl(layers: LayerKey[]): string {
 
 export function warningsGeoJsonUrl(params: {
   type?: WarningType;
+  active_at?: string;
   level?: number | null;
   phenomenon?: string;
   province?: string;
