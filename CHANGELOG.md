@@ -4,6 +4,14 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 16 public API, SDK, and power-user exports: stabilized
+  `API_CONTRACT.md` with `/api/v1` compatibility and responsible-use notes,
+  added warning GeoJSON and map-state JSON export endpoints, exposed those
+  exports in the frontend menu, added a lightweight TypeScript client with
+  OpenAPI-generated metadata under `packages/meteolens-api-client/`, added
+  runnable Node API examples under `examples/api/`, documented the generator
+  workflow, and added tests for Stage 16 exports, generated metadata, and
+  example script syntax.
 - Added Stage 15 historical archive backfill: bounded server-side daily SYNOP
   archive import (`POST /api/v1/archive/backfill/synop-daily`) with date/file
   limits, per-file rate limiting, resumable upserts, import-run progress/error

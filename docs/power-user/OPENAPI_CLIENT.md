@@ -1,32 +1,66 @@
-# Generated Public API Client Plan
+# Public API Client
 
-Stage 11 documents client generation; no generated SDK is committed yet.
+Stage 16 adds a lightweight TypeScript client under
+`packages/meteolens-api-client/`. It is intentionally small: handwritten fetch
+helpers for common workflows, plus generated OpenAPI metadata committed in
+`src/generated.ts` so route drift is visible in tests and reviews.
 
 ## Source Of Truth
 
-- FastAPI OpenAPI schema at `/openapi.json`
-- Human-readable contract in [`API_CONTRACT.md`](../../API_CONTRACT.md)
+- Live FastAPI OpenAPI schema: `/openapi.json`
+- Human-readable contract: [`API_CONTRACT.md`](../../API_CONTRACT.md)
+- Client generator: [`scripts/api/generate_ts_client.py`](../../scripts/api/generate_ts_client.py)
+- Generated metadata: [`packages/meteolens-api-client/src/generated.ts`](../../packages/meteolens-api-client/src/generated.ts)
 
-## Recommended Workflow
+Regenerate after changing public routes or response models:
 
 ```bash
-# Example only — run after backend is up locally
-curl -sS http://localhost:8000/openapi.json -o openapi.json
-npx openapi-typescript openapi.json -o meteolens-api.d.ts
+backend/.venv/bin/python scripts/api/generate_ts_client.py
 ```
 
-Alternative generators:
+Then type-check the package:
 
-- `openapi-generator-cli` for Python/TypeScript fetch clients
-- `fern` or `speakeasy` if versioning and publishing become requirements
+```bash
+cd packages/meteolens-api-client
+npm run check
+```
+
+## Supported Helpers
+
+The client currently covers the workflows most useful for integrations:
+
+- `listStations`
+- `getStationObservations`
+- `stationObservationsCsvUrl`
+- `stationObservationsJsonUrl`
+- `getFreshnessStatus`
+- `getActiveWarningsForLocation`
+- `warningGeoJsonUrl`
+
+It does not publish to npm yet. Treat it as a repo-local SDK template until a
+tagged release process and package-publishing policy exist.
+
+## Examples
+
+Runnable Node examples live in [`examples/api/`](../../examples/api/). They use
+Node 18+ built-in `fetch` and the `METEOLENS_API_BASE_URL` environment variable.
+
+Example:
+
+```bash
+METEOLENS_API_BASE_URL=http://localhost:8000 \
+  node examples/api/list-stations.mjs --type hydro --limit 5
+```
+
+The examples call MeteoLens endpoints only. They do not fetch IMGW-PIB sources
+directly from the user's machine.
 
 ## Versioning Rules
 
-1. Regenerate clients only from tagged releases, not from every branch.
-2. Treat additive OpenAPI changes as minor; removed fields as major.
-3. Keep `alerting_disclaimer` and attribution fields required in generated types.
-
-## Stage 11 Scope
-
-- Document the command sequence above.
-- Do **not** check generated artifacts into the repo until release automation exists.
+1. Regenerate client metadata from the backend OpenAPI schema before opening a
+   PR that changes public routes or response models.
+2. Treat additive OpenAPI changes as compatible within `/api/v1`.
+3. Treat removed fields, renamed fields, changed field meaning, changed export
+   column names, or changed default filter behavior as breaking.
+4. Keep attribution, processed-data notices, source timestamps, and
+   `alerting_disclaimer` fields visible in client-facing types and examples.

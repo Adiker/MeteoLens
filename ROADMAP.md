@@ -82,14 +82,15 @@ Stages 15-16 deepen the data product after alpha basics are honest: archive
 backfill makes charts useful on fresh deployments, and API/SDK/export work makes
 the system easier to integrate without reading backend code.
 
-- Stage 15 - Historical archive backfill: research current IMGW archive formats,
+- Stage 15 - Historical archive backfill (done): research current IMGW archive formats,
   document legal notes, add an opt-in bounded and resumable server-side import
   path for at least one clear source, preserve timestamps/nulls/attribution, and
   label imported history separately from live refresh history.
-- Stage 16 - Public API, SDK, and power-user exports: stabilize the public API
-  surface, prepare a generated TypeScript client, add example scripts for common
-  workflows, improve station/warning/map exports, and document versioning,
-  backwards compatibility, rate limits, and responsible use.
+- Stage 16 - Public API, SDK, and power-user exports (done): stabilize the
+  public API surface, prepare a TypeScript client with generated OpenAPI
+  metadata, add example scripts for common workflows, improve
+  station/warning/map exports, and document versioning, backwards
+  compatibility, rate limits, and responsible use.
 
 ## Backlog Ideas
 

@@ -3,6 +3,7 @@ from datetime import UTC, date, datetime
 from io import StringIO
 from math import asin, cos, radians, sin, sqrt
 from typing import Annotated, Any, Literal, NoReturn
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
@@ -1213,8 +1214,205 @@ def export_map_geojson(
     )
 
 
+@router.get("/export/warnings.geojson")
+def export_warnings_geojson(
+    warning_type: Annotated[
+        Literal["meteo", "hydro"] | None,
+        Query(alias="type"),
+    ] = None,
+    active_at: datetime | None = None,
+    level: int | None = None,
+    phenomenon: str | None = None,
+    teryt: str | None = None,
+    basin: str | None = None,
+    province: str | None = None,
+    county: str | None = None,
+    bbox: Annotated[str | None, Query(description="minLon,minLat,maxLon,maxLat")] = None,
+) -> JSONResponse:
+    cache = _source_cache()
+    geometry_store = get_geometry_store()
+    bbox_values = _parse_bbox(bbox)
+    cached_warnings = _warnings_from_cache(cache)
+    warnings = [
+        warning
+        for warning in cached_warnings
+        if _warning_matches(
+            warning,
+            warning_type=warning_type,
+            active_at=active_at,
+            level=level,
+            phenomenon=phenomenon,
+            teryt=teryt,
+            basin=basin,
+            province=province,
+            county=county,
+            geometry_store=geometry_store,
+        )
+    ]
+    features: list[dict[str, Any]] = []
+    non_spatial_records: list[dict[str, Any]] = []
+    missing_geometry: list[dict[str, Any]] = []
+    for warning in warnings:
+        geometry = resolve_warning_geometries(warning, geometry_store)
+        warning_features = geometry["geojson"]["features"]
+        if bbox_values is not None:
+            warning_features = [
+                feature
+                for feature in warning_features
+                if _feature_intersects_bbox(feature, bbox_values)
+            ]
+        features.extend(warning_features)
+        if warning_features or geometry["unresolved_areas"] or bbox_values is None:
+            non_spatial_records.append(_warning_map_record(warning, geometry))
+        if geometry["unresolved_areas"]:
+            missing_geometry.extend(
+                _missing_warning_geometry(warning, geometry["unresolved_areas"])
+            )
+
+    geojson = {
+        "type": "FeatureCollection",
+        "features": features,
+        "generated_at": datetime.now(UTC),
+        "attribution": ATTRIBUTION,
+        "geometry_attributions": _geometry_attributions_for_features(features),
+        "processed_notice": PROCESSED_NOTICE,
+        "cache": [
+            state.model_dump(mode="json")
+            for state in _cache_states(cache, WARNING_SOURCE_KEYS)
+        ],
+        "filters": {
+            "type": warning_type,
+            "active_at": active_at,
+            "level": level,
+            "phenomenon": phenomenon,
+            "teryt": teryt,
+            "basin": basin,
+            "province": province,
+            "county": county,
+            "bbox": bbox,
+        },
+        "non_spatial_records": non_spatial_records,
+        "missing_geometry": missing_geometry,
+        "empty_state": (
+            _collection_empty_state(
+                cached_warnings,
+                features or non_spatial_records or missing_geometry,
+                WARNING_SOURCE_KEYS,
+                filter_message="No warnings matched the requested export filters.",
+            ).model_dump(mode="json")
+            if not (features or non_spatial_records or missing_geometry)
+            else None
+        ),
+    }
+    return JSONResponse(
+        content=jsonable_encoder(geojson),
+        media_type="application/geo+json",
+        headers={"Content-Disposition": 'attachment; filename="meteolens-warnings.geojson"'},
+    )
+
+
+@router.get("/export/map-state.json")
+def export_map_state_json(
+    layers: Annotated[str | None, Query(description="Comma-separated layer keys.")] = None,
+    bbox: Annotated[str | None, Query(description="minLon,minLat,maxLon,maxLat")] = None,
+    lng: float | None = None,
+    lat: float | None = None,
+    zoom: float | None = None,
+    mode: Literal["simple", "expert"] | None = None,
+    theme: Literal["system", "light", "dark"] | None = None,
+    selection_kind: Literal["station", "warning"] | None = None,
+    selection_id: str | None = None,
+    warning_level: int | None = None,
+    phenomenon: str | None = None,
+    province: str | None = None,
+    county: str | None = None,
+    basin: str | None = None,
+    timeline_layer: str | None = None,
+    timeline_frame_index: int | None = None,
+) -> JSONResponse:
+    map_layers = get_map_layers(layers=layers, bbox=bbox)
+    active_layers = _parse_layers(layers)
+    state = {
+        "generated_at": datetime.now(UTC),
+        "attribution": ATTRIBUTION,
+        "processed_notice": PROCESSED_NOTICE,
+        "version": "1",
+        "view": {
+            "lng": lng,
+            "lat": lat,
+            "zoom": zoom,
+            "bbox": bbox,
+        },
+        "active_layers": [str(layer["key"]) for layer in active_layers],
+        "mode": mode,
+        "theme": theme,
+        "selection": {
+            "kind": selection_kind,
+            "id": selection_id,
+        }
+        if selection_kind and selection_id
+        else None,
+        "filters": {
+            "warning_level": warning_level,
+            "phenomenon": phenomenon,
+            "province": province,
+            "county": county,
+            "basin": basin,
+        },
+        "timeline": {
+            "active_layer_key": timeline_layer,
+            "frame_index": timeline_frame_index,
+        },
+        "api_requests": {
+            "map_layers": (
+                "/api/v1/map/layers"
+                + _query_string({"layers": layers, "bbox": bbox})
+            ),
+            "warnings_geojson": (
+                "/api/v1/export/warnings.geojson"
+                + _query_string(
+                    {
+                        "level": warning_level,
+                        "phenomenon": phenomenon,
+                        "province": province,
+                        "county": county,
+                        "basin": basin,
+                    }
+                )
+            ),
+        },
+        "layer_summaries": [
+            {
+                "key": layer.key,
+                "feature_count": len(layer.geojson["features"]),
+                "record_count": len(layer.records),
+                "missing_geometry_count": len(layer.missing_geometry),
+                "source_keys": layer.source_keys,
+            }
+            for layer in map_layers.layers
+        ],
+        "cache": [state.model_dump(mode="json") for state in map_layers.cache],
+        "empty_state": map_layers.empty_state.model_dump(mode="json")
+        if map_layers.empty_state
+        else None,
+    }
+    return JSONResponse(
+        content=jsonable_encoder(state),
+        headers={"Content-Disposition": 'attachment; filename="meteolens-map-state.json"'},
+    )
+
+
 def _source_cache() -> SourceCache:
     return SourceCache(get_settings().cache_dir)
+
+
+def _query_string(params: dict[str, Any]) -> str:
+    clean_params = {
+        key: value
+        for key, value in params.items()
+        if value is not None and value != ""
+    }
+    return "?" + urlencode(clean_params) if clean_params else ""
 
 
 def _geometry_attributions_for_features(features: list[dict[str, Any]]) -> list[str]:

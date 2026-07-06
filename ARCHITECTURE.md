@@ -37,7 +37,7 @@ Backend:
 ```text
 frontend/       React/Vite application, map UI, charts, export UI
 backend/        FastAPI app, IMGW clients, parsers, normalizers, cache, API
-packages/       Shared schemas or generated clients after the API stabilizes
+packages/       Repo-local API client packages and generated OpenAPI metadata
 data/           Local cache/database files and non-secret downloaded datasets
 docs/           Screenshots, mockups, diagrams, research notes
 scripts/        Developer and data maintenance scripts
@@ -83,6 +83,11 @@ window-event bus (`src/lib/mapBus.ts`) instead of prop-drilling the MapLibre
 instance. The timeline/animation module is deferred until time-aware data
 exists, and warning polygons are deferred until area geometry datasets are
 cached (warnings currently render as a filterable list).
+
+Stage 16 adds a repo-local TypeScript integration client under
+`packages/meteolens-api-client/`. The frontend still uses its local
+`src/api/client.ts` for app-specific UI types and TanStack Query integration;
+the package is for external scripts, examples, and OpenAPI drift checks.
 
 ## Data Ingestion Flow
 
@@ -270,25 +275,21 @@ refreshes:
 - `/api/v1/export/station/{id}.json`
 - `/api/v1/export/map.geojson`
 
-Planned public API changes:
-
-- Stage 8 should expand `/api/v1/stations/{id}/observations` into real
-  time-series queries with `metric`, `from`, `to`, `interval`, and `limit`, and
-  should add station comparison, rankings, and time-range export endpoints after
-  `API_CONTRACT.md` is updated.
-- Stage 9 should expose geometry status for warning areas, support spatial
-  warning matching for `/api/v1/location/summary`, and add administrative or
-  basin filters only for datasets that pass source/legal review.
-- Stage 10 should add product/raster/timeline API contracts only after product
-  file formats, projections, licensing, cache policy, and missing-frame behavior
-  are documented.
-- Stage 11 should add saved views, dashboards, local alert rules, and generated
-  API client planning only after the data ownership and official-warning
-  disclaimer requirements are documented.
-
 Stage 15 adds `POST /api/v1/archive/backfill/synop-daily` for manual bounded
 imports and extends station observation responses/exports with
 `series_origin`, `origin_counts`, and per-point archive import metadata.
+
+Stage 16 stabilizes the public `/api/v1` surface in `API_CONTRACT.md`, adds
+responsible-use and backwards-compatibility notes, and adds:
+
+- `/api/v1/export/station/{id}/observations.csv`
+- `/api/v1/export/station/{id}/observations.json`
+- `/api/v1/export/warnings.geojson`
+- `/api/v1/export/map-state.json`
+
+OpenAPI metadata for the TypeScript client is generated from the FastAPI app by
+`scripts/api/generate_ts_client.py` and committed at
+`packages/meteolens-api-client/src/generated.ts`.
 
 ## Map Layers
 
@@ -360,6 +361,13 @@ Stage 4 implements station CSV, station JSON, and map GeoJSON exports from
 normalized cache records. The map GeoJSON export includes point features and
 foreign members for non-spatial warning records and missing-geometry metadata.
 
+Stage 16 extends exports with station observation range CSV/JSON, warning
+GeoJSON, and map-state JSON. Warning GeoJSON preserves unresolved warning
+geometry in `non_spatial_records` and `missing_geometry`; map-state JSON records
+visible layers, map view, mode/theme, selection, filters, timeline state, cache
+state, and per-layer feature/record/missing-geometry counts. PDF reports remain
+planned only in `docs/power-user/PDF_EXPORT_PLAN.md`.
+
 ## Error Handling
 
 - IMGW download errors are user-visible.
@@ -391,6 +399,10 @@ Stage 4-5:
 
 Stage 4 adds backend API and export tests using normalized cache records seeded
 from real-shape IMGW fixtures.
+
+Stage 16 adds backend tests for warning GeoJSON and map-state exports, a
+generated-client metadata drift check for public routes, and syntax checks for
+the Node API examples when Node.js is available.
 
 Stage 6:
 

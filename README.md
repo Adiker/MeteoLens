@@ -3,19 +3,20 @@
 **Status: public alpha (`v0.1.0-alpha` candidate).** MeteoLens works end to
 end against live IMGW-PIB data, but it is an alpha: expect the gaps listed in
 [Known Limitations](#known-limitations) (no synop map markers until a reviewed
-station-coordinate dataset is imported, no radar/product rendering, history
-starts empty). Reproducible local and production smoke-test records live in
+station-coordinate dataset is imported, radar downloads blocked at the source,
+history starts empty unless backfilled). Reproducible local and production
+smoke-test records live in
 [docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-15 (research, documentation, backend
+hydrological data for Poland. Stages 0-16 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
 deployment, observation history, geometry datasets, product timeline,
 PWA/power-user features, public-alpha release polish, the reviewed geometry
 dataset MVP with bundled PRG voivodeship/county polygons, and the product
-rendering MVP with the COSMO 2 m temperature map overlay, and bounded SYNOP
-daily archive backfill) are implemented. See [TASKS.md](TASKS.md) for the full
-staged backlog. Stage 16 is planned next and is not implemented yet.
+rendering MVP with the COSMO 2 m temperature map overlay, bounded SYNOP daily
+archive backfill, and the public API/SDK/export stabilization pass) are
+implemented. See [TASKS.md](TASKS.md) for the full staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -38,7 +39,7 @@ Implemented now:
 
 - IMGW-PIB source research.
 - Architecture decision record in documentation.
-- Public backend API contract draft.
+- Public backend API contract.
 - UI/UX specification.
 - Legal attribution rules.
 - Implementation backlog and staged task list.
@@ -125,11 +126,13 @@ Implemented now:
   `live_refresh`, `archive_import`, and `mixed` series so charts can show
   multi-point historical data immediately after a successful import.
 
-Planned next:
-
-- Stage 16 public API, SDK, and power-user exports: stabilized API docs,
-  TypeScript client preparation, example scripts, stronger exports, and
-  responsible-use/versioning notes.
+- Stage 16 public API, SDK, and power-user exports: the `/api/v1` contract now
+  documents versioning, compatibility, and responsible-use guidance; station
+  observation range CSV/JSON exports, warning GeoJSON exports, and map-state
+  JSON exports are available; the frontend export menu links them where
+  relevant; `packages/meteolens-api-client/` contains a lightweight TypeScript
+  client with OpenAPI-generated metadata; and runnable integration examples
+  live in `examples/api/`.
 
 Remaining gaps: see [Known Limitations](#known-limitations) below.
 
@@ -200,6 +203,18 @@ Limits are controlled with `METEOLENS_ARCHIVE_BACKFILL_MAX_DAYS`,
 `METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS`. Archive fetching always runs
 server-side; the browser never calls IMGW archive files directly.
 
+Public API examples:
+
+```bash
+node examples/api/list-stations.mjs --type hydro --limit 5
+node examples/api/check-source-freshness.mjs
+node examples/api/active-warnings-for-location.mjs 52.23 21.01 --radius-km 75
+```
+
+The examples use `METEOLENS_API_BASE_URL` when the backend is not at
+`http://localhost:8000`. See [examples/api/README.md](examples/api/README.md)
+and [docs/power-user/OPENAPI_CLIENT.md](docs/power-user/OPENAPI_CLIENT.md).
+
 Local URLs:
 
 - Frontend: `http://localhost:5173`
@@ -262,10 +277,14 @@ The target layout is specified in [UI_UX.md](UI_UX.md).
 ## Exports
 
 - CSV for selected station data, including selected time ranges.
-- JSON for selected station or object details.
+- JSON for selected station details, station observation ranges, and current
+  map state.
 - GeoJSON for visible map objects.
+- GeoJSON for warning polygons/non-spatial warning records with unresolved
+  geometry metadata.
 - PNG for the current map view.
-- PDF reports remain planned for after MVP.
+- PDF reports are not implemented; the optional plan is documented in
+  [docs/power-user/PDF_EXPORT_PLAN.md](docs/power-user/PDF_EXPORT_PLAN.md).
 
 Every export must include IMGW-PIB attribution and, when applicable, a processed
 data notice.

@@ -1,9 +1,40 @@
-# API_CONTRACT.md - MeteoLens Backend API Draft
+# API_CONTRACT.md - MeteoLens Backend API
 
 Base path: `/api/v1`.
 
-This is the frontend-facing API contract. Stage 4 implements the map, station,
-warning, location summary, and export endpoints from normalized cache records.
+This is the supported public API contract for the current alpha. The API is
+cache-backed: data comes from public IMGW-PIB sources fetched server-side,
+normalized by MeteoLens, and returned with attribution, retrieval timestamps,
+missing-field metadata, and processed-data notices.
+
+## Versioning And Compatibility
+
+- `/api/v1` is the stable alpha surface. Additive response fields and additive
+  optional query parameters may appear in `v1`.
+- Removing fields, changing field meaning, changing default filter behavior, or
+  changing export column names requires a new API version or an explicit
+  migration note in `CHANGELOG.md`.
+- Clients should ignore unknown JSON fields and should not treat collection
+  ordering as stable unless an endpoint documents it.
+- Error bodies use FastAPI's `{"detail": {"error": ...}}` envelope for
+  application errors.
+- `GET /openapi.json` is the machine-readable source of truth. The lightweight
+  TypeScript client metadata in
+  `packages/meteolens-api-client/src/generated.ts` is generated from this
+  OpenAPI schema with `python scripts/api/generate_ts_client.py`.
+
+## Responsible Use
+
+- Deployed instances should rate-limit public traffic at the reverse proxy.
+  Suggested starting point for unauthenticated public demos: 60-120 requests per
+  minute per IP, with lower limits for product render downloads and archive
+  backfill.
+- Public users should call MeteoLens, not IMGW archive/product files directly.
+  Archive backfill and product rendering are server-side and bounded to protect
+  upstream services.
+- MeteoLens local alerts, dashboards, and warning/station comparisons are not
+  official IMGW-PIB warnings and must keep the disclaimer visible in UI and
+  downstream integrations.
 
 ## Shared Metadata
 
@@ -65,12 +96,6 @@ Returns service status and version.
 `GET /api/v1/sources`
 
 Returns supported source descriptors, cache status, and parser status.
-
-Stage 2 implementation returns planned descriptors only. Real cache freshness
-and parser status will be wired during Stage 3.
-
-Stage 3 implementation returns parser status and file-cache status for the
-current IMGW sources.
 
 Public refresh endpoints are not exposed. Cache refresh remains an internal
 backend concern so public API consumers cannot mutate cache state; deployments
@@ -349,11 +374,20 @@ unresolved geometry via `notes`.
 
 `GET /api/v1/export/station/{id}.json`
 
+`GET /api/v1/export/station/{id}/observations.csv`
+
+`GET /api/v1/export/station/{id}/observations.json`
+
 `GET /api/v1/export/map.geojson`
 
-Export query parameters mirror station/map filters. Every export must include
-attribution, processed-data notice when relevant, generated timestamp, retrieval
-timestamp, and missing-field metadata.
+`GET /api/v1/export/warnings.geojson`
+
+`GET /api/v1/export/map-state.json`
+
+Export query parameters mirror the related station, observations, warning, and
+map filters. Every export includes attribution, processed-data notice when
+relevant, generated timestamp, retrieval timestamp where applicable, and
+missing-field or missing-geometry metadata.
 
 Station CSV columns:
 
@@ -372,6 +406,35 @@ Station CSV columns:
 - `processed_notice`
 - `missing_fields`
 
+Station observation range exports support:
+
+- `metric`
+- `from`
+- `to`
+- `interval`: `raw`, `10m`, `1h`, or `1d`
+- `limit`: maximum 5000
+
+Observation CSV columns:
+
+- `station_id`
+- `station_name`
+- `metric`
+- `value`
+- `unit`
+- `observed_at`
+- `retrieved_at`
+- `data_delay_seconds`
+- `missing`
+- `raw_field`
+- `origin`
+- `import_run_id`
+- `import_source_url`
+- `source_key`
+- `attribution`
+- `processed_notice`
+- `series_kind`
+- `interval`
+
 Map GeoJSON includes point station features plus foreign members for
 `non_spatial_records`, `missing_geometry`, `cache`, `attribution`,
 `geometry_attributions`, `processed_notice`, and `generated_at`.
@@ -379,12 +442,26 @@ Map GeoJSON includes point station features plus foreign members for
 used by exported features, for example PRG/GUGiK attribution for warning
 polygons or reviewed station-coordinate sources.
 
+Warning GeoJSON supports the same warning filters as `/api/v1/warnings`, plus
+`bbox`. It returns polygon features when reviewed geometry exists and keeps
+warnings with unresolved geometry in `non_spatial_records` and
+`missing_geometry`; absence of polygons is not treated as absence of warnings.
+
+Map state JSON records the visible layer keys, optional map center/zoom/bbox,
+mode, theme, current selection, warning filters, timeline selection, cache
+state, and per-layer feature/record/missing-geometry counts. It is intended for
+automation, troubleshooting, and reproducible power-user views, not as a
+replacement for GeoJSON data exports.
+
+Report-like PDF exports are not implemented. The optional future plan is in
+[`docs/power-user/PDF_EXPORT_PLAN.md`](docs/power-user/PDF_EXPORT_PLAN.md).
+
 ## Raw Expert Data
 
-`GET /api/v1/raw/{source_key}/{source_id}`
-
-Returns raw source payload slices when available. This endpoint is for expert
-mode and debugging, not for primary UI rendering.
+No raw expert-data endpoint is currently supported. Raw source snippets are
+included inside station and warning detail payloads where feasible. A future
+`/api/v1/raw/...` endpoint may be added only if it preserves attribution,
+missing-field metadata, and clear cache provenance.
 
 ## Product And Timeline APIs
 
@@ -493,6 +570,29 @@ See also:
 - [`docs/pwa/PWA_PLAN.md`](docs/pwa/PWA_PLAN.md)
 - [`docs/power-user/TREND_ANOMALY_IDEAS.md`](docs/power-user/TREND_ANOMALY_IDEAS.md)
 - [`docs/power-user/OPENAPI_CLIENT.md`](docs/power-user/OPENAPI_CLIENT.md)
+
+## SDK And Examples
+
+The Stage 16 TypeScript client lives in
+`packages/meteolens-api-client/`. It provides typed helpers for common
+integration workflows:
+
+- list stations,
+- fetch station observations,
+- build station range export URLs,
+- check source freshness,
+- fetch active warnings for a location,
+- build warning GeoJSON export URLs.
+
+The generated OpenAPI metadata file is committed so docs and tests can detect
+drift from backend routes. Regenerate it after API changes:
+
+```bash
+backend/.venv/bin/python scripts/api/generate_ts_client.py
+```
+
+Runnable Node examples live under `examples/api/` and use
+`METEOLENS_API_BASE_URL` to target local or deployed instances.
 
 ## Planned Power-User APIs
 
