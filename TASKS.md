@@ -253,10 +253,11 @@ geometry dataset workflow.
 
 Implemented: PRG © GUGiK voivodeship and county polygons are reviewed,
 converted (`scripts/geometry/convert_prg_shapefiles.py`), validated, and
-bundled under `data/geometry/`. Hydro basins (MPHP candidate) and the synop
-coordinate dataset (WMO OSCAR candidate) stay `planned` pending terms review;
-their backend mechanisms are implemented and tested with fixtures. Full review
-notes: `docs/geometry/GEOMETRY_SOURCES.md`.
+bundled under `data/geometry/`. Hydro basins (MPHP candidate) stay `planned`
+until their own terms and mapping review is complete. The synop coordinate
+mechanism was implemented and tested with fixtures in Stage 13, then the
+reviewed WMO OSCAR/Surface dataset was bundled in Stage 18. Full review notes:
+`docs/geometry/GEOMETRY_SOURCES.md`.
 
 - [x] Select candidate public geometry sources for Polish province boundaries.
   Selected and implemented: PRG (GUGiK) via the GIS Support SHP mirror.
@@ -270,7 +271,7 @@ notes: `docs/geometry/GEOMETRY_SOURCES.md`.
   implemented — licensing and `kod_zlewni` mapping unverified.
 - [x] Select a source for synoptic station coordinates from an official or
   legally cleared source. Candidate documented (WMO OSCAR/Surface; IMGW
-  `wykaz_stacji.csv` has no coordinates); import pending terms review.
+  `wykaz_stacji.csv` has no coordinates); imported after Stage 18 terms review.
 - [x] For every candidate dataset, document provider, canonical URL,
   license/terms URL, attribution text, public-use status, commercial-use status,
   caching/redistribution/screenshot/export implications, update cadence, and
@@ -306,10 +307,11 @@ Acceptance criteria:
   (hydro basins and unresolved codes keep `geometry_not_found` /
   `missing_area_geometry_dataset`).
 - [x] No unofficial or legally unclear geometry source is marked as implemented
-  (MPHP and WMO OSCAR stay `planned`).
+  (MPHP stays `planned`; WMO OSCAR/Surface was promoted to implemented only
+  after Stage 18 source/legal review).
 - [x] Synoptic stations only appear as map markers after coordinates come from a
-  reviewed source (`coordinate_source` metadata; no reviewed dataset bundled
-  yet, so synop stations stay off the map).
+  reviewed source (`coordinate_source` metadata; Stage 18 now bundles the
+  reviewed WMO OSCAR/Surface dataset).
 
 ## Stage 14 - Radar/Product Rendering MVP
 
@@ -475,7 +477,8 @@ tests.
 - [x] Correct stale Stage 8/10 future-tense notes in `API_CONTRACT.md`.
 - [x] Correct stale future-tense UX notes in `UI_UX.md` and keep future UX
   candidates separate from implemented behavior.
-- [x] Update `ROADMAP.md` with Stage 17 and planned Stage 18+ candidates.
+- [x] Update `ROADMAP.md` with Stage 17 and the then-planned next-stage
+  candidates.
 - [x] Update `CHANGELOG.md` with Stage 17 documentation/status cleanup.
 - [x] Keep `README.md`, `DATA_SOURCES.md`, and `LEGAL_ATTRIBUTION.md` unchanged
   because they already describe the Stage 16 state and source/legal constraints
@@ -490,4 +493,47 @@ Acceptance criteria:
 - [x] `TASKS.md`, `README.md`, `ROADMAP.md`, `CHANGELOG.md`, and `CLAUDE.md`
   describe the same Stage 0-17 project state.
 - [x] Stage 17 is clearly documentation/status stabilization only.
-- [x] Stage 18+ items are listed as future candidates, not implemented features.
+- [x] Future-stage items were listed as candidates, not implemented features.
+
+## Stage 18 - Reviewed Synop Station Coordinates
+
+Goal: render synoptic stations on the map only after importing reviewed station
+coordinates from a legally documented source.
+
+- [x] Review WMO OSCAR/Surface as the station-coordinate source for current
+  IMGW SYNOP station IDs.
+- [x] Verify public OSCAR/Surface station metadata can be fetched by WIGOS ID
+  (`0-20000-0-<id_stacji>`).
+- [x] Add a reproducible generator
+  (`scripts/geometry/fetch_oscar_synop_stations.py`) that discovers current
+  IMGW SYNOP IDs and resolves them through OSCAR/Surface.
+- [x] Add reviewed metadata under `docs/geometry/metadata/synop_stations.json`.
+- [x] Generate and import `data/geometry/synop_stations.geojson` through
+  `python -m app.geometry.import_cli`.
+- [x] Preserve WMO OSCAR/Surface attribution and IMGW-PIB measurement-source
+  attribution in dataset metadata.
+- [x] Keep commercial-use clearance conservative; public use is reviewed, but
+  commercial deployments must re-review WMO/OSCAR terms.
+- [x] Verify all current IMGW SYNOP station IDs resolve to reviewed coordinates
+  during the Stage 18 import.
+- [x] Add or update tests for the bundled production `synop_stations` dataset.
+- [x] Update `README.md`.
+- [x] Update `ARCHITECTURE.md`.
+- [x] Update `API_CONTRACT.md`.
+- [x] Update `DATA_SOURCES.md`.
+- [x] Update `LEGAL_ATTRIBUTION.md`.
+- [x] Update `docs/geometry/GEOMETRY_SOURCES.md`.
+- [x] Update `UI_UX.md`.
+- [x] Update `ROADMAP.md`.
+- [x] Update `TASKS.md`.
+- [x] Update `CHANGELOG.md`.
+
+Acceptance criteria:
+
+- [x] A fresh checkout includes a reviewed `synop_stations` dataset under
+  `data/geometry/` and loads it through the existing geometry manifest.
+- [x] Synop stations render as map markers when current IMGW cache data is
+  present, with visible `coordinate_source` metadata.
+- [x] Future unresolved station IDs remain explicit as `missing_lat_lon`.
+- [x] No source/legal ambiguity is hidden; commercial deployments are told to
+  re-review WMO/OSCAR terms.

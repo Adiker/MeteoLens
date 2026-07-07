@@ -4,7 +4,8 @@ This document is an implementation guide, not legal advice. Users must verify
 the current IMGW-PIB terms before public, production, or commercial use.
 
 Research dates: 2026-06-29 (base IMGW terms), 2026-07-05 (COSMO product
-download verification and daily SYNOP archive format verification).
+download verification and daily SYNOP archive format verification), 2026-07-07
+(WMO OSCAR/Surface synop station-coordinate review).
 
 Source terms reviewed:
 [https://danepubliczne.imgw.pl/pl/regulations](https://danepubliczne.imgw.pl/pl/regulations).
@@ -150,6 +151,28 @@ these polygons must keep the processed-data notice. The full review (canonical
 URLs, terms, limitations) lives in `docs/geometry/GEOMETRY_SOURCES.md` and in
 the machine-readable manifest metadata exposed by `/api/v1/geometry/datasets`.
 
+### Reviewed Synop Station Coordinates (Stage 18)
+
+Stage 18 ships `synop_stations`, a reviewed Point dataset resolving current
+IMGW SYNOP `id_stacji` values to WMO OSCAR/Surface station metadata by WIGOS ID
+(`0-20000-0-<id_stacji>`). WMO describes OSCAR as its global repository of
+observing-system capabilities, and WMO wis2box documentation describes fetching
+and caching station metadata from OSCAR/Surface by WIGOS ID. The review uses WMO
+Unified Data Policy Resolution 1 and the OSCAR/Surface station-metadata caching
+guidance for public-use clearance.
+
+Use this attribution wherever synop station coordinates are shown or exported:
+
+```text
+Współrzędne stacji synoptycznych: WMO OSCAR/Surface; identyfikatory stacji i dane pomiarowe: IMGW-PIB; przetworzenie: MeteoLens.
+```
+
+MeteoLens does not assert commercial-use clearance for the redistributed OSCAR
+station-coordinate dataset; commercial deployments must re-review current
+WMO/OSCAR terms. The full review and refresh pipeline live in
+`docs/geometry/GEOMETRY_SOURCES.md` and
+`docs/geometry/metadata/synop_stations.json`.
+
 ### Reviewed Product Dataset (Stage 14)
 
 The Stage 14 product-rendering MVP uses public IMGW-PIB COSMO
@@ -179,8 +202,9 @@ IMGW-PIB attribution and the processed-data notice.
 - TERYT polygons are resolved (PRG, see above). Which dataset will be used for
   hydrological basin polygons (candidate: MPHP, PGW Wody Polskie), and do its
   terms allow redistribution?
-- Do the WMO OSCAR/Surface terms allow importing synoptic station coordinates
-  as a redistributable reviewed dataset?
+- WMO OSCAR/Surface synop coordinates are resolved for public use, but
+  commercial deployments must re-review current WMO/OSCAR terms before
+  downstream redistribution.
 - Radar composite files are high-value, but current public file delivery is
   blocked at the source. Re-review terms, projection metadata, and download
   behavior before implementing radar rendering.

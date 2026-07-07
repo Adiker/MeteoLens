@@ -257,8 +257,6 @@ target spec above, driven by current backend data:
 
 ## Future UX Candidates
 
-- Reviewed synop coordinates may add synop station markers once a legally
-  cleared station-coordinate dataset is imported.
 - Reviewed hydro basin geometry may add hydro warning polygons and richer basin
   filters; unresolved geometry must remain visible as partial data.
 - Hydrological archive backfill may add date-range import progress controls,

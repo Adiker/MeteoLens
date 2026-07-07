@@ -2,6 +2,30 @@
   "format_version": 2,
   "datasets": [
     {
+      "key": "synop_stations",
+      "file": "synop_stations.geojson",
+      "imported_at": "2026-07-07T20:54:49.421410+00:00",
+      "feature_count": 62,
+      "title": "Stacje synoptyczne – współrzędne WMO OSCAR/Surface",
+      "provider": "World Meteorological Organization (WMO) – OSCAR/Surface; station IDs cross-referenced with IMGW-PIB current SYNOP endpoint",
+      "canonical_url": "https://oscar.wmo.int/surface/",
+      "license_url": "https://wmo.int/wmo-unified-data-policy-resolution-res1",
+      "license_note": "WMO Resolution 1 commits WMO to free and unrestricted international exchange of Earth-system data. WMO wis2box documentation identifies OSCAR/Surface as the key station-metadata resource and documents caching OSCAR station metadata by WIGOS ID. This reviewed import contains station coordinates/metadata resolved from public OSCAR/Surface search responses and must keep WMO/OSCAR attribution.",
+      "attribution": "Współrzędne stacji synoptycznych: WMO OSCAR/Surface; identyfikatory stacji i dane pomiarowe: IMGW-PIB; przetworzenie: MeteoLens.",
+      "public_use": true,
+      "commercial_use": false,
+      "redistribution_note": "Public redistribution is treated as allowed with attribution under the reviewed WMO data-policy and OSCAR/Surface station-metadata caching guidance. Commercial-use clearance is not asserted by MeteoLens; re-review current WMO/OSCAR terms before commercial deployment or downstream redistribution.",
+      "update_cadence": "Manual reviewed refresh. Re-run scripts/geometry/fetch_oscar_synop_stations.py against the current IMGW SYNOP station list and re-import with python -m app.geometry.import_cli.",
+      "known_limitations": "Coordinates come from WMO OSCAR/Surface station metadata resolved by WIGOS ID pattern 0-20000-0-<IMGW id_stacji>. This import covers the 62 stations present in the IMGW current SYNOP endpoint during the 2026-07-07 refresh. Station metadata can change independently of IMGW observations; not suitable for cadastral/legal positioning.",
+      "dataset_version": "OSCAR/Surface public search API fetched 2026-07-07; IMGW SYNOP station list observed 2026-07-07 20:00 Europe/Warsaw",
+      "review": {
+        "status": "approved",
+        "reviewed_at": "2026-07-07",
+        "reviewed_by": "MeteoLens Stage 18 source/legal review",
+        "notes": "Official WMO pages describe OSCAR as WMO's global repository of observing-system capabilities, and WMO wis2box docs document fetching/caching station metadata from OSCAR/Surface by WIGOS ID. WMO Unified Data Policy Resolution 1 documents free and unrestricted Earth-system data exchange. Live verification on 2026-07-07 resolved all 62 current IMGW SYNOP station IDs through OSCAR WIGOS IDs."
+      }
+    },
+    {
       "key": "teryt_counties",
       "file": "teryt_counties.geojson",
       "imported_at": "2026-07-04T14:19:38.810904+00:00",

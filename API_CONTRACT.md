@@ -122,11 +122,11 @@ Implemented layer keys:
 
 Returns GeoJSON FeatureCollections grouped by layer. Hydro and meteo stations
 are point features when coordinates exist. Synop records are emitted as point
-features only when coordinates come from a reviewed `synop_stations` geometry
-dataset; otherwise they are listed in `missing_geometry` with
-`missing_lat_lon`. Warning areas are emitted as polygon features when their
-TERYT/basin codes resolve against reviewed geometry datasets (Stage 13 ships
-PRG voivodeship and county polygons); unresolved codes stay visible in
+features from the reviewed Stage 18 `synop_stations` WMO OSCAR/Surface dataset;
+future station IDs not present in that dataset are listed in `missing_geometry`
+with `missing_lat_lon`. Warning areas are emitted as polygon features when
+their TERYT/basin codes resolve against reviewed geometry datasets (Stage 13
+ships PRG voivodeship and county polygons); unresolved codes stay visible in
 `records` and `missing_geometry` with `geometry_not_found` or
 `missing_area_geometry_dataset` reasons.
 

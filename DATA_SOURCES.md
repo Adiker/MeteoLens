@@ -266,10 +266,12 @@ Stage 13 status (full review in `docs/geometry/GEOMETRY_SOURCES.md`):
   uproszczenie geometrii: MeteoLens."
 - `hydro_basins`: planned. Candidate MPHP (PGW Wody Polskie); licensing and
   IMGW `kod_zlewni` mapping unverified — hydro warnings stay list-only.
-- `synop_stations`: planned. IMGW `wykaz_stacji.csv` has no coordinates;
-  candidate WMO OSCAR/Surface (WIGOS `0-20000-0-12xxx` matches IMGW
-  `id_stacji`). The backend enrichment mechanism is implemented; synop stations
-  stay off the map until a reviewed dataset is imported.
+- `synop_stations`: **implemented** in Stage 18. IMGW `wykaz_stacji.csv` has no
+  coordinates, so MeteoLens resolves current IMGW SYNOP `id_stacji` values
+  through WMO OSCAR/Surface WIGOS IDs (`0-20000-0-<id_stacji>`) and imports the
+  reviewed Point dataset under `data/geometry/`. Synop stations render as map
+  markers with `coordinate_source`; future unresolved station IDs stay explicit
+  as `missing_lat_lon`.
 
 Stage 9 source research must document candidate datasets with:
 

@@ -14,6 +14,7 @@ from tests.settings_helpers import apply_test_settings
 from tests.test_frontend_api import _seed_cache
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "geometry"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _feature(code: str, *, name: str | None = None, coordinates=None, geometry_type="Polygon"):
@@ -302,6 +303,23 @@ def test_loader_rejects_invalid_dataset_file(tmp_path) -> None:
     assert dataset is not None
     assert not dataset.loaded
     assert "invalid_dataset" in (dataset.error or "")
+
+
+def test_bundled_synop_station_dataset_loads() -> None:
+    store = GeometryStore(PROJECT_ROOT / "data" / "geometry")
+    store.load_all()
+
+    dataset = store.get_dataset("synop_stations")
+
+    assert dataset is not None
+    assert dataset.loaded
+    assert dataset.review_status == "approved"
+    assert dataset.commercial_use is False
+    assert len(dataset.features) == 62
+    bialystok = store.find_by_code(dataset_key="synop_stations", code="12295")
+    assert bialystok is not None
+    assert bialystok.properties["wigos_id"] == "0-20000-0-12295"
+    assert bialystok.coordinates == [23.1722222222, 53.1083333333]
 
 
 # --- API review metadata and synop coordinates ---------------------------------
