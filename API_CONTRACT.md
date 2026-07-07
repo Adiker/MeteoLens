@@ -208,9 +208,8 @@ Query parameters:
 - `metric`: optional metric key.
 - `from`: optional ISO timestamp.
 - `to`: optional ISO timestamp.
-- `interval`: planned Stage 8 aggregation interval such as `raw`, `10m`,
-  `1h`, or `1d`.
-- `limit`: planned Stage 8 maximum number of returned points.
+- `interval`: aggregation interval such as `raw`, `10m`, `1h`, or `1d`.
+- `limit`: maximum number of returned points.
 
 Returns observation values for charts and exports. The implementation reads
 persisted observation history when available and falls back to the latest cache
@@ -341,7 +340,7 @@ reviewed geometry datasets are cached under `METEOLENS_GEOMETRY_DIR`, map layers
 and warning detail responses include resolved polygon GeoJSON plus
 `unresolved_areas` for codes that cannot be mapped.
 
-Stage 9 adds reviewed geometry references or GeoJSON features for warning
+Stage 9 added reviewed geometry references or GeoJSON features for warning
 areas where code mapping is reliable. Responses continue to expose
 unresolved codes and missing geometry reasons instead of hiding partial data.
 
@@ -363,7 +362,7 @@ location matching is not available until area geometry datasets are cached.
 The response includes `generated_at`, `cache`, and `empty_state` metadata like
 other collection endpoints.
 
-Stage 9 adds spatial warning matching for this endpoint when reviewed
+Stage 9 added spatial warning matching for this endpoint when reviewed
 TERYT or basin geometries exist. The response distinguishes exact polygon
 matches (`match_type: "polygon"`), fallback active-warning summaries, and
 unresolved geometry via `notes`.
@@ -465,7 +464,7 @@ missing-field metadata, and clear cache provenance.
 
 ## Product And Timeline APIs
 
-Stage 10 exposed product classification and frame metadata; Stage 14 adds the
+Stage 10 exposed product classification and frame metadata; Stage 14 added the
 first real rendering path (COSMO `*_00` 2 m temperature as a PNG map overlay).
 Radar composites stay metadata-only (`rendering_status: download_blocked`)
 because IMGW does not currently serve their files publicly.
@@ -544,7 +543,7 @@ metadata. See [`docs/products/PRODUCT_RESEARCH.md`](docs/products/PRODUCT_RESEAR
 
 ## Power-User And Freshness APIs
 
-Stage 11 adds operational dashboards and comparison helpers. Saved locations,
+Stage 11 added operational dashboards and comparison helpers. Saved locations,
 views, dashboards, and local alert rules remain browser-local unless a future
 authenticated backend is introduced.
 

@@ -45,9 +45,11 @@ the future stages below.
 - Stage 10 - Radar, product files, GRIB, and timeline animation: IMGW product
   file research, stable/risky product ID documentation, radar-like and GRIB
   source review, raster/product ingestion design, MapLibre rendering strategy,
-  timeline animation requirements, and large-file cache retention. Binary
-  parsing and rendering remain deferred until format, projection, licensing,
-  file-size, and cache strategy are documented.
+  timeline animation requirements, and large-file cache retention. At Stage 10,
+  binary parsing and rendering stayed deferred until format, projection,
+  licensing, file-size, and cache strategy were documented; Stage 14 later
+  implemented the reviewed COSMO rendering path while radar stayed blocked at
+  the source.
 - Stage 11 - PWA, local alerts, dashboards, and power-user features: PWA
   planning, saved locations, saved map views, user dashboards, local alert
   rules, source availability/freshness dashboards, advanced expert filters,
@@ -78,9 +80,10 @@ clear.
 
 ## v5
 
-Stages 15-16 deepen the data product after alpha basics are honest: archive
-backfill makes charts useful on fresh deployments, and API/SDK/export work makes
-the system easier to integrate without reading backend code.
+Stages 15-17 deepen and stabilize the data product after alpha basics are
+honest: archive backfill makes charts useful on fresh deployments, API/SDK/export
+work makes the system easier to integrate without reading backend code, and
+Stage 17 aligns the documentation/status trail after Stage 16.
 
 - Stage 15 - Historical archive backfill (done): research current IMGW archive formats,
   document legal notes, add an opt-in bounded and resumable server-side import
@@ -91,10 +94,37 @@ the system easier to integrate without reading backend code.
   metadata, add example scripts for common workflows, improve
   station/warning/map exports, and document versioning, backwards
   compatibility, rate limits, and responsible use.
+- Stage 17 - Post-Stage-16 stabilization (done): documentation-only cleanup
+  that aligns `CLAUDE.md`, `ARCHITECTURE.md`, `TASKS.md`, `ROADMAP.md`,
+  `CHANGELOG.md`, API/UI notes, and the tested status after Stage 16 without
+  changing runtime behavior.
+
+## v6 Candidates
+
+These are planned candidates, not implemented features:
+
+- Stage 18 - Reviewed synop station coordinates: import only a legally reviewed
+  coordinate dataset so synop stations can appear as map markers with visible
+  `coordinate_source` metadata.
+- Stage 19 - Hydro basin geometry MVP: review basin geometry licensing and
+  `kod_zlewni` mapping before enabling hydro warning polygons.
+- Stage 20 - Hydrological archive backfill: extend bounded server-side archive
+  imports beyond daily SYNOP once hydro archive parsing and null/status handling
+  are verified.
+- Stage 21 - PDF reports MVP: generate server-side reports from cached
+  MeteoLens data with attribution, processed-data notices, timestamps, and
+  missing-data metadata.
+- Stage 22 - Performance and observability: reduce frontend bundle pressure and
+  add clearer operational signals for cache freshness, fetch failures, product
+  rendering, and archive imports.
 
 ## Backlog Ideas
 
 - PDF reports.
+- Reviewed synop station coordinates.
+- Reviewed hydro basin geometry.
+- Hydrological archive backfill.
+- Observability and frontend bundle performance.
 - Heatmaps and explicitly labelled interpolation.
 - Station metadata browser.
 - Warning history and warning-change timeline.

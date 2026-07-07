@@ -460,3 +460,34 @@ client with OpenAPI-generated metadata from
 `GET /api/v1/export/map-state.json`; station observation range CSV/JSON exports
 remain the supported time-range export path. PDF reports remain planned only in
 `docs/power-user/PDF_EXPORT_PLAN.md`.
+
+## Stage 17 - Post-Stage-16 Stabilization
+
+Goal: align documentation and release/status notes after Stage 16 without
+changing runtime behavior, public API shape, schemas, source integrations, or
+tests.
+
+- [x] Confirm repository status and current branch before documentation edits.
+- [x] Verify Stage 14-16 are consistently treated as implemented where code,
+  tests, and docs exist.
+- [x] Update `CLAUDE.md` so it no longer carries the old Stage 14-16 status.
+- [x] Correct stale future-tense implementation notes in `ARCHITECTURE.md`.
+- [x] Correct stale Stage 8/10 future-tense notes in `API_CONTRACT.md`.
+- [x] Correct stale future-tense UX notes in `UI_UX.md` and keep future UX
+  candidates separate from implemented behavior.
+- [x] Update `ROADMAP.md` with Stage 17 and planned Stage 18+ candidates.
+- [x] Update `CHANGELOG.md` with Stage 17 documentation/status cleanup.
+- [x] Keep `README.md`, `DATA_SOURCES.md`, and `LEGAL_ATTRIBUTION.md` unchanged
+  because they already describe the Stage 16 state and source/legal constraints
+  consistently.
+- [x] Do not add sources, change API/runtime behavior, or mark `hydro_basins`,
+  `synop_stations`, PDF reports, or radar rendering as implemented.
+- [x] Run backend lint/tests and frontend lint/tests/build.
+
+Acceptance criteria:
+
+- [x] Documentation no longer contains contradictory Stage 14-16 status notes.
+- [x] `TASKS.md`, `README.md`, `ROADMAP.md`, `CHANGELOG.md`, and `CLAUDE.md`
+  describe the same Stage 0-17 project state.
+- [x] Stage 17 is clearly documentation/status stabilization only.
+- [x] Stage 18+ items are listed as future candidates, not implemented features.

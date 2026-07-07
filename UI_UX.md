@@ -105,10 +105,11 @@ MVP quick filters:
 
 Filters must be reflected in permalink state.
 
-Stage 8 should add metric, date/time range, aggregation interval, and station
-comparison filters for time-series views. Stage 9 should add province, county,
-and basin filters only where reviewed geometry exists. Stage 11 should add
-advanced expert filters without hiding missing values or stale-source states.
+Stage 8 added metric, date/time range, aggregation interval, and station
+comparison filters for time-series views. Stage 9 added province, county, and
+basin-code filters where reviewed geometry or source area codes support them.
+Stage 11 added advanced expert filters without hiding missing values or
+stale-source states.
 
 ## Timeline And Animation
 
@@ -123,12 +124,11 @@ Controls:
 - current timestamp label,
 - stale/missing frame indication.
 
-Stage 8 should enable the timeline for historical observation series where real
-multi-point data exists. Stage 10 extends the same control pattern to radar/product
-frames using cached manifest metadata. The timeline appears when
+Stage 10 extended the same control pattern to product frames using cached
+manifest metadata. The timeline appears when
 `/api/v1/map/timeline` returns layers.
 
-Stage 14 adds the first rendered layer: for renderable products (COSMO `*_00`
+Stage 14 added the first rendered layer: for renderable products (COSMO `*_00`
 2 m temperature) the timeline offers an explicit "Pokaż na mapie" toggle that
 draws the rendered frame as a semi-transparent map overlay (image source under
 station markers and warning polygons). The overlay is opt-in because the first
@@ -194,7 +194,7 @@ Use explicit states:
 
 Do not hide source failures behind an empty map.
 
-Future stages must add explicit states for:
+Implemented and future stages must keep explicit states for:
 
 - unresolved TERYT or basin geometry,
 - unresolved synoptic station coordinates,
@@ -247,7 +247,7 @@ target spec above, driven by current backend data:
 - Layer legends are rendered as coloured swatches with on-map counts in the
   layer toggles; warning legend entries note the missing geometry.
 - The PNG export captures the current MapLibre canvas; CSV/JSON/GeoJSON exports
-  are backend downloads. Stage 16 adds explicit menu entries for visible-map
+  are backend downloads. Stage 16 added explicit menu entries for visible-map
   GeoJSON, warning GeoJSON, and map-state JSON. Warning GeoJSON is enabled only
   when a warning layer is visible; map-data exports are disabled when all layers
   are hidden so the UI never silently exports hidden data.
@@ -255,24 +255,17 @@ target spec above, driven by current backend data:
   data. Expert mode also shows archive import markers in observation raw-field
   metadata; exported history includes the import run and archive source URL.
 
-## Planned Future UX
+## Future UX Candidates
 
-- Stage 7 should add production/demo readiness tasks around README screenshots
-  and public deployment documentation, but it should not change the app into a
-  marketing landing page.
-- Stage 8 should replace snapshot-only charts with real time-series charts,
-  station comparison, rankings, and time-range exports.
-- Stage 9 should render warning polygons and location-specific warning matching
-  only where reviewed geometry and reliable code mapping exist; unresolved
-  geometry remains visible as partial data.
-- Stage 10 adds a product timeline shell driven by frame metadata APIs. Radar/GRIB
-  map layers and tile rendering remain future work once binary ingestion exists.
-- Stage 11 adds saved locations/views (browser-local), dashboard widget toggles,
-  local alert rules with an official-warning disclaimer, freshness monitor,
-  warning-vs-station comparison, expert filters, and a minimal PWA shell. Trend/
-  anomaly automation remains documented future work.
-- Stage 15 adds imported-history labels for daily SYNOP archive backfill. Future
-  archive UI controls may expose date-range import progress, but the current
-  MVP keeps the import as an explicit backend/API operation.
-- Stage 16 adds public API/SDK and power-user export affordances without adding
-  new map chrome beyond the compact export menu.
+- Reviewed synop coordinates may add synop station markers once a legally
+  cleared station-coordinate dataset is imported.
+- Reviewed hydro basin geometry may add hydro warning polygons and richer basin
+  filters; unresolved geometry must remain visible as partial data.
+- Hydrological archive backfill may add date-range import progress controls,
+  but archive fetching must stay backend-only and bounded.
+- PDF reports may add report download actions for selected stations, source
+  freshness, location summaries, or map-state snapshots, with attribution and
+  processed-data notices on every report.
+- Observability/performance hardening may add lighter chunk loading and clearer
+  operational status panels without turning the map dashboard into a marketing
+  landing page.
