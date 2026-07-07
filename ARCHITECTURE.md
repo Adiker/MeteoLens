@@ -80,11 +80,13 @@ Stage 5 frontend module layout (implemented):
 
 Imperative map commands (search/location fly-to, PNG capture) use a small
 window-event bus (`src/lib/mapBus.ts`) instead of prop-drilling the MapLibre
-instance. The timeline/animation module is deferred until time-aware data
-exists, and warning polygons are deferred until area geometry datasets are
-cached (warnings currently render as a filterable list).
+instance. The timeline is now driven by cached product frame manifests and, for
+the reviewed COSMO rendering path, can opt into a MapLibre image overlay.
+Meteorological warning polygons render where reviewed PRG geometry resolves the
+TERYT codes; hydrological warnings remain list-only until a reviewed basin
+dataset is added.
 
-Stage 16 adds a repo-local TypeScript integration client under
+Stage 16 added a repo-local TypeScript integration client under
 `packages/meteolens-api-client/`. The frontend still uses its local
 `src/api/client.ts` for app-specific UI types and TanStack Query integration;
 the package is for external scripts, examples, and OpenAPI drift checks.
@@ -164,13 +166,12 @@ history rows. Loops log failures without masking them and shut down cleanly on
 app shutdown. The first scheduled refresh happens one interval after startup;
 initial freshness comes from the startup sync.
 
-Stage 8 should add an observation-history cache instead of replacing each
-station with only the latest snapshot. Historical rows must keep source
-timestamp, retrieval timestamp, data delay, missing/null state, attribution, and
-processed-data notice metadata. A local retention policy is required before this
-cache is allowed to grow unbounded.
+Stage 8 added an observation-history cache instead of replacing each station
+with only the latest snapshot. Historical rows keep source timestamp, retrieval
+timestamp, data delay, missing/null state, attribution, processed-data notice
+metadata, and a local retention policy so the cache does not grow unbounded.
 
-Stage 15 adds an opt-in server-side archive importer for daily SYNOP archives.
+Stage 15 added an opt-in server-side archive importer for daily SYNOP archives.
 `app/imgw/archive.py` discovers bounded archive ZIPs, decodes CP1250/CSV daily
 SYNOP rows, preserves status-driven missing/null values, and writes through the
 observation-history repository. Imports are limited by date range and file count,
@@ -180,7 +181,7 @@ rate-limited between files, and resumable through upserts on
 Stage 10 defines a separate cache policy for large product, radar-like,
 and GRIB files. Detail manifest cache lives under `cache/product_details/`
 (TTL plus a manifest-count cap, refreshed by the scheduler when
-`METEOLENS_PRODUCT_REFRESH_ENABLED=true`). Stage 14 adds the binary and render
+`METEOLENS_PRODUCT_REFRESH_ENABLED=true`). Stage 14 added the binary and render
 caches: downloaded COSMO GRIB files under `data/products/binaries/{id}/` and
 rendered PNG frames plus metadata sidecars under `data/products/renders/{id}/`,
 both with count and age eviction. The rendering pipeline lives in
@@ -275,12 +276,12 @@ refreshes:
 - `/api/v1/export/station/{id}.json`
 - `/api/v1/export/map.geojson`
 
-Stage 15 adds `POST /api/v1/archive/backfill/synop-daily` for manual bounded
+Stage 15 added `POST /api/v1/archive/backfill/synop-daily` for manual bounded
 imports and extends station observation responses/exports with
 `series_origin`, `origin_counts`, and per-point archive import metadata.
 
-Stage 16 stabilizes the public `/api/v1` surface in `API_CONTRACT.md`, adds
-responsible-use and backwards-compatibility notes, and adds:
+Stage 16 stabilized the public `/api/v1` surface in `API_CONTRACT.md`, added
+responsible-use and backwards-compatibility notes, and added:
 
 - `/api/v1/export/station/{id}/observations.csv`
 - `/api/v1/export/station/{id}/observations.json`
@@ -400,7 +401,7 @@ Stage 4-5:
 Stage 4 adds backend API and export tests using normalized cache records seeded
 from real-shape IMGW fixtures.
 
-Stage 16 adds backend tests for warning GeoJSON and map-state exports, a
+Stage 16 added backend tests for warning GeoJSON and map-state exports, a
 generated-client metadata drift check for public routes, and syntax checks for
 the Node API examples when Node.js is available.
 
@@ -423,7 +424,7 @@ when their code, compose files, or the CI workflow itself changes.
 
 ## Deployment
 
-Stage 2 should introduce Docker Compose with:
+Stage 2 introduced Docker Compose with:
 
 - backend service,
 - frontend service,
@@ -435,12 +436,12 @@ Stage 2 should introduce Docker Compose with:
 Post-MVP deployment may add PostgreSQL/PostGIS/TimescaleDB and object storage
 for large raw products.
 
-Stage 7 should split local development deployment from production deployment.
-Production should serve the frontend as static built assets through nginx,
-Caddy, or an equivalent server instead of the Vite dev server. The backend image
-should be production-oriented and avoid development-only dependencies.
+Stage 7 split local development deployment from production deployment.
+Production serves the frontend as static built assets through nginx instead of
+the Vite dev server. The backend production image avoids development-only
+dependencies.
 
-Stage 7 deployment documentation must cover reverse proxy/TLS, production CORS,
+Stage 7 deployment documentation covers reverse proxy/TLS, production CORS,
 restart policies, persistent volumes, backup expectations, source fetch
 retry/backoff behavior, and a public deployment checklist. Public or commercial
 deployments remain blocked on verifying current IMGW-PIB terms and choosing a
@@ -463,10 +464,11 @@ MVP should log:
 Later stages can add structured logs, metrics, tracing, and dashboard panels for
 source availability.
 
-Stage 7 should define production logging and monitoring requirements for source
-fetches, parser failures, stale cache, and API errors. Stage 11 may build a
+Stage 7 defined production logging and monitoring requirements for source
+fetches, parser failures, stale cache, and API errors. Stage 11 added a
 user-facing source availability dashboard and data freshness monitor from the
-same underlying metadata.
+same underlying metadata. A future observability/performance stage may add
+metrics, tracing, and deployment dashboards.
 
 ## Extension Points
 

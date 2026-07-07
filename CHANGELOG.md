@@ -4,6 +4,10 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 17 post-Stage-16 stabilization: aligned documentation/status notes
+  after Stage 16, corrected stale future-tense references in agent,
+  architecture, API, and UI docs, recorded Stage 18+ as future candidates, and
+  kept the pass documentation-only with no runtime/API/source changes.
 - Added Stage 16 public API, SDK, and power-user exports: stabilized
   `API_CONTRACT.md` with `/api/v1` compatibility and responsible-use notes,
   added warning GeoJSON and map-state JSON export endpoints, exposed those
@@ -50,7 +54,9 @@ All notable changes to MeteoLens will be documented in this file.
   and planning docs for trends and OpenAPI client generation.
 - Added Stage 10 product/radar research, frame-metadata API, map timeline
   endpoint, and frontend timeline shell with explicit metadata-only labels.
-  Binary GRIB/radar parsing and map rendering remain deferred.
+  At that point binary GRIB/radar parsing and map rendering remained deferred;
+  Stage 14 later added the reviewed COSMO rendering path while radar stayed
+  blocked at the source.
 - Added Stage 9 geometry pipeline: local geometry manifest/cache, warning polygon
   map layers, spatial location matching, province/county/basin filters, and
   geometry dataset status API.
