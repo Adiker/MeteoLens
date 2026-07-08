@@ -64,8 +64,19 @@ def fetch_oscar_station(wigos_id: str, timeout: float) -> dict[str, Any]:
                 if isinstance(identifier, dict)
             )
         ),
-        items[0],
+        None,
     )
+    if primary is None:
+        returned_ids = [
+            str(item.get("wigosId") or item.get("id") or "<unknown>")
+            for item in items
+            if isinstance(item, dict)
+        ]
+        raise RuntimeError(
+            f"OSCAR/Surface returned {len(items)} station(s) for {wigos_id}, "
+            f"but none contained an exact WIGOS ID match. Returned IDs: "
+            f"{', '.join(returned_ids)}"
+        )
     lat = primary.get("latitude")
     lon = primary.get("longitude")
     if not isinstance(lat, int | float) or not isinstance(lon, int | float):
