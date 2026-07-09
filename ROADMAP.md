@@ -99,13 +99,20 @@ Stage 17 aligns the documentation/status trail after Stage 16.
   `CHANGELOG.md`, API/UI notes, and the tested status after Stage 16 without
   changing runtime behavior.
 
+## v6
+
+Stage 18 removes the biggest remaining station-geometry gap by shipping a
+reviewed WMO OSCAR/Surface coordinate dataset for current IMGW SYNOP stations.
+
+- Stage 18 - Reviewed synop station coordinates (done): import a reviewed
+  WMO OSCAR/Surface Point dataset so synop stations appear as map markers with
+  visible `coordinate_source` metadata; keep future unresolved IDs explicit as
+  `missing_lat_lon`.
+
 ## v6 Candidates
 
 These are planned candidates, not implemented features:
 
-- Stage 18 - Reviewed synop station coordinates: import only a legally reviewed
-  coordinate dataset so synop stations can appear as map markers with visible
-  `coordinate_source` metadata.
 - Stage 19 - Hydro basin geometry MVP: review basin geometry licensing and
   `kod_zlewni` mapping before enabling hydro warning polygons.
 - Stage 20 - Hydrological archive backfill: extend bounded server-side archive
@@ -121,7 +128,6 @@ These are planned candidates, not implemented features:
 ## Backlog Ideas
 
 - PDF reports.
-- Reviewed synop station coordinates.
 - Reviewed hydro basin geometry.
 - Hydrological archive backfill.
 - Observability and frontend bundle performance.

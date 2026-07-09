@@ -83,8 +83,9 @@ window-event bus (`src/lib/mapBus.ts`) instead of prop-drilling the MapLibre
 instance. The timeline is now driven by cached product frame manifests and, for
 the reviewed COSMO rendering path, can opt into a MapLibre image overlay.
 Meteorological warning polygons render where reviewed PRG geometry resolves the
-TERYT codes; hydrological warnings remain list-only until a reviewed basin
-dataset is added.
+TERYT codes, and Stage 18 adds reviewed WMO OSCAR/Surface coordinates for
+synop station markers. Hydrological warnings remain list-only until a reviewed
+basin dataset is added.
 
 Stage 16 added a repo-local TypeScript integration client under
 `packages/meteolens-api-client/`. The frontend still uses its local
@@ -304,12 +305,12 @@ MVP layers:
 
 Hydrological and meteorological stations are emitted as GeoJSON point features
 when IMGW coordinates are present. Synoptic records lack coordinates in the
-public endpoint; Stage 13 fills them from a reviewed `synop_stations` geometry
-dataset when one is imported (recorded in `coordinate_source`), otherwise they
-stay in missing-geometry metadata. Warning TERYT codes resolve to polygons via
-the reviewed PRG voivodeship/county datasets bundled in `data/geometry/`;
-hydro basin codes remain marked as missing area geometry until a reviewed
-basin dataset is added.
+public endpoint; Stage 18 fills them from the reviewed WMO OSCAR/Surface
+`synop_stations` dataset bundled in `data/geometry/` (recorded in
+`coordinate_source`), while any future unresolved ID stays in missing-geometry
+metadata. Warning TERYT codes resolve to polygons via the reviewed PRG
+voivodeship/county datasets bundled in `data/geometry/`; hydro basin codes
+remain marked as missing area geometry until a reviewed basin dataset is added.
 
 Stage 13 geometry components live in `backend/app/geometry/`:
 

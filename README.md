@@ -2,21 +2,23 @@
 
 **Status: public alpha (`v0.1.0-alpha` candidate).** MeteoLens works end to
 end against live IMGW-PIB data, but it is an alpha: expect the gaps listed in
-[Known Limitations](#known-limitations) (no synop map markers until a reviewed
-station-coordinate dataset is imported, radar downloads blocked at the source,
-history starts empty unless backfilled). Reproducible local and production
-smoke-test records live in
+[Known Limitations](#known-limitations) (hydro warning basins still lack
+reviewed polygons, radar downloads are blocked at the source, history starts
+empty unless backfilled). Reproducible local and production smoke-test records
+live in
 [docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-16 (research, documentation, backend
+hydrological data for Poland. Stages 0-18 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
 deployment, observation history, geometry datasets, product timeline,
 PWA/power-user features, public-alpha release polish, the reviewed geometry
 dataset MVP with bundled PRG voivodeship/county polygons, and the product
 rendering MVP with the COSMO 2 m temperature map overlay, bounded SYNOP daily
-archive backfill, and the public API/SDK/export stabilization pass) are
-implemented. See [TASKS.md](TASKS.md) for the full staged backlog.
+archive backfill, the public API/SDK/export stabilization pass, documentation
+status stabilization, and reviewed WMO OSCAR/Surface synop station
+coordinates) are implemented. See [TASKS.md](TASKS.md) for the full staged
+backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -100,9 +102,10 @@ Implemented now:
   (`python -m app.geometry.import_cli`), bundled PRG © GUGiK voivodeship and
   county polygons (so meteo warning polygons and province/county filters work
   out of the box), a reproducible conversion script
-  (`scripts/geometry/convert_prg_shapefiles.py`), and reviewed-source synop
-  coordinate enrichment (`coordinate_source`) that keeps synop stations off
-  the map until a reviewed coordinate dataset is imported — see
+  (`scripts/geometry/convert_prg_shapefiles.py`), and reviewed-source geometry
+  enrichment hooks. Stage 18 now bundles reviewed WMO OSCAR/Surface synop
+  station coordinates, so synop markers can render with `coordinate_source`
+  metadata — see
   `docs/geometry/GEOMETRY_SOURCES.md`.
 
 - Stage 14 product rendering MVP: the first real rendered product layer —
@@ -244,10 +247,10 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 Captured on 2026-07-03 from a populated live IMGW-PIB cache (not fixtures);
 every view keeps the IMGW-PIB attribution and processed-data notice visible.
 Note the honest gaps in the shots: synoptic stations report "0 na mapie · 62
-bez współrzędnych" (still true until a reviewed coordinate dataset is
-imported), and warnings show "0 poligonów" because the shots predate the
-Stage 13 bundled PRG polygons — with the bundled datasets, meteo warnings now
-render county/voivodeship polygons (see
+bez współrzędnych" and warnings show "0 poligonów" because the shots predate
+the Stage 13 bundled PRG polygons and Stage 18 bundled synop coordinates. With
+the current bundled datasets, meteo warnings render county/voivodeship polygons
+and current synop stations render as markers (see
 [Known Limitations](#known-limitations)).
 
 Map view with live station layers and the active warning list:
@@ -320,13 +323,12 @@ data (see `AGENTS.md`).
   `missing_area_geometry_dataset` metadata. The bundled administrative
   polygons are a simplified 2022 PRG snapshot (processed data, not for
   legal/cadastral use). See `docs/geometry/GEOMETRY_SOURCES.md`.
-- **Synoptic stations have no coordinates.** `api/data/synop` does not return
-  `lat/lon`, so synop stations appear in lists/details but are excluded from
-  map markers (`missing_lat_lon`). The `synop_stations` reviewed-dataset
-  enrichment is implemented (stations gain coordinates plus a visible
-  `coordinate_source` once a dataset is imported), but the coordinate source
-  itself (candidate: WMO OSCAR/Surface) is still `planned` in
-  `docs/geometry/GEOMETRY_SOURCES.md`, pending terms review.
+- **Synoptic station coordinates come from reviewed WMO metadata.**
+  `api/data/synop` does not return `lat/lon`; Stage 18 bundles a reviewed
+  `synop_stations` dataset resolved from WMO OSCAR/Surface by WIGOS ID, so
+  current synop stations render as map markers with visible
+  `coordinate_source` metadata. Future station IDs that are not present in the
+  reviewed dataset remain explicit as `missing_lat_lon`.
 - **Observation history is local-only.** Time series are persisted to SQLite
   from this deployment's own IMGW refreshes, and Stage 15 can optionally
   backfill bounded daily SYNOP archive ranges. Other measurement archives

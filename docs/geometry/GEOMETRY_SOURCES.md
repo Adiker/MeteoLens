@@ -29,7 +29,7 @@ Do not ship unofficial or legally unclear geometry as an implemented source.
 | `teryt_voivodeships` | Voivodeship polygons, meteo warning fallback, province filter | PRG (GUGiK) via GIS Support SHP mirror | **implemented** |
 | `teryt_counties` | County polygons for meteo warning TERYT codes, county filter | PRG (GUGiK) via GIS Support SHP mirror | **implemented** |
 | `hydro_basins` | Hydro warning basin polygons, basin filters | MPHP (PGW Wody Polskie) — candidate | planned (licensing and `kod_zlewni` mapping unverified) |
-| `synop_stations` | Synoptic station coordinates (IMGW synop API has none) | WMO OSCAR/Surface — candidate; IMGW `wykaz_stacji.csv` has no coordinates | planned (mechanism implemented, dataset import pending review) |
+| `synop_stations` | Synoptic station coordinates (IMGW synop API has none) | WMO OSCAR/Surface, resolved by WIGOS ID from IMGW `id_stacji` | **implemented** |
 
 ## Implemented: `teryt_voivodeships` and `teryt_counties`
 
@@ -101,26 +101,53 @@ at import time.
 - Until reviewed, hydro warnings stay list-only with
   `missing_area_geometry_dataset` / `geometry_not_found` metadata.
 
-## Candidate: `synop_stations` (planned; mechanism implemented)
+## Implemented: `synop_stations`
 
 - IMGW's synop API returns no coordinates, and the public station list
   (`https://danepubliczne.imgw.pl/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/wykaz_stacji.csv`)
   contains station codes and names but **no coordinates**, so it cannot be the
   coordinate source on its own.
-- **Candidate provider:** WMO OSCAR/Surface (<https://oscar.wmo.int/surface>),
-  the official WMO station metadata registry. Polish synoptic stations use WMO
-  block 12 identifiers that match IMGW `id_stacji` (verified against the live
-  synop API, e.g. `12295` = Białystok). WIGOS identifiers have the form
-  `0-20000-0-12295`. WMO metadata is intended for free reuse with attribution
-  (WMO Unified Data Policy, Res. 1 Cg-Ext(2021)); confirm the exact terms
-  before import.
-- **Behaviour until then:** synop stations appear in lists and charts but not
-  as map markers; `/api/v1/map/layers` reports them under `missing_geometry`
-  with `missing_lat_lon`.
-- The backend mechanism is already implemented and tested: once a reviewed
-  `synop_stations` Point dataset (feature `code` = IMGW `id_stacji`) is
-  imported, synop stations gain coordinates plus a visible
-  `coordinate_source`, and render as markers.
+- **Provider:** World Meteorological Organization (WMO) OSCAR/Surface
+  (<https://oscar.wmo.int/surface/>), cross-referenced with the current IMGW
+  SYNOP endpoint. WMO describes OSCAR as its global repository of
+  observing-system capabilities, and WMO wis2box documentation identifies
+  OSCAR/Surface as the key station-metadata resource and documents fetching and
+  caching station metadata by WIGOS ID.
+- **Mapping key:** Polish synoptic stations use WMO block 12 identifiers that
+  match IMGW `id_stacji`; WIGOS IDs use `0-20000-0-<id_stacji>`, e.g.
+  `0-20000-0-12295` for Białystok.
+- **License/terms:** reviewed against WMO Unified Data Policy Resolution 1 and
+  WMO OSCAR/Surface station-metadata caching guidance. Public use and local
+  redistribution are treated as allowed with attribution. MeteoLens does not
+  assert commercial-use clearance for this dataset; commercial deployments must
+  re-review current WMO/OSCAR terms.
+- **Attribution text:** `Współrzędne stacji synoptycznych: WMO OSCAR/Surface;
+  identyfikatory stacji i dane pomiarowe: IMGW-PIB; przetworzenie:
+  MeteoLens.`
+- **Update cadence:** manual reviewed refresh. Re-run
+  `scripts/geometry/fetch_oscar_synop_stations.py`, then import with
+  `python -m app.geometry.import_cli import synop_stations ...`.
+- **Known limitations:** committed import covers the 62 stations present in the
+  live IMGW SYNOP endpoint during the 2026-07-07 refresh. OSCAR station
+  metadata can change independently of IMGW observation rows; coordinates are
+  not legal/cadastral positions.
+
+Reproducible pipeline:
+
+```bash
+python scripts/geometry/fetch_oscar_synop_stations.py \
+  --out out/synop_stations.geojson
+cd backend
+python -m app.geometry.import_cli import synop_stations \
+  ../out/synop_stations.geojson \
+  --metadata ../docs/geometry/metadata/synop_stations.json
+```
+
+Stage 18 verification resolved all 62 current IMGW SYNOP station IDs through
+OSCAR WIGOS IDs and imported the reviewed Point dataset into `data/geometry/`.
+Synop stations now render as map markers with visible `coordinate_source`
+metadata; unresolved future stations still remain explicit as
+`missing_lat_lon`.
 
 ## Manifest Format (format_version 2)
 
@@ -190,7 +217,8 @@ Validation (strict at import time, structural re-check at load time):
 - Meteo warnings: IMGW `teryt` codes map to `teryt_counties` first, then
   `teryt_voivodeships` when the code itself is a two-digit voivodeship code.
 - Hydro warnings: IMGW `kod_zlewni` values map to `hydro_basins`.
-- Synop stations: IMGW `id_stacji` maps to `synop_stations` Point features.
+- Synop stations: IMGW `id_stacji` maps to `synop_stations` Point features
+  resolved from WMO OSCAR/Surface by WIGOS ID.
 - Unresolved codes remain visible in API/UI as `geometry_not_found` or
   `missing_area_geometry_dataset`; MeteoLens must not hide partial data.
 

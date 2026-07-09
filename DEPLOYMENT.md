@@ -94,8 +94,9 @@ from `/usr/share/nginx/html`.
 - `backend/Dockerfile.prod` — installs runtime dependencies only (no pytest/ruff)
   and bundles reviewed geometry seeds under `/app/bundled/geometry`.
 - `backend/docker-entrypoint.prod.sh` — on first startup, copies the bundled
-  reviewed geometry datasets into `/data/geometry` if the named volume does not
-  already contain `manifest.json`; existing imported geometry is left untouched.
+  reviewed geometry datasets into `/data/geometry`; on later upgrades, merges
+  newly bundled dataset entries and files into an existing geometry volume
+  without overwriting already registered datasets.
 - `frontend/Dockerfile.prod` — multi-stage build + nginx runtime.
 - `deploy/nginx/frontend.conf` — static UI, API proxy, SPA fallback.
 - `deploy/caddy/Caddyfile.example` — TLS termination example in front of the stack.
@@ -118,10 +119,13 @@ relevant for direct backend access during diagnostics.
 
 Production Compose stores runtime state in the `meteolens-data` named volume.
 Fresh volumes start empty, so the backend production image bundles the reviewed
-PRG geometry files from `data/geometry/` and seeds `/data/geometry` before
-starting the API when no manifest is present. This makes the Stage 13
-voivodeship/county polygons available on first deployment while preserving any
-later geometry imported into the volume with `python -m app.geometry.import_cli`.
+geometry files from `data/geometry/` and seeds `/data/geometry` before starting
+the API when no manifest is present. Existing volumes keep their local geometry,
+but the entrypoint also merges newly bundled reviewed datasets that are missing
+from the active manifest. This makes Stage 13 voivodeship/county polygons and
+Stage 18 synop station coordinates available across fresh deployments and image
+upgrades while preserving any later geometry imported into the volume with
+`python -m app.geometry.import_cli`.
 
 Check the active geometry state with:
 

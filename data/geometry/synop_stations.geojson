@@ -1,0 +1,1500 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12001",
+        "name": "Platforma",
+        "wigos_id": "0-20000-0-12001",
+        "oscar_station_id": 3242,
+        "oscar_name": "PETROBALTIC BETA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Partly operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 46,
+        "hp_m": 46,
+        "date_established": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1825,
+          55.4808333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12100",
+        "name": "Kołobrzeg",
+        "wigos_id": "0-20000-0-12100",
+        "oscar_station_id": 3243,
+        "oscar_name": "KOLOBRZEG",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 4,
+        "hp_m": 5.39,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.5797222222,
+          54.1825
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12105",
+        "name": "Koszalin",
+        "wigos_id": "0-20000-0-12105",
+        "oscar_station_id": 3244,
+        "oscar_name": "KOSZALIN",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 33.05,
+        "hp_m": 34.66,
+        "date_established": "1963-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.1552777778,
+          54.2044444444
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12115",
+        "name": "Ustka",
+        "wigos_id": "0-20000-0-12115",
+        "oscar_station_id": 3245,
+        "oscar_name": "USTKA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 3.25,
+        "hp_m": 10.85,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.8541666667,
+          54.5883333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12120",
+        "name": "Łeba",
+        "wigos_id": "0-20000-0-12120",
+        "oscar_station_id": 3246,
+        "oscar_name": "LEBA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 1.81,
+        "hp_m": 5.92,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.5347222222,
+          54.7536111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12125",
+        "name": "Lębork",
+        "wigos_id": "0-20000-0-12125",
+        "oscar_station_id": 3247,
+        "oscar_name": "LEBORK",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 38.62,
+        "hp_m": 40.97,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7569444444,
+          54.5530555556
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12135",
+        "name": "Hel",
+        "wigos_id": "0-20000-0-12135",
+        "oscar_station_id": 3248,
+        "oscar_name": "HEL",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 1.1,
+        "hp_m": 2.62,
+        "date_established": "1920-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.8119444444,
+          54.6036111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12155",
+        "name": "Gdańsk",
+        "wigos_id": "0-20000-0-12155",
+        "oscar_station_id": 3252,
+        "oscar_name": "GDANSK-SWIBNO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 6.79,
+        "hp_m": 9,
+        "date_established": "1982-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9344444444,
+          54.3336111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12160",
+        "name": "Elbląg",
+        "wigos_id": "0-20000-0-12160",
+        "oscar_station_id": 3253,
+        "oscar_name": "ELBLAG-MILEJEWO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 189,
+        "hp_m": 185.01,
+        "date_established": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.5430555556,
+          54.2230555556
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12185",
+        "name": "Kętrzyn",
+        "wigos_id": "0-20000-0-12185",
+        "oscar_station_id": 3254,
+        "oscar_name": "KETRZYN",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 106.57,
+        "hp_m": 109.91,
+        "date_established": "1963-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.3694444444,
+          54.0683333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12195",
+        "name": "Suwałki",
+        "wigos_id": "0-20000-0-12195",
+        "oscar_station_id": 3255,
+        "oscar_name": "SUWALKI",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 184.32,
+        "hp_m": 185.35,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.9488888889,
+          54.1308333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12200",
+        "name": "Świnoujście",
+        "wigos_id": "0-20000-0-12200",
+        "oscar_station_id": 3256,
+        "oscar_name": "SWINOUJSCIE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 4.95,
+        "hp_m": 5,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.2422222222,
+          53.9233333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12205",
+        "name": "Szczecin",
+        "wigos_id": "0-20000-0-12205",
+        "oscar_station_id": 3257,
+        "oscar_name": "SZCZECIN",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 1.29,
+        "hp_m": 6.68,
+        "date_established": "1961-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.6227777778,
+          53.3952777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12210",
+        "name": "Resko",
+        "wigos_id": "0-20000-0-12210",
+        "oscar_station_id": 3259,
+        "oscar_name": "RESKO-SMOLSKO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 52,
+        "hp_m": 52.88,
+        "date_established": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.3933333333,
+          53.7636111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12215",
+        "name": "Szczecinek",
+        "wigos_id": "0-20000-0-12215",
+        "oscar_station_id": 3260,
+        "oscar_name": "SZCZECINEK",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 139.41,
+        "hp_m": 142.05,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.7466666667,
+          53.7147222222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12230",
+        "name": "Piła",
+        "wigos_id": "0-20000-0-12230",
+        "oscar_station_id": 3261,
+        "oscar_name": "PILA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 72.47,
+        "hp_m": 73.33,
+        "date_established": "1970-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.7483333333,
+          53.1311111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12235",
+        "name": "Chojnice",
+        "wigos_id": "0-20000-0-12235",
+        "oscar_station_id": 3262,
+        "oscar_name": "CHOJNICE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 165.11,
+        "hp_m": 171.9,
+        "date_established": "1860-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.5325,
+          53.7152777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12250",
+        "name": "Toruń",
+        "wigos_id": "0-20000-0-12250",
+        "oscar_station_id": 3264,
+        "oscar_name": "TORUN",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 68.76,
+        "hp_m": 72.09,
+        "date_established": "1920-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.5952777778,
+          53.0422222222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12270",
+        "name": "Mława",
+        "wigos_id": "0-20000-0-12270",
+        "oscar_station_id": 3265,
+        "oscar_name": "MLAWA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 147.05,
+        "hp_m": 148.52,
+        "date_established": "1963-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.3611111111,
+          53.1041666667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12272",
+        "name": "Olsztyn",
+        "wigos_id": "0-20000-0-12272",
+        "oscar_station_id": 3266,
+        "oscar_name": "OLSZTYN",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 133.21,
+        "hp_m": 136.6,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.4227777778,
+          53.7711111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12280",
+        "name": "Mikołajki",
+        "wigos_id": "0-20000-0-12280",
+        "oscar_station_id": 3267,
+        "oscar_name": "MIKOLAJKI",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 127.06,
+        "hp_m": 128.44,
+        "date_established": "1952-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.5886111111,
+          53.7891666667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12285",
+        "name": "Ostrołęka",
+        "wigos_id": "0-20000-0-12285",
+        "oscar_station_id": 3268,
+        "oscar_name": "OSTROLEKA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 94.4,
+        "hp_m": 94,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.5352777778,
+          53.0675
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12295",
+        "name": "Białystok",
+        "wigos_id": "0-20000-0-12295",
+        "oscar_station_id": 3269,
+        "oscar_name": "BIALYSTOK",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 148.16,
+        "hp_m": 150.09,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.1722222222,
+          53.1083333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12300",
+        "name": "Gorzów",
+        "wigos_id": "0-20000-0-12300",
+        "oscar_station_id": 3270,
+        "oscar_name": "GORZOW WLKP",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 71.22,
+        "hp_m": 72.55,
+        "date_established": "1966-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.2772222222,
+          52.7411111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12310",
+        "name": "Słubice",
+        "wigos_id": "0-20000-0-12310",
+        "oscar_station_id": 3271,
+        "oscar_name": "SLUBICE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 20.81,
+        "hp_m": 24,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5938888889,
+          52.3486111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12330",
+        "name": "Poznań",
+        "wigos_id": "0-20000-0-12330",
+        "oscar_station_id": 3273,
+        "oscar_name": "POZNAN-LAWICA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Partly operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 88.24,
+        "hp_m": 88,
+        "date_established": "1920-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.8347222222,
+          52.4166666667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12345",
+        "name": "Koło",
+        "wigos_id": "0-20000-0-12345",
+        "oscar_station_id": 3274,
+        "oscar_name": "KOLO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 115.4,
+        "hp_m": 117.41,
+        "date_established": "1963-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.6613888889,
+          52.2002777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12360",
+        "name": "Płock",
+        "wigos_id": "0-20000-0-12360",
+        "oscar_station_id": 3275,
+        "oscar_name": "PLOCK",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 105.94,
+        "hp_m": 108.76,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.7258333333,
+          52.5883333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12375",
+        "name": "Warszawa",
+        "wigos_id": "0-20000-0-12375",
+        "oscar_station_id": 3278,
+        "oscar_name": "WARSZAWA-OKECIE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Partly operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 106.51,
+        "hp_m": 106.47,
+        "date_established": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.9611111111,
+          52.1627777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12385",
+        "name": "Siedlce",
+        "wigos_id": "0-20000-0-12385",
+        "oscar_station_id": 3279,
+        "oscar_name": "SIEDLCE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 151.9,
+        "hp_m": 154.99,
+        "date_established": "1881-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.2447222222,
+          52.1811111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12399",
+        "name": "Terespol",
+        "wigos_id": "0-20000-0-12399",
+        "oscar_station_id": 3280,
+        "oscar_name": "TERESPOL",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 133.38,
+        "hp_m": 137.32,
+        "date_established": "1955-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.6219444444,
+          52.0786111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12400",
+        "name": "Zielona Góra",
+        "wigos_id": "0-20000-0-12400",
+        "oscar_station_id": 3281,
+        "oscar_name": "ZIELONA GORA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 191.55,
+        "hp_m": 192.45,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.5244444444,
+          51.9302777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12415",
+        "name": "Legnica",
+        "wigos_id": "0-20000-0-12415",
+        "oscar_station_id": 3282,
+        "oscar_name": "LEGNICA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 122.38,
+        "hp_m": 123.53,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.2075,
+          51.1930555556
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12418",
+        "name": "Leszno",
+        "wigos_id": "0-20000-0-12418",
+        "oscar_station_id": 3283,
+        "oscar_name": "LESZNO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 90.55,
+        "hp_m": 93.05,
+        "date_established": "1958-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.5347222222,
+          51.8358333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12424",
+        "name": "Wrocław",
+        "wigos_id": "0-20000-0-12424",
+        "oscar_station_id": 3284,
+        "oscar_name": "WROCLAW II",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Partly operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 120.62,
+        "hp_m": 120.96,
+        "date_established": "1961-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.9,
+          51.1033333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12435",
+        "name": "Kalisz",
+        "wigos_id": "0-20000-0-12435",
+        "oscar_station_id": 3286,
+        "oscar_name": "KALISZ",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 137.29,
+        "hp_m": 138,
+        "date_established": "1922-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.0819444444,
+          51.7819444444
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12455",
+        "name": "Wieluń",
+        "wigos_id": "0-20000-0-12455",
+        "oscar_station_id": 3287,
+        "oscar_name": "WIELUN",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 199.45,
+        "hp_m": 200.86,
+        "date_established": "1963-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.5577777778,
+          51.2111111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12465",
+        "name": "Łódź",
+        "wigos_id": "0-20000-0-12465",
+        "oscar_station_id": 3288,
+        "oscar_name": "LODZ-LUBLINEK",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Partly operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 174,
+        "hp_m": 181.39,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.3994444444,
+          51.7233333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12469",
+        "name": "Sulejów",
+        "wigos_id": "0-20000-0-12469",
+        "oscar_station_id": 3289,
+        "oscar_name": "SULEJOW",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 188.14,
+        "hp_m": 189.19,
+        "date_established": "1966-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.8663888889,
+          51.3533333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12488",
+        "name": "Kozienice",
+        "wigos_id": "0-20000-0-12488",
+        "oscar_station_id": 3291,
+        "oscar_name": "KOZIENICE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 123.49,
+        "hp_m": 126.11,
+        "date_established": "1977-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.5436111111,
+          51.5647222222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12495",
+        "name": "Lublin",
+        "wigos_id": "0-20000-0-12495",
+        "oscar_station_id": 3293,
+        "oscar_name": "LUBLIN RADAWIEC",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 237.59,
+        "hp_m": 239.7,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.3930555556,
+          51.2166666667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12497",
+        "name": "Włodawa",
+        "wigos_id": "0-20000-0-12497",
+        "oscar_station_id": 3294,
+        "oscar_name": "WLODAWA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 176.67,
+        "hp_m": 179.45,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.5294444444,
+          51.5533333333
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12500",
+        "name": "Jelenia Góra",
+        "wigos_id": "0-20000-0-12500",
+        "oscar_station_id": 3295,
+        "oscar_name": "JELENIA GORA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 342.29,
+        "hp_m": 343.35,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.7888888889,
+          50.9002777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12510",
+        "name": "Śnieżka",
+        "wigos_id": "0-20000-0-12510",
+        "oscar_station_id": 3296,
+        "oscar_name": "SNIEZKA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 1603.56,
+        "hp_m": 1613.23,
+        "date_established": "1886-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.7394444444,
+          50.7361111111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12520",
+        "name": "Kłodzko",
+        "wigos_id": "0-20000-0-12520",
+        "oscar_station_id": 3297,
+        "oscar_name": "KLODZKO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 356.03,
+        "hp_m": 356.9,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.6141666667,
+          50.4369444444
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12530",
+        "name": "Opole",
+        "wigos_id": "0-20000-0-12530",
+        "oscar_station_id": 3298,
+        "oscar_name": "OPOLE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 162.84,
+        "hp_m": 162.97,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.9688888889,
+          50.6269444444
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12540",
+        "name": "Racibórz",
+        "wigos_id": "0-20000-0-12540",
+        "oscar_station_id": 3299,
+        "oscar_name": "RACIBORZ",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 205.92,
+        "hp_m": 205.92,
+        "date_established": "1901-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1916666667,
+          50.0616666667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12550",
+        "name": "Częstochowa",
+        "wigos_id": "0-20000-0-12550",
+        "oscar_station_id": 3300,
+        "oscar_name": "CZESTOCHOWA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 293.21,
+        "hp_m": 295.15,
+        "date_established": "1892-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0925,
+          50.8125
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12560",
+        "name": "Katowice",
+        "wigos_id": "0-20000-0-12560",
+        "oscar_station_id": 3302,
+        "oscar_name": "KATOWICE-MUCHOWIEC",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 278.22,
+        "hp_m": 280.56,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0327777778,
+          50.2405555556
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12566",
+        "name": "Kraków",
+        "wigos_id": "0-20000-0-12566",
+        "oscar_station_id": 3303,
+        "oscar_name": "KRAKOW-BALICE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Partly operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 236.51,
+        "hp_m": 241.5,
+        "date_established": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.8019444444,
+          50.0802777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12570",
+        "name": "Kielce",
+        "wigos_id": "0-20000-0-12570",
+        "oscar_station_id": 3304,
+        "oscar_name": "KIELCE-SUKOW",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 260.08,
+        "hp_m": 261.11,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.6922222222,
+          50.8102777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12575",
+        "name": "Tarnów",
+        "wigos_id": "0-20000-0-12575",
+        "oscar_station_id": 3305,
+        "oscar_name": "TARNOW",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 193,
+        "hp_m": null,
+        "date_established": "1868-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.94194,
+          50.02556
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12580",
+        "name": "Rzeszów",
+        "wigos_id": "0-20000-0-12580",
+        "oscar_station_id": 3306,
+        "oscar_name": "RZESZOW-JASIONKA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Partly operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 211.48,
+        "hp_m": 212.56,
+        "date_established": "1866-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.02,
+          50.1113888889
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12585",
+        "name": "Sandomierz",
+        "wigos_id": "0-20000-0-12585",
+        "oscar_station_id": 3307,
+        "oscar_name": "SANDOMIERZ",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 216.95,
+        "hp_m": 218.94,
+        "date_established": "1912-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.7158333333,
+          50.6966666667
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12595",
+        "name": "Zamość",
+        "wigos_id": "0-20000-0-12595",
+        "oscar_station_id": 3308,
+        "oscar_name": "ZAMOSC",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 222.17,
+        "hp_m": 213.19,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.2063888889,
+          50.6977777778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12600",
+        "name": "Bielsko Biała",
+        "wigos_id": "0-20000-0-12600",
+        "oscar_station_id": 3309,
+        "oscar_name": "BIELSKO-BIALA",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 395.8,
+        "hp_m": 399.47,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0011111111,
+          49.8080555556
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12625",
+        "name": "Zakopane",
+        "wigos_id": "0-20000-0-12625",
+        "oscar_station_id": 3310,
+        "oscar_name": "ZAKOPANE",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 854.56,
+        "hp_m": 857,
+        "date_established": "1875-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.9602777778,
+          49.2938888889
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12650",
+        "name": "Kasprowy Wierch",
+        "wigos_id": "0-20000-0-12650",
+        "oscar_station_id": 3311,
+        "oscar_name": "KASPROWY WIERCH",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 1990.51,
+        "hp_m": 1988.75,
+        "date_established": "1951-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.9819444444,
+          49.2325
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12660",
+        "name": "Nowy Sącz",
+        "wigos_id": "0-20000-0-12660",
+        "oscar_station_id": 3312,
+        "oscar_name": "NOWY SACZ",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 291.51,
+        "hp_m": 295.9,
+        "date_established": "1877-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.6891666667,
+          49.6272222222
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12670",
+        "name": "Krosno",
+        "wigos_id": "0-20000-0-12670",
+        "oscar_station_id": 3313,
+        "oscar_name": "KROSNO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 329.49,
+        "hp_m": 331.31,
+        "date_established": null
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.7691666667,
+          49.7069444444
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12690",
+        "name": "Lesko",
+        "wigos_id": "0-20000-0-12690",
+        "oscar_station_id": 3314,
+        "oscar_name": "LESKO",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 420.19,
+        "hp_m": 422.39,
+        "date_established": "1867-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.3416666667,
+          49.4663888889
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "code": "12695",
+        "name": "Przemyśl",
+        "wigos_id": "0-20000-0-12695",
+        "oscar_station_id": 3315,
+        "oscar_name": "PRZEMYSL",
+        "territory": "Poland",
+        "declared_status": "Operational",
+        "assessed_status": "Operational",
+        "station_type": "Land (fixed)",
+        "elevation_m": 279.12,
+        "hp_m": 280.34,
+        "date_established": "1875-01-01T00:00:00.000+00:00"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.7719444444,
+          49.8041666667
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "source": "WMO OSCAR/Surface public search API",
+    "imgw_station_source": "https://danepubliczne.imgw.pl/api/data/synop",
+    "oscar_search_url": "https://oscar.wmo.int/surface/rest/api/search/station",
+    "wigos_id_pattern": "0-20000-0-<id_stacji>",
+    "feature_count": 62
+  }
+}

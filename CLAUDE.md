@@ -7,17 +7,16 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
 
 - **What:** Web application for visualising public IMGW-PIB meteorological and
   hydrological data for Poland.
-- **Status:** Stages 0-16 are implemented and documented: FastAPI cache-backed
+- **Status:** Stages 0-18 are implemented and documented: FastAPI cache-backed
   APIs, IMGW client/parser/cache layer, React/Vite/MapLibre frontend,
   production Compose setup, local observation history, reviewed geometry
   pipeline, product timeline metadata plus COSMO 2 m temperature rendering,
   PWA shell, browser-local power-user tools, public-alpha release polish,
   bounded daily SYNOP archive backfill, public API exports, and the repo-local
-  TypeScript API client. Stage 17 is a documentation/status stabilization pass
-  after Stage 16. Hydro basins, reviewed synop coordinates, hydrological archive
-  backfill, PDF reports, and observability/performance hardening remain future
-  candidates until their own source/legal review, implementation, docs, and
-  tests land.
+  TypeScript API client, and Stage 18 reviewed WMO OSCAR/Surface synop station
+  coordinates. Hydro basins, hydrological archive backfill, PDF reports, and
+  observability/performance hardening remain future candidates until their own
+  source/legal review, implementation, docs, and tests land.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
   GL, ECharts, TanStack Query, Zustand.
 - **Backend plan:** Python FastAPI, Pydantic, httpx, scheduler, cache, SQLite
@@ -99,7 +98,7 @@ and must stay test-only.
   `python -m app.geometry.import_cli`. Stages 14-16 are also implemented:
   product rendering is limited to the reviewed COSMO path, daily SYNOP archive
   backfill is opt-in and bounded, and the generated SDK/examples live under
-  `packages/` and `examples/`. Do not mark future candidates such as
-  `hydro_basins`, `synop_stations`, PDF reports, or radar rendering as
-  implemented until the repo contains matching implementation, docs, tests, and
-  source/legal review.
+  `packages/` and `examples/`. Stage 18 bundles reviewed WMO OSCAR/Surface
+  synop station coordinates. Do not mark future candidates such as
+  `hydro_basins`, PDF reports, or radar rendering as implemented until the repo
+  contains matching implementation, docs, tests, and source/legal review.

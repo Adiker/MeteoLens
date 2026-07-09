@@ -4,9 +4,14 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 18 reviewed synop station coordinates: bundled a reviewed WMO
+  OSCAR/Surface `synop_stations` Point dataset for all 62 current IMGW SYNOP
+  station IDs, added a reproducible fetch/import pipeline, documented
+  WMO/OSCAR source/legal review and attribution, and updated docs so synop
+  stations are no longer described as map-marker blocked.
 - Added Stage 17 post-Stage-16 stabilization: aligned documentation/status notes
   after Stage 16, corrected stale future-tense references in agent,
-  architecture, API, and UI docs, recorded Stage 18+ as future candidates, and
+  architecture, API, and UI docs, recorded the then-next stage candidates, and
   kept the pass documentation-only with no runtime/API/source changes.
 - Added Stage 16 public API, SDK, and power-user exports: stabilized
   `API_CONTRACT.md` with `/api/v1` compatibility and responsible-use notes,
