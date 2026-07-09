@@ -14,9 +14,11 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
   PWA shell, browser-local power-user tools, public-alpha release polish,
   bounded daily SYNOP archive backfill, public API exports, and the repo-local
   TypeScript API client, and Stage 18 reviewed WMO OSCAR/Surface synop station
-  coordinates. Hydro basins, hydrological archive backfill, PDF reports, and
-  observability/performance hardening remain future candidates until their own
-  source/legal review, implementation, docs, and tests land.
+  coordinates. Stages 19-26 are planned only: public-internet security,
+  production observability/backup/recovery, current-main release validation,
+  hydro basin geometry, hydrological archive backfill, warning history,
+  performance/scalability hardening, and PDF reports remain future work until
+  their own implementation, docs, and tests land.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
   GL, ECharts, TanStack Query, Zustand.
 - **Backend plan:** Python FastAPI, Pydantic, httpx, scheduler, cache, SQLite
@@ -99,6 +101,7 @@ and must stay test-only.
   product rendering is limited to the reviewed COSMO path, daily SYNOP archive
   backfill is opt-in and bounded, and the generated SDK/examples live under
   `packages/` and `examples/`. Stage 18 bundles reviewed WMO OSCAR/Surface
-  synop station coordinates. Do not mark future candidates such as
-  `hydro_basins`, PDF reports, or radar rendering as implemented until the repo
+  synop station coordinates. Stage 19-26 tasks are unchecked planning items.
+  Do not mark future work such as `hydro_basins`, hydrological archive imports,
+  warning history, PDF reports, or radar rendering as implemented until the repo
   contains matching implementation, docs, tests, and source/legal review.

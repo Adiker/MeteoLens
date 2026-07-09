@@ -452,6 +452,14 @@ Stage 10 deployment planning must cover large product-file storage, cache
 retention, tile/raster generation storage, and operational limits before any
 radar or GRIB product layer is exposed.
 
+Stages 19-21 are planned to close the gap between a public repository and an
+unrestricted public deployment: endpoint classification, admin authentication,
+rate and concurrency limits, proxy safeguards, non-root containers, workflow
+restrictions, observability, backups, restore tests, and current-main release
+validation. Until those stages land, archive backfill remains an administrative
+operation and product rendering remains an expensive route that needs public
+abuse protection.
+
 ## Observability
 
 MVP should log:
@@ -468,8 +476,11 @@ source availability.
 Stage 7 defined production logging and monitoring requirements for source
 fetches, parser failures, stale cache, and API errors. Stage 11 added a
 user-facing source availability dashboard and data freshness monitor from the
-same underlying metadata. A future observability/performance stage may add
-metrics, tracing, and deployment dashboards.
+same underlying metadata. Stage 20 is planned to add production readiness and
+recovery signals such as readiness semantics, product-render/import metrics,
+resource and disk visibility, backup/restore validation, and incident-response
+runbooks. Stage 25 is planned to add measured performance and scalability
+thresholds.
 
 ## Extension Points
 

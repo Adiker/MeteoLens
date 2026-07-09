@@ -62,6 +62,14 @@ Docker healthcheck should call `/health`.
 - Keep source attribution visible in public deployments.
 - Verify current IMGW-PIB terms before public or commercial use.
 
+Unrestricted public deployment is not release-ready until the Stage 19-21 plan
+is implemented and validated. The public repository can be reviewed and run
+locally, but internet-exposed instances still need endpoint protection,
+expensive-route limits, workflow restrictions, container hardening,
+observability, backup/restore verification, and a fresh current-main production
+smoke-test record. See
+`docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md`.
+
 ## Stage 7 Production Target
 
 Stage 7 adds a production deployment path separate from the local development
