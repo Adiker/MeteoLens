@@ -25,6 +25,10 @@ missing-field metadata, and processed-data notices.
 
 ## Responsible Use
 
+- Current public-read APIs are alpha APIs. Before unrestricted public
+  deployment, Stage 19 must classify routes as public, expensive, or
+  administrative and turn that classification into authentication, rate-limit,
+  concurrency, proxy, and workflow protections.
 - Deployed instances should rate-limit public traffic at the reverse proxy.
   Suggested starting point for unauthenticated public demos: 60-120 requests per
   minute per IP, with lower limits for product render downloads and archive
@@ -241,6 +245,10 @@ the existing observation-history schema. The endpoint is bounded by
 the browser to fetch IMGW archive files directly. Duplicate records are handled
 by upsert on `station_id + metric + observed_at`; repeated runs refresh import
 metadata without creating duplicate observations.
+
+Public deployment note: this endpoint is administrative. Stage 19 must protect
+or disable it by default for internet-exposed deployments before the alpha
+release is tagged.
 
 Response shape:
 
@@ -503,11 +511,15 @@ Returns cached product detail manifest slices with parsed frame metadata:
   renderable frames — `render_url` and `render_ready` (PNG already cached)
 - `empty_state.code` may be `cache_empty`, `product_unavailable`, or `frame_missing`
 
-### `GET /api/v1/products/{product_id}/render/{file}?variable=t2m`
+### `GET /api/v1/products/{product_id}/render/{filename}?variable=t2m`
 
 Serves the rendered PNG overlay for one renderable frame (`image/png`). The
 first request downloads the source GRIB server-side (can take seconds to tens
 of seconds; downloads are serialized), then the cached PNG is served.
+
+Public deployment note: this endpoint is expensive. Stage 19 must add
+route-specific rate limits, concurrency limits, and a safe execution model so
+anonymous traffic cannot repeatedly force large downloads or CPU-heavy renders.
 
 - Response headers: `X-MeteoLens-Frame-Time`, `X-MeteoLens-Run-Time`,
   `X-MeteoLens-Retrieved-At`, `X-MeteoLens-Rendered-At`, `X-MeteoLens-Variable`

@@ -91,3 +91,22 @@ mandatory guardrails for AI agents and automation working in this repository.
   server-side imports.
 - Stage 16 may stabilize public API docs, generated clients, examples, and
   exports while preserving attribution and processed-data notices.
+- Stage 17 may align documentation/status without runtime changes.
+- Stage 18 may bundle reviewed synop station coordinates after source/legal
+  review.
+- Stage 19 must address public-internet security and abuse protection before
+  unrestricted deployment.
+- Stage 20 must add production observability, backup, and recovery before
+  release validation.
+- Stage 21 may tag and publish `v0.1.0-alpha` only after current-main
+  production validation and unresolved release blockers are cleared.
+- Stage 22 may add hydro basin geometry only after reviewed source/legal and
+  `kod_zlewni` mapping work.
+- Stage 23 may add hydrological archive backfill only for verified archive
+  families through bounded server-side imports.
+- Stage 24 may add warning history only with explicit source-correction,
+  duplicate, retention, attribution, and official-warning-disclaimer handling.
+- Stage 25 may harden performance only with measured budgets and regression
+  thresholds.
+- Stage 26 may add PDF reports only after security and resource controls are in
+  place and fixture-based deterministic report tests exist.

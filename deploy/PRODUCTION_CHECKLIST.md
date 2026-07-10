@@ -2,9 +2,10 @@
 
 Use this checklist before exposing a public demo or production instance. The
 boxes are intentionally unchecked: complete them per deployment on the target
-host. A reference run of the smoke-test items is recorded in
-`docs/release/SMOKE_TEST_2026-07-03.md`; the frontend checks can be repeated
-with `frontend/scripts/smoke.mjs`.
+host. A historical smoke-test run is recorded in
+`docs/release/SMOKE_TEST_2026-07-03.md`, but unrestricted public deployment now
+requires the Stage 19-21 hardening and validation plan in
+`docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md`.
 
 ## Legal and attribution
 
@@ -30,7 +31,24 @@ with `frontend/scripts/smoke.mjs`.
 - [ ] Production CORS origins set via `METEOLENS_FRONTEND_ORIGIN` (comma-separated if needed).
 - [ ] Persistent volume mounted at `/data` for SQLite and IMGW cache.
 - [ ] `restart: unless-stopped` policies active for backend and frontend services.
-- [ ] Backups planned for `/data` (database + cache metadata).
+- [ ] Fresh named-volume startup tested.
+- [ ] Upgrade from an existing pre-Stage-18 volume tested.
+
+## Endpoint protection and abuse limits
+
+- [ ] API routes classified as public, expensive, or administrative.
+- [ ] Administrative archive-backfill routes disabled by default or protected by
+  admin authentication in public deployments.
+- [ ] Public per-IP request rate limits configured.
+- [ ] Lower public limits configured for product render routes.
+- [ ] Product downloads, renders, and archive imports have concurrency limits.
+- [ ] Repeated render requests serve cached PNGs where possible and cannot force
+  repeated approximately 160 MB downloads.
+- [ ] Large COSMO frames use a documented safe model: queueing, cache-only
+  serving, pre-rendering, or another bounded execution path.
+- [ ] Public users cannot trigger credential-backed Claude/OpenCode workflows
+  unless explicitly allowed.
+- [ ] CORS restricted to intended production origins.
 
 ## IMGW access discipline
 
@@ -39,12 +57,56 @@ with `frontend/scripts/smoke.mjs`.
 - [ ] Stale cache and source failures remain visible in `/api/v1/sources`.
 - [ ] No direct IMGW calls from the browser.
 
+## Proxy and HTTP hardening
+
+- [ ] TLS enabled at the public edge.
+- [ ] HTTP security headers configured.
+- [ ] nginx or upstream proxy request-size limits configured.
+- [ ] nginx or upstream proxy connection and request-rate limits configured.
+- [ ] Proxy read, send, and upstream timeouts configured.
+- [ ] Response-size or buffering safeguards reviewed for export/render routes.
+- [ ] Compression configured only for safe content types.
+- [ ] `/health` and API proxy headers reviewed.
+
+## Container hardening
+
+- [ ] Backend production container runs as a non-root user.
+- [ ] Frontend/nginx runtime user reviewed.
+- [ ] Unnecessary Linux capabilities dropped.
+- [ ] `no-new-privileges` enabled where supported.
+- [ ] Read-only root filesystem evaluated while preserving writable `/data`.
+- [ ] Container resource limits configured for CPU and memory.
+- [ ] Dependency, secret, and container image scans reviewed.
+
 ## Observability
 
 - [ ] `/health` monitored for liveness.
-- [ ] `/api/v1/sources` monitored for cache freshness and parser errors.
+- [ ] Readiness or source-freshness signal monitored separately from liveness.
+- [ ] `/api/v1/sources` monitored for cache freshness, source failures, and
+  parser errors.
+- [ ] Refresh durations and failures monitored.
+- [ ] Product download/render duration, queue state, and cache hits monitored.
+- [ ] Archive import progress and failures monitored.
+- [ ] SQLite size, cache size, product-cache size, disk usage, memory, and CPU
+  monitored.
 - [ ] Container logs reviewed for `meteolens.source` fetch outcomes.
 - [ ] API errors logged under `meteolens.api` with path and error code.
+- [ ] Logs are structured or otherwise rotation-safe.
+- [ ] Request or correlation identifiers configured where useful.
+- [ ] Logs reviewed to avoid secrets or unnecessary sensitive location data.
+- [ ] Operational thresholds and alert recommendations documented.
+
+## Backups and recovery
+
+- [ ] Backups configured for `/data`.
+- [ ] Backup scope documents SQLite, observation history, cache metadata,
+  product manifests/renders, reviewed geometry, and any local imports.
+- [ ] Data that can be recreated from IMGW is distinguished from data that must
+  be backed up.
+- [ ] Restore procedure documented with commands.
+- [ ] Restore from backup tested on a fresh volume.
+- [ ] Persistent-volume upgrade and rollback steps documented.
+- [ ] Incident-response and troubleshooting runbook available.
 
 ## Demo media
 

@@ -90,7 +90,7 @@ their primary file.
 - `GET /api/v1/products/{id}/frames` — frame metadata; renderable products get
   a `renderable` descriptor plus per-frame `renderable`, `renderable_reason`,
   `render_ready`, `render_url`.
-- `GET /api/v1/products/{id}/render/{file}?variable=t2m` — the rendered PNG.
+- `GET /api/v1/products/{id}/render/{filename}?variable=t2m` — the rendered PNG.
 - `GET /api/v1/map/timeline` — layer descriptors; `frames_renderable=true` and
   the `renderable` block appear **only** for genuinely renderable products.
 

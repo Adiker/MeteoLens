@@ -4,6 +4,12 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added documentation-only planning for Stages 19-26: public-internet security
+  and abuse protection, production observability/backup/recovery,
+  current-main `v0.1.0-alpha` validation, hydro basin geometry, hydrological
+  archive backfill, warning history, performance/scalability hardening, and
+  PDF reports. The plan renumbers the old unimplemented candidate items and
+  keeps all Stage 19-26 work explicitly planned, not implemented.
 - Added Stage 18 reviewed synop station coordinates: bundled a reviewed WMO
   OSCAR/Surface `synop_stations` Point dataset for all 62 current IMGW SYNOP
   station IDs, added a reproducible fetch/import pipeline, documented

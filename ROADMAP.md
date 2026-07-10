@@ -109,32 +109,82 @@ reviewed WMO OSCAR/Surface coordinate dataset for current IMGW SYNOP stations.
   visible `coordinate_source` metadata; keep future unresolved IDs explicit as
   `missing_lat_lon`.
 
-## v6 Candidates
+## Implemented And Planned Stages
 
-These are planned candidates, not implemented features:
+Stages 0-18 are implemented and documented. Stages 19-26 are planned only:
+their tasks remain unchecked in `TASKS.md` until matching implementation, docs,
+and tests land.
 
-- Stage 19 - Hydro basin geometry MVP: review basin geometry licensing and
-  `kod_zlewni` mapping before enabling hydro warning polygons.
-- Stage 20 - Hydrological archive backfill: extend bounded server-side archive
-  imports beyond daily SYNOP once hydro archive parsing and null/status handling
-  are verified.
-- Stage 21 - PDF reports MVP: generate server-side reports from cached
-  MeteoLens data with attribution, processed-data notices, timestamps, and
-  missing-data metadata.
-- Stage 22 - Performance and observability: reduce frontend bundle pressure and
-  add clearer operational signals for cache freshness, fetch failures, product
-  rendering, and archive imports.
+## v7 - Public Alpha Readiness
+
+Before adding more public-facing product features, MeteoLens needs explicit
+public-internet hardening, operational readiness, and a fresh release validation
+pass against the current `main` branch. This sequence keeps the first prerelease
+honest: the repository can stay public, but unrestricted public deployment
+should wait for the following stages.
+
+- Stage 19 - Public internet security and abuse protection: classify endpoints
+  as public, expensive, or administrative; protect or disable administrative
+  archive imports by default; bound expensive product rendering; harden nginx,
+  CORS, security headers, production containers, and GitHub AI workflows; add
+  scanning and a vulnerability-reporting policy.
+- Stage 20 - Production observability, backup and recovery: split liveness and
+  readiness semantics; monitor source freshness, parser failures, refresh
+  duration, product render/import state, resource usage, and cache sizes; define
+  `/data` backups, restore tests, resource limits, and incident response.
+- Stage 21 - Current-main production validation and `v0.1.0-alpha` release:
+  rerun local and production smoke tests against the release commit, test fresh
+  and upgraded volumes, verify Stage 13-20 behavior, update screenshots and
+  release notes, move changelog entries only when the release is cut, tag
+  `v0.1.0-alpha`, and create a GitHub prerelease.
+
+## v8 - Hydrology And Warning History
+
+After the alpha hardening and release-validation gates, the hydrology roadmap
+can resume without treating legally or technically unresolved datasets as done.
+
+- Stage 22 - Hydro basin geometry MVP: review MPHP or another official basin
+  dataset, document public/commercial/redistribution/caching/screenshot/export
+  implications, build a reproducible import pipeline, map IMGW `kod_zlewni`
+  values, render hydro warning polygons, add basin filters and location
+  matching, and keep unresolved codes explicit.
+- Stage 23 - Hydrological archive backfill: research verified hydro archive
+  formats, preserve quality/status/null/correction metadata, add bounded and
+  resumable admin-protected imports, connect imported hydro history to charts,
+  rankings, comparisons, and exports, and avoid claiming support for unverified
+  archive families.
+- Stage 24 - Warning history and change timeline: persist warning snapshots,
+  define stable warning identity rules, detect creation/update/extension/
+  escalation/downgrade/cancellation/expiry events, add warning-change APIs and
+  timeline UI, support filters and exports, and keep the official-warning
+  disclaimer visible.
+
+## v9 - Scale And Reporting
+
+Once hardening and the next hydrology/history features are defined, the final
+planned group focuses on measured scale and shareable reports.
+
+- Stage 25 - Performance and scalability hardening: measure frontend bundle
+  size, GeoJSON payloads, API bounds, SQLite indexes, GRIB memory behavior,
+  render/import execution paths, startup/cache warmup, resource budgets, and
+  load-test thresholds for a single Docker Compose deployment.
+- Stage 26 - PDF reports and shareable weather briefings: generate
+  server-side station, location, warning, and selected time-range reports with
+  maps, charts, timestamps, data delay, missing-value metadata, live/imported
+  labels, attribution, processed-data notices, official-warning disclaimers,
+  accessible print layout, resource limits, and deterministic fixture-only CI
+  samples.
 
 ## Backlog Ideas
 
-- PDF reports.
-- Reviewed hydro basin geometry.
-- Hydrological archive backfill.
-- Observability and frontend bundle performance.
 - Heatmaps and explicitly labelled interpolation.
 - Station metadata browser.
-- Warning history and warning-change timeline.
 - Additional public data sources after source/legal review.
+- Tile pyramids for additional product layers after documented format,
+  projection, licensing, and cache policy review.
+- Server-side saved views or alert delivery audit logs for authenticated
+  deployments, clearly separated from official IMGW-PIB warning
+  responsibility.
 
 ## Product Decisions
 

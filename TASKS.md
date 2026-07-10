@@ -537,3 +537,484 @@ Acceptance criteria:
 - [x] Future unresolved station IDs remain explicit as `missing_lat_lon`.
 - [x] No source/legal ambiguity is hidden; commercial deployments are told to
   re-review WMO/OSCAR terms.
+
+## Stage 19 - Public Internet Security And Abuse Protection
+
+Goal: make an internet-exposed MeteoLens instance resistant to trivial abuse and
+reduce the security impact of compromised or malformed requests.
+
+Implementation tasks:
+
+- [ ] Classify API routes as public, expensive, or administrative.
+- [ ] Protect or disable the archive-backfill endpoint by default in public
+  deployments.
+- [ ] Define and implement an admin authentication mechanism for administrative
+  operations.
+- [ ] Add request and per-IP rate limiting at the proxy or backend boundary.
+- [ ] Add lower limits for expensive product-render requests.
+- [ ] Limit concurrent downloads, renders, and archive imports.
+- [ ] Define queueing, cache-only serving, pre-rendering, or another safe
+  execution model for large COSMO frames.
+- [ ] Prevent repeated public requests from forcing unnecessary approximately
+  160 MB downloads or CPU-heavy renders.
+- [ ] Add nginx request, connection, timeout, and response-size safeguards.
+- [ ] Review CORS behavior for same-origin production and diagnostic access.
+- [ ] Add recommended HTTP security headers.
+- [ ] Run the backend production container as a non-root user.
+- [ ] Drop unnecessary Linux capabilities in production Compose.
+- [ ] Enable `no-new-privileges` for production containers.
+- [ ] Evaluate a read-only root filesystem while preserving writable `/data`.
+- [ ] Restrict Claude and OpenCode workflows to trusted actors or repository
+  collaborators.
+- [ ] Prevent arbitrary public comments from consuming paid AI workflow
+  credentials.
+- [ ] Pin third-party GitHub Actions to stable versions or commit SHAs.
+- [ ] Add dependency, secret, and container scanning.
+- [ ] Add or plan a `SECURITY.md` vulnerability-reporting policy.
+- [ ] Ensure logs do not expose secrets or unnecessary sensitive location data.
+
+Documentation tasks:
+
+- [ ] Document public, expensive, and administrative endpoint categories.
+- [ ] Document geolocation and request-log privacy expectations.
+- [ ] Update `API_CONTRACT.md` with public-use and admin-operation guidance.
+- [ ] Update `DEPLOYMENT.md` and `deploy/PRODUCTION_CHECKLIST.md` with the
+  selected hardening controls.
+- [ ] Update workflow documentation with trusted-actor restrictions.
+- [ ] Keep security limitations explicit.
+
+Test tasks:
+
+- [ ] Add backend tests for admin-only archive imports.
+- [ ] Add backend or proxy tests for rate limits and render concurrency limits.
+- [ ] Add tests proving expensive rendering cannot be trivially multiplied.
+- [ ] Add nginx configuration tests or smoke checks for request, timeout,
+  response-size, and security-header behavior.
+- [ ] Add workflow tests or documented dry-runs for trusted-actor gating.
+- [ ] Add deployment checks confirming the backend container does not run as
+  root and uses the intended capability restrictions.
+
+Non-goals and blocked items:
+
+- [ ] Do not add new public data products in this stage.
+- [ ] Do not turn MeteoLens into an official warning service.
+- [ ] Do not design a Kubernetes-only security model; keep Docker Compose as
+  the reference deployment.
+
+Acceptance criteria:
+
+- [ ] Unauthenticated users cannot trigger administrative archive imports.
+- [ ] Expensive product rendering is bounded and cannot be trivially multiplied.
+- [ ] Public users cannot trigger credential-backed AI workflows unless
+  explicitly allowed.
+- [ ] The backend production container does not run as root.
+- [ ] Production HTTP safeguards are documented and testable.
+- [ ] Security limitations remain explicit.
+
+## Stage 20 - Production Observability, Backup And Recovery
+
+Goal: make a public deployment diagnosable and recoverable.
+
+Implementation tasks:
+
+- [ ] Separate liveness and readiness semantics.
+- [ ] Monitor IMGW source freshness and parser failures.
+- [ ] Monitor refresh durations and failures.
+- [ ] Monitor product downloads, render duration, queue state, and cache hits.
+- [ ] Monitor archive imports and failures.
+- [ ] Monitor SQLite size, cache size, product-cache size, disk usage, memory,
+  and CPU.
+- [ ] Add structured and rotation-safe logs.
+- [ ] Add correlation or request identifiers where useful.
+- [ ] Add container resource limits suitable for a small self-hosted deployment.
+- [ ] Define operational thresholds and alert recommendations.
+- [ ] Improve graceful degradation when IMGW sources are unavailable.
+- [ ] Define `/data` backup scope for database, cache metadata, reviewed
+  geometry, product manifests, rendered products, and local history.
+- [ ] Define restore commands and validation checks.
+- [ ] Verify restore from backup on a fresh volume.
+- [ ] Document persistent-volume upgrade and rollback guidance.
+- [ ] Write an incident-response and troubleshooting runbook.
+- [ ] Document what can be recreated from IMGW and what must be backed up.
+
+Documentation tasks:
+
+- [ ] Update `DEPLOYMENT.md` with monitoring, thresholds, resource budgets, and
+  backup/restore procedures.
+- [ ] Update `deploy/PRODUCTION_CHECKLIST.md` with observability, backup,
+  restore-test, and incident-response gates.
+- [ ] Update `TROUBLESHOOTING.md` with public-deployment failure modes.
+- [ ] Record a restore-test result in `docs/release/` or another release note.
+
+Test tasks:
+
+- [ ] Add health/readiness tests.
+- [ ] Add tests for degraded source and stale-cache reporting.
+- [ ] Add tests or smoke checks for backup and restore commands.
+- [ ] Add resource-exhaustion or cache-size smoke checks where practical.
+- [ ] Add log-shape tests for source failures, render failures, and archive
+  import failures.
+
+Non-goals and blocked items:
+
+- [ ] Do not require managed cloud services for the reference deployment.
+- [ ] Do not add alert delivery that could be confused with official IMGW-PIB
+  warnings.
+
+Acceptance criteria:
+
+- [ ] An operator can identify stale or failed sources without reading raw
+  container output.
+- [ ] Disk and resource exhaustion risks are visible.
+- [ ] `/data` can be backed up and restored through documented commands.
+- [ ] A restore test is recorded.
+- [ ] Public deployment failure modes and recovery actions are documented.
+
+## Stage 21 - Current-Main Production Validation And v0.1.0-alpha Release
+
+Goal: validate the current Stage 0-20 application and publish the first honest
+prerelease.
+
+Implementation tasks:
+
+- [ ] Rerun development smoke tests against the current `main` release commit.
+- [ ] Rerun production smoke tests against the current `main` release commit.
+- [ ] Record exact commit SHA, date, Docker version, Compose version, and test
+  environment.
+- [ ] Test a fresh named volume.
+- [ ] Test an upgrade from an existing pre-Stage-18 volume.
+- [ ] Verify bundled PRG geometry.
+- [ ] Verify bundled SYNOP station coordinates.
+- [ ] Verify SYNOP markers and `coordinate_source`.
+- [ ] Verify meteorological warning polygons.
+- [ ] Verify explicit missing hydro basin geometry.
+- [ ] Verify one real COSMO temperature frame render.
+- [ ] Verify cached replay of the rendered frame.
+- [ ] Verify render failure and source-unavailable states.
+- [ ] Verify a bounded archive backfill.
+- [ ] Verify live/archive/mixed observation series.
+- [ ] Verify exports and attribution.
+- [ ] Verify source outage behavior.
+- [ ] Test backup and restore.
+- [ ] Run a small abuse/load smoke test for expensive routes.
+- [ ] Update screenshots to match the current implementation.
+- [ ] Update release notes.
+- [ ] Move relevant `CHANGELOG.md` entries from `Unreleased` to a dated
+  `0.1.0-alpha` section.
+- [ ] Align backend, frontend, README, and release version metadata.
+- [ ] Define rollback steps.
+- [ ] Tag `v0.1.0-alpha`.
+- [ ] Create a GitHub prerelease.
+- [ ] Verify rendered release notes, screenshots, links, license, attribution,
+  and known limitations.
+
+Documentation tasks:
+
+- [ ] Update `docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md` as checks pass.
+- [ ] Record the current-main smoke-test run in `docs/release/`.
+- [ ] Update `README.md` screenshots and alpha status if the release is cut.
+- [ ] Update `CHANGELOG.md` only when the release is actually performed.
+- [ ] Keep known limitations prominently visible.
+
+Test tasks:
+
+- [ ] Run backend tests and lint.
+- [ ] Run frontend tests, lint, and build.
+- [ ] Run E2E tests.
+- [ ] Run production smoke tests against nginx and runtime images.
+- [ ] Run fresh-volume and upgrade-path smoke tests.
+- [ ] Run backup/restore verification.
+- [ ] Run a small abuse/load smoke test for archive and product-render routes.
+
+Non-goals and blocked items:
+
+- [ ] Do not tag or publish the release until Stages 19-20 acceptance criteria
+  are met.
+- [ ] Do not promote the release beyond alpha.
+- [ ] Do not claim legal certainty for deployers who must re-review source
+  terms.
+
+Acceptance criteria:
+
+- [ ] A production smoke-test record exists for the current release commit.
+- [ ] Both fresh install and persistent-volume upgrade paths pass.
+- [ ] Stage 13-20 behavior is covered.
+- [ ] The release checklist has no unresolved release-blocking items.
+- [ ] The release remains clearly labelled as alpha.
+- [ ] Known limitations are prominently visible.
+
+## Stage 22 - Hydro Basin Geometry MVP
+
+Goal: add hydrological warning polygons only after a reviewed and reproducible
+basin-geometry source is available.
+
+Implementation tasks:
+
+- [ ] Perform legal and source review of MPHP or an alternative official
+  hydrological basin dataset.
+- [ ] Analyze public-use, commercial-use, redistribution, caching, screenshot,
+  and export implications.
+- [ ] Build a reproducible import pipeline for the selected basin dataset.
+- [ ] Validate geometry type, coordinate bounds, simplification, and required
+  properties.
+- [ ] Map IMGW `kod_zlewni` values to geometry identifiers.
+- [ ] Analyze coverage using real warning payloads.
+- [ ] Render hydrological warning polygons when codes resolve.
+- [ ] Add location matching against hydrological warning polygons.
+- [ ] Add basin filters backed by reviewed geometry.
+- [ ] Add dataset versioning and an update procedure.
+- [ ] Preserve attribution and processed-data notices.
+- [ ] Expose unresolved-code metadata for unmapped or ambiguous basin codes.
+
+Documentation tasks:
+
+- [ ] Update `docs/geometry/GEOMETRY_SOURCES.md`.
+- [ ] Update `DATA_SOURCES.md`.
+- [ ] Update `LEGAL_ATTRIBUTION.md`.
+- [ ] Update `API_CONTRACT.md`.
+- [ ] Update `UI_UX.md`.
+- [ ] Update `README.md` known limitations after implementation.
+- [ ] Update `TASKS.md` only as work is completed.
+
+Test tasks:
+
+- [ ] Add backend import and validation tests.
+- [ ] Add backend warning-code coverage tests with realistic fixtures.
+- [ ] Add API tests for hydro polygons and unresolved metadata.
+- [ ] Add frontend tests for hydro polygon rendering, basin filters, and
+  list-only fallback.
+- [ ] Add export tests for basin geometry attribution and missing geometry.
+- [ ] Add upgrade tests for bundled or imported basin datasets.
+
+Non-goals and blocked items:
+
+- [ ] Do not describe hydro basin polygons as implemented until the dataset
+  review, import, API, UI, docs, and tests land.
+- [ ] Do not add legally unclear basin geometry.
+- [ ] Do not hide warnings whose basin codes remain unresolved.
+
+Acceptance criteria:
+
+- [ ] Hydrological warning polygons render only from reviewed geometry.
+- [ ] `kod_zlewni` coverage and unresolved codes are documented and exposed.
+- [ ] Location matching includes hydro polygons where available.
+- [ ] Exports include correct basin attribution and processed-data notices.
+- [ ] Hydro warning gaps remain visible.
+
+## Stage 23 - Hydrological Archive Backfill
+
+Goal: extend bounded historical imports beyond daily SYNOP.
+
+Implementation tasks:
+
+- [ ] Research hydro archive files, directory layout, formats, encodings, and
+  update cadence.
+- [ ] Document parsing status and quality/status fields.
+- [ ] Handle nulls, sentinel values, measurement status, corrections,
+  duplicates, and station-ID changes.
+- [ ] Add bounded and resumable hydro archive imports.
+- [ ] Add progress reporting for hydro import runs.
+- [ ] Apply admin protection and rate limits from Stage 19.
+- [ ] Define database retention interaction for hydro history.
+- [ ] Preserve live/archive/mixed-series behavior.
+- [ ] Add hydro charts, rankings, comparisons, and exports where data quality
+  supports them.
+- [ ] Preserve attribution, source URLs, import timestamps, and processed-data
+  notices.
+
+Documentation tasks:
+
+- [ ] Update `DATA_SOURCES.md` with verified hydro archive formats only.
+- [ ] Update `API_CONTRACT.md` with supported import kinds and series metadata.
+- [ ] Update `LEGAL_ATTRIBUTION.md` if source terms or attribution differ.
+- [ ] Update `README.md` and `TROUBLESHOOTING.md`.
+- [ ] Update `TASKS.md` only as work is completed.
+
+Test tasks:
+
+- [ ] Add parser tests using realistic hydro archive fixtures.
+- [ ] Add duplicate, null, sentinel, correction, and station-ID-change tests.
+- [ ] Add importer resume and bound tests.
+- [ ] Add retention interaction tests.
+- [ ] Add live/archive/mixed-series API tests.
+- [ ] Add frontend tests for hydro chart and export labels.
+
+Non-goals and blocked items:
+
+- [ ] Do not claim support for archive families that remain unverified.
+- [ ] Do not add unbounded public import triggers.
+- [ ] Do not replace missing or invalid measurements with zero.
+
+Acceptance criteria:
+
+- [ ] At least one verified hydro archive family imports through a bounded
+  server-side path.
+- [ ] Imported hydro observations preserve source quality and missing-value
+  metadata.
+- [ ] Live/archive/mixed labels remain visible in APIs, charts, and exports.
+- [ ] Unsupported archive families remain documented as unsupported.
+
+## Stage 24 - Warning History And Change Timeline
+
+Goal: preserve and explain how warnings change over time.
+
+Implementation tasks:
+
+- [ ] Persist warning snapshots.
+- [ ] Define stable warning identity rules.
+- [ ] Detect creation, update, extension, escalation, downgrade, cancellation,
+  and expiry events.
+- [ ] Support meteorological and hydrological warning history.
+- [ ] Add a warning-change API.
+- [ ] Add timeline UI for warning changes.
+- [ ] Add filters by warning type, level, phenomenon, office, and area.
+- [ ] Show the relationship between warning changes and station observations
+  where useful.
+- [ ] Explicitly handle source corrections and duplicated warning records.
+- [ ] Define retention policy.
+- [ ] Add exports for warning history and change timelines.
+- [ ] Preserve attribution and the official-warning disclaimer.
+
+Documentation tasks:
+
+- [ ] Update `ARCHITECTURE.md` with warning identity, snapshot, and retention
+  design.
+- [ ] Update `API_CONTRACT.md` for warning-history endpoints.
+- [ ] Update `UI_UX.md` for the timeline interaction.
+- [ ] Update `LEGAL_ATTRIBUTION.md` for exported warning history.
+- [ ] Update `README.md` and `TASKS.md` after implementation.
+
+Test tasks:
+
+- [ ] Add backend snapshot and identity tests.
+- [ ] Add change-detection tests for creation, update, extension, escalation,
+  downgrade, cancellation, expiry, corrections, and duplicates.
+- [ ] Add API tests for warning-history filters.
+- [ ] Add frontend timeline tests.
+- [ ] Add migration and retention tests.
+- [ ] Add E2E tests for a warning-change workflow.
+
+Non-goals and blocked items:
+
+- [ ] Do not present MeteoLens as an official warning service.
+- [ ] Do not infer official warning changes when the source data is ambiguous;
+  expose ambiguity instead.
+
+Acceptance criteria:
+
+- [ ] Warning changes can be reviewed from persisted snapshots.
+- [ ] Change categories are deterministic and tested.
+- [ ] Timeline UI and exports preserve attribution and disclaimers.
+- [ ] Source corrections and duplicated records are explicit.
+
+## Stage 25 - Performance And Scalability Hardening
+
+Goal: document and verify the supported scale of a single MeteoLens deployment.
+
+Implementation tasks:
+
+- [ ] Run frontend bundle analysis.
+- [ ] Lazy-load or code-split MapLibre, ECharts, expert tools, and heavy panels
+  where measurements justify it.
+- [ ] Optimize GeoJSON payload size and rendering behavior.
+- [ ] Review API pagination and bounded query behavior.
+- [ ] Add or tune cache headers and compression.
+- [ ] Review SQLite queries and indexes.
+- [ ] Ensure memory-safe GRIB download and decode behavior.
+- [ ] Avoid unnecessary full-file copies in memory where practical.
+- [ ] Move long-running render/import operations out of synchronous request
+  paths where appropriate.
+- [ ] Evaluate worker or job-queue options that fit the Docker Compose
+  deployment.
+- [ ] Measure startup time and cache-warmup behavior.
+- [ ] Define resource budgets.
+- [ ] Document supported deployment size and regression thresholds.
+
+Documentation tasks:
+
+- [ ] Update `ARCHITECTURE.md` with selected performance boundaries.
+- [ ] Update `DEPLOYMENT.md` with resource budgets and supported scale.
+- [ ] Update `API_CONTRACT.md` with pagination and bounded-query guidance.
+- [ ] Update `docs/products/RASTER_PIPELINE.md` if render behavior changes.
+- [ ] Update `TASKS.md` only as work is completed.
+
+Test tasks:
+
+- [ ] Add load tests for map layers.
+- [ ] Add load tests for exports.
+- [ ] Add load tests for history queries.
+- [ ] Add load tests for archive imports.
+- [ ] Add load tests for product renders.
+- [ ] Add regression thresholds with measurable limits, not vague
+  "performance improved" statements.
+
+Non-goals and blocked items:
+
+- [ ] Do not introduce Kubernetes-only dependencies for the reference scale.
+- [ ] Do not optimize by hiding data-quality metadata or attribution.
+
+Acceptance criteria:
+
+- [ ] Supported single-deployment scale is documented with measured limits.
+- [ ] Expensive routes have measurable budgets and regression thresholds.
+- [ ] Bundle, GeoJSON, database, render, and import bottlenecks are measured.
+- [ ] Performance changes preserve attribution, missing-value metadata, and
+  known-limitations visibility.
+
+## Stage 26 - PDF Reports And Shareable Weather Briefings
+
+Goal: generate shareable reports without losing data-quality context or
+attribution.
+
+Implementation tasks:
+
+- [ ] Add station reports.
+- [ ] Add location reports.
+- [ ] Add warning reports.
+- [ ] Add selected time-range reports.
+- [ ] Include maps and charts.
+- [ ] Include source timestamps.
+- [ ] Include retrieval timestamps.
+- [ ] Include data delay.
+- [ ] Include missing-value metadata.
+- [ ] Include imported/live-series labels.
+- [ ] Include IMGW-PIB, PRG/GUGiK, and WMO OSCAR/Surface attribution where
+  applicable.
+- [ ] Include processed-data notices.
+- [ ] Include the official-warning disclaimer.
+- [ ] Design an accessible print layout.
+- [ ] Choose a server-side generation model.
+- [ ] Apply resource and abuse limits from Stages 19 and 25.
+- [ ] Generate sample reports only from fixtures in CI.
+
+Documentation tasks:
+
+- [ ] Update `docs/power-user/PDF_EXPORT_PLAN.md`.
+- [ ] Update `API_CONTRACT.md` for report endpoints.
+- [ ] Update `UI_UX.md` for report controls and print layout.
+- [ ] Update `LEGAL_ATTRIBUTION.md` for report attribution and metadata.
+- [ ] Update `README.md` and `TASKS.md` after implementation.
+
+Test tasks:
+
+- [ ] Add deterministic report-generation tests.
+- [ ] Add fixture-only CI sample report tests.
+- [ ] Add accessibility and print-layout checks where practical.
+- [ ] Add tests for timestamps, missing metadata, imported/live labels,
+  attribution, processed-data notices, and disclaimers.
+- [ ] Add abuse/resource-limit tests.
+
+Non-goals and blocked items:
+
+- [ ] Do not describe PDF reports as implemented until server-side generation,
+  docs, and tests land.
+- [ ] Do not generate CI samples from live IMGW data.
+- [ ] Do not omit known limitations or data-quality metadata from reports.
+
+Acceptance criteria:
+
+- [ ] Reports are generated server-side within documented resource limits.
+- [ ] Reports preserve source timestamps, retrieval timestamps, delay,
+  missing-value metadata, attribution, processed-data notices, and disclaimers.
+- [ ] CI sample reports are deterministic and fixture-based.
+- [ ] PDF reports remain shareable alpha outputs, not official warnings.
