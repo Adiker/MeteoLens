@@ -511,7 +511,7 @@ Returns cached product detail manifest slices with parsed frame metadata:
   renderable frames — `render_url` and `render_ready` (PNG already cached)
 - `empty_state.code` may be `cache_empty`, `product_unavailable`, or `frame_missing`
 
-### `GET /api/v1/products/{product_id}/render/{file}?variable=t2m`
+### `GET /api/v1/products/{product_id}/render/{filename}?variable=t2m`
 
 Serves the rendered PNG overlay for one renderable frame (`image/png`). The
 first request downloads the source GRIB server-side (can take seconds to tens

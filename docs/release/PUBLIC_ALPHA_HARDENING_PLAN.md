@@ -67,7 +67,7 @@ Public read endpoints are expected to stay unauthenticated but bounded:
 Expensive endpoints may remain public only with stricter rate, concurrency, and
 cache controls:
 
-- `GET /api/v1/products/{product_id}/render/{file}`
+- `GET /api/v1/products/{product_id}/render/{filename}`
 - large exports or history queries when they approach configured limits
 
 Administrative endpoints must not be anonymously available in public

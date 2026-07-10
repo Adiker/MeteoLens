@@ -19,10 +19,10 @@ dataset MVP with bundled PRG voivodeship/county polygons, and the product
 rendering MVP with the COSMO 2 m temperature map overlay, bounded SYNOP daily
 archive backfill, the public API/SDK/export stabilization pass, documentation
 status stabilization, and reviewed WMO OSCAR/Surface synop station
-  coordinates) are implemented. Stages 19-26 are planned only and prioritize
-  public-internet hardening, operations, fresh release validation, hydrology,
-  warning history, performance, and PDF reports. See [TASKS.md](TASKS.md) for
-  the full staged backlog.
+coordinates) are implemented. Stages 19-26 are planned only and prioritize
+public-internet hardening, operations, fresh release validation, hydrology,
+warning history, performance, and PDF reports. See [TASKS.md](TASKS.md) for
+the full staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -116,7 +116,7 @@ Implemented now:
   COSMO 2 m temperature decoded from public IMGW GRIB1 files server-side,
   reprojected from the model's rotated grid, and drawn on the map as a
   semi-transparent overlay with frame/run times, a legend, attribution, and a
-  processed-data notice (`/api/v1/products/{id}/render/{file}`). Rendering is
+  processed-data notice (`/api/v1/products/{id}/render/{filename}`). Rendering is
   an explicit opt-in ("Pokaż na mapie" in the timeline bar) because each new
   frame downloads a ~160 MB source file on the backend; rendered PNGs are
   cached with retention limits. Radar composites stay metadata-only — IMGW
