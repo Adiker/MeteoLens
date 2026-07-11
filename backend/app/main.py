@@ -81,7 +81,9 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.frontend_origins,
-        allow_credentials=True,
+        # MeteoLens has no browser session/auth cookies. Credentials would make
+        # CORS unnecessarily permissive and are intentionally disabled.
+        allow_credentials=False,
         allow_methods=["GET"],
         allow_headers=["*"],
     )

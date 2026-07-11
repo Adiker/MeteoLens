@@ -115,6 +115,41 @@ METEOLENS_FRONTEND_ORIGIN=https://meteolens.example.com,https://www.meteolens.ex
 When nginx serves the UI and proxies `/api` on the same origin, CORS is mainly
 relevant for direct backend access during diagnostics.
 
+In production, a missing, wildcard, or `localhost` frontend-origin setting
+produces no CORS allow-list. This is intentional fail-closed behavior; set only
+the exact HTTPS browser origins that need direct backend access. MeteoLens does
+not use browser credentials, so credentialed CORS is disabled.
+
+### Public-internet security (Stage 19)
+
+Production route categories are public (read-only data, exports, and metadata),
+expensive (product renders), and administrative (archive backfill). Archive
+backfill is disabled by default. To deliberately enable it, store a high-entropy
+`METEOLENS_ADMIN_TOKEN` outside git and supply it in the
+`X-MeteoLens-Admin-Token` header. Do not put this value in the frontend or
+browser configuration.
+
+The bundled nginx configuration rejects bodies over 64 KB, applies finite
+client/proxy timeouts, restricts public API and product-render request rates,
+and emits CSP, anti-framing, content-type, referrer, and permissions headers.
+Product renders are additionally limited in the backend to one concurrent
+render by default and identical simultaneous render requests share the cached
+result. Archive imports permit one active run and rate-limit a recently
+completed identical range.
+
+Production Compose exposes only nginx; the backend has no host port. The
+long-running backend runs as UID/GID 10001 with a read-only root filesystem,
+all Linux capabilities dropped, and `no-new-privileges`. `/data` remains the
+intentional writable persistent volume. A short-lived `data-init` service seeds
+and assigns that volume before the backend starts. The nginx service is also
+non-root, read-only, capability-free, and uses a temporary filesystem for its
+runtime files.
+
+Logs exclude authorization headers and request query strings. Source and error
+logging redacts token-like parameters and signed URL material. Do not add exact
+caller coordinates to application logs; use aggregate operational metrics when
+location diagnostics are necessary.
+
 ### Reviewed geometry data
 
 Production Compose stores runtime state in the `meteolens-data` named volume.

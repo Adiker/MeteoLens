@@ -25,13 +25,15 @@ missing-field metadata, and processed-data notices.
 
 ## Responsible Use
 
-- Deployed instances should rate-limit public traffic at the reverse proxy.
-  Suggested starting point for unauthenticated public demos: 60-120 requests per
-  minute per IP, with lower limits for product render downloads and archive
-  backfill.
+- Route categories are deliberately small and deployment-visible: **public**
+  (read-only health/data/map/export/product-metadata routes), **expensive**
+  (product rendering), and **administrative** (archive backfill).
+- Production nginx limits public API traffic to 60 requests/minute/IP (burst
+  30) and product renders to 10 requests/minute/IP (burst 2).
 - Public users should call MeteoLens, not IMGW archive/product files directly.
-  Archive backfill and product rendering are server-side and bounded to protect
-  upstream services.
+  Product rendering has a configurable one-render default concurrency bound and
+  coalesces simultaneous identical requests. Archive import is single-concurrent
+  and suppresses recently completed duplicate date ranges.
 - MeteoLens local alerts, dashboards, and warning/station comparisons are not
   official IMGW-PIB warnings and must keep the disclaimer visible in UI and
   downstream integrations.
@@ -227,6 +229,12 @@ unit metadata where available. Historical observations may also include
 `origin`, `import_run_id`, and `import_source_url`.
 
 `POST /api/v1/archive/backfill/synop-daily`
+
+Administrative route. It is disabled unless `METEOLENS_ADMIN_TOKEN` is set.
+When enabled, clients must send the matching value in the
+`X-MeteoLens-Admin-Token` header. Missing configuration returns `403`; missing
+or invalid credentials return `401`. This deployment-local token is not an
+end-user account system.
 
 Query parameters:
 

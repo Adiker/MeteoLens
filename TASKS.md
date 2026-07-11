@@ -537,3 +537,31 @@ Acceptance criteria:
 - [x] Future unresolved station IDs remain explicit as `missing_lat_lon`.
 - [x] No source/legal ambiguity is hidden; commercial deployments are told to
   re-review WMO/OSCAR terms.
+
+## Stage 19 - Public Internet Security And Abuse Protection
+
+Goal: safely expose Stage 0-18 functionality to public internet traffic.
+
+- [x] Classify public, expensive, and administrative routes.
+- [x] Disable archive backfill by default and protect enabled backfill with a
+  deployment-local admin token.
+- [x] Add authentication and public-deployment fail-closed tests.
+- [x] Bound public requests, rendering/downloads, imports, concurrency, and
+  duplicate expensive work.
+- [x] Harden nginx and production containers with tested limits and restrictions.
+- [x] Restrict credential-backed AI workflows to trusted actors and pin actions
+  where practical.
+- [x] Add dependency review, secret scanning, container scanning, and
+  `SECURITY.md`.
+- [x] Redact sensitive log values and avoid location query logging.
+- [x] Update API, deployment, production checklist, security, task, and changelog
+  documentation.
+
+Acceptance criteria:
+
+- [x] Unauthenticated users cannot run archive imports.
+- [x] Expensive render/import operations are bounded and duplicate render work
+  is coalesced.
+- [x] Production containers and nginx safeguards are active and testable.
+- [x] Untrusted commenters cannot trigger credential-backed AI workflows.
+- [x] Logs do not emit tokens, signed URL signatures, or location query strings.

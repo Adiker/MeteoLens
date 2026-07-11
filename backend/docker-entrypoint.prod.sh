@@ -7,7 +7,10 @@ BUNDLED_GEOMETRY_DIR="${METEOLENS_BUNDLED_GEOMETRY_DIR:-/app/bundled/geometry}"
 if [ -f "$BUNDLED_GEOMETRY_DIR/manifest.json" ]; then
   mkdir -p "$GEOMETRY_DIR"
   if [ ! -f "$GEOMETRY_DIR/manifest.json" ]; then
-    cp -a "$BUNDLED_GEOMETRY_DIR/." "$GEOMETRY_DIR/"
+    # Do not preserve owner/timestamp metadata here: the init container drops
+    # all capabilities except CHOWN, and this runtime data is subsequently
+    # assigned to the non-root application user.
+    cp -R "$BUNDLED_GEOMETRY_DIR/." "$GEOMETRY_DIR/"
     echo "Seeded reviewed geometry datasets into $GEOMETRY_DIR"
   else
     python - <<'PY'
@@ -64,6 +67,15 @@ if added:
     )
 PY
   fi
+fi
+
+# The one-shot Compose init service runs this script as root so a fresh named
+# volume becomes writable by the long-running, non-root backend. This must run
+# after geometry seeding: with capabilities dropped except CHOWN, root cannot
+# create files in a directory it has already handed to the service user.
+if [ "$(id -u)" = "0" ]; then
+  mkdir -p /data
+  chown -R meteolens:meteolens /data
 fi
 
 exec "$@"

@@ -179,6 +179,13 @@ observation-history repository. Imports are limited by date range and file count
 rate-limited between files, and resumable through upserts on
 `station_id + metric + observed_at`.
 
+Stage 19 classifies read-only data routes as public, product renders as
+expensive, and archive imports as administrative. The archive HTTP endpoint is
+disabled without a deployment-local admin token; MeteoLens stores no user
+accounts. Product work is bounded by a cache-aware render gate, while archive
+imports use a one-at-a-time gate plus duplicate-range cooldown. Nginx enforces
+public internet request limits before requests reach the backend.
+
 Stage 10 defines a separate cache policy for large product, radar-like,
 and GRIB files. Detail manifest cache lives under `cache/product_details/`
 (TTL plus a manifest-count cap, refreshed by the scheduler when

@@ -4,6 +4,12 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 19 public-internet security and abuse protection: public,
+  expensive, and administrative route classification; fail-closed admin-token
+  archive backfill; rate/concurrency/duplicate-work controls; nginx request and
+  header safeguards; non-root read-only production containers; restricted,
+  commit-pinned AI workflows; dependency/secret/container scanning; safe-log
+  redaction; `SECURITY.md`; and focused regression tests/documentation.
 - Added Stage 18 reviewed synop station coordinates: bundled a reviewed WMO
   OSCAR/Surface `synop_stations` Point dataset for all 62 current IMGW SYNOP
   station IDs, added a reproducible fetch/import pipeline, documented

@@ -28,7 +28,11 @@ with `frontend/scripts/smoke.mjs`.
 - [ ] Backend image built from `backend/Dockerfile.prod` without dev dependencies.
 - [ ] Reverse proxy and TLS configured (`deploy/caddy/Caddyfile.example` or equivalent).
 - [ ] Production CORS origins set via `METEOLENS_FRONTEND_ORIGIN` (comma-separated if needed).
+- [ ] Production CORS origins are exact public HTTPS origins; no wildcard or localhost origin is used.
 - [ ] Persistent volume mounted at `/data` for SQLite and IMGW cache.
+- [ ] `METEOLENS_ADMIN_TOKEN` is absent (archive import disabled) or stored in the deployment secret manager and tested only through the admin header.
+- [ ] Backend has no host port, runs as UID 10001, has a read-only root filesystem, dropped capabilities, and `no-new-privileges` enabled.
+- [ ] `/data` is the only persistent writable backend path; the `data-init` service completed successfully on a fresh volume.
 - [ ] `restart: unless-stopped` policies active for backend and frontend services.
 - [ ] Backups planned for `/data` (database + cache metadata).
 
@@ -38,6 +42,8 @@ with `frontend/scripts/smoke.mjs`.
 - [ ] Timeout/retry/backoff configured via `METEOLENS_IMGW_*` settings.
 - [ ] Stale cache and source failures remain visible in `/api/v1/sources`.
 - [ ] No direct IMGW calls from the browser.
+- [ ] nginx request-size, timeout, public request-rate, and product-render-rate safeguards are active.
+- [ ] Product render concurrency and archive duplicate-import cooldown retain their Stage 19 defaults unless capacity has been reviewed.
 
 ## Observability
 
@@ -45,6 +51,13 @@ with `frontend/scripts/smoke.mjs`.
 - [ ] `/api/v1/sources` monitored for cache freshness and parser errors.
 - [ ] Container logs reviewed for `meteolens.source` fetch outcomes.
 - [ ] API errors logged under `meteolens.api` with path and error code.
+- [ ] Logs checked to confirm that authorization values, signed URLs, and caller location query strings are not present.
+
+## CI and repository security
+
+- [ ] AI/comment workflows remain restricted to repository owners, members, and collaborators.
+- [ ] Fork pull requests run only read-only CI/security checks and do not receive paid-AI secrets.
+- [ ] Scheduled dependency review, secret scan, and container-image scan results are reviewed.
 
 ## Demo media
 

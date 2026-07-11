@@ -1,4 +1,25 @@
 services:
+  data-init:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.prod
+    user: "0:0"
+    command: ["true"]
+    environment:
+      METEOLENS_GEOMETRY_DIR: /data/geometry
+    volumes:
+      - meteolens-data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
   backend:
     build:
       context: .
@@ -14,6 +35,17 @@ services:
       METEOLENS_REFRESH_ENABLED: "${METEOLENS_REFRESH_ENABLED:-true}"
     volumes:
       - meteolens-data:/data
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
+    user: "10001:10001"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
     healthcheck:
       test:
@@ -38,8 +70,15 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     ports:
-      - "${PUBLIC_HTTP_PORT:-8080}:80"
+      - "${PUBLIC_HTTP_PORT:-8080}:8080"
 
 volumes:
   meteolens-data:
