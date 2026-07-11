@@ -104,7 +104,11 @@ def create_app() -> FastAPI:
             code=code,
             message=message,
         )
-        return JSONResponse(status_code=exc.status_code, content={"detail": detail})
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": detail},
+            headers=exc.headers,
+        )
 
     app.include_router(health_router)
     app.include_router(v1_router)

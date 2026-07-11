@@ -184,7 +184,12 @@ expensive, and archive imports as administrative. The archive HTTP endpoint is
 disabled without a deployment-local admin token; MeteoLens stores no user
 accounts. Product work is bounded by a cache-aware render gate, while archive
 imports use a one-at-a-time gate plus duplicate-range cooldown. Nginx enforces
-public internet request limits before requests reach the backend.
+public internet request limits before requests reach the backend. The documented
+Caddy TLS edge proxies every path through nginx on port 8080; nginx accepts
+forwarded client addresses only from configured trusted proxy ranges so its
+per-IP limit key remains both accurate and resistant to direct-header spoofing.
+The one-shot data initializer temporarily owns `/data` while seeding or merging
+bundled geometry, then returns the volume to backend UID/GID 10001.
 
 Stage 10 defines a separate cache policy for large product, radar-like,
 and GRIB files. Detail manifest cache lives under `cache/product_details/`
@@ -459,6 +464,12 @@ Stage 10 deployment planning must cover large product-file storage, cache
 retention, tile/raster generation storage, and operational limits before any
 radar or GRIB product layer is exposed.
 
+Stage 19 closed the security portion of the gap between a public repository and
+an unrestricted public deployment: endpoint classification, admin
+authentication, rate and concurrency limits, proxy safeguards, non-root
+containers, and workflow restrictions. Stages 20-21 still need to add
+observability, backups, restore tests, and current-main release validation.
+
 ## Observability
 
 MVP should log:
@@ -475,8 +486,11 @@ source availability.
 Stage 7 defined production logging and monitoring requirements for source
 fetches, parser failures, stale cache, and API errors. Stage 11 added a
 user-facing source availability dashboard and data freshness monitor from the
-same underlying metadata. A future observability/performance stage may add
-metrics, tracing, and deployment dashboards.
+same underlying metadata. Stage 20 is planned to add production readiness and
+recovery signals such as readiness semantics, product-render/import metrics,
+resource and disk visibility, backup/restore validation, and incident-response
+runbooks. Stage 25 is planned to add measured performance and scalability
+thresholds.
 
 ## Extension Points
 

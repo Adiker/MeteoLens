@@ -62,6 +62,12 @@ Docker healthcheck should call `/health`.
 - Keep source attribution visible in public deployments.
 - Verify current IMGW-PIB terms before public or commercial use.
 
+Stage 19 endpoint protection, expensive-route limits, workflow restrictions,
+and container hardening are implemented. Unrestricted public deployment is not
+release-ready until Stage 20 observability/backup/recovery and Stage 21
+current-main production validation are complete. See
+`docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md`.
+
 ## Stage 7 Production Target
 
 Stage 7 adds a production deployment path separate from the local development
@@ -99,7 +105,8 @@ from `/usr/share/nginx/html`.
   without overwriting already registered datasets.
 - `frontend/Dockerfile.prod` — multi-stage build + nginx runtime.
 - `deploy/nginx/frontend.conf` — static UI, API proxy, SPA fallback.
-- `deploy/caddy/Caddyfile.example` — TLS termination example in front of the stack.
+- `deploy/caddy/Caddyfile.example` — TLS termination example that sends all
+  traffic through the hardened frontend nginx entrypoint on port 8080.
 - `deploy/.env.production.example` — production environment template.
 - `deploy/PRODUCTION_CHECKLIST.md` — public deployment checklist.
 
@@ -132,6 +139,14 @@ browser configuration.
 The bundled nginx configuration rejects bodies over 64 KB, applies finite
 client/proxy timeouts, restricts public API and product-render request rates,
 and emits CSP, anti-framing, content-type, referrer, and permissions headers.
+Its CSP explicitly permits the configured OpenStreetMap tile host used by the
+map-first UI. The bundled Caddy example never proxies API routes directly to
+the backend, so these controls remain active behind TLS. Nginx trusts forwarded
+client addresses only from loopback and Docker's standard `172.16.0.0/12`
+private bridge range; deployments using a custom proxy network must replace
+that trusted range with their exact proxy subnet before relying on per-IP
+limits.
+
 Product renders are additionally limited in the backend to one concurrent
 render by default and identical simultaneous render requests share the cached
 result. Archive imports permit one active run and rate-limit a recently
@@ -141,9 +156,10 @@ Production Compose exposes only nginx; the backend has no host port. The
 long-running backend runs as UID/GID 10001 with a read-only root filesystem,
 all Linux capabilities dropped, and `no-new-privileges`. `/data` remains the
 intentional writable persistent volume. A short-lived `data-init` service seeds
-and assigns that volume before the backend starts. The nginx service is also
-non-root, read-only, capability-free, and uses a temporary filesystem for its
-runtime files.
+or upgrades bundled geometry, temporarily takes ownership when an existing
+volume belongs to UID 10001, and assigns it back before the backend starts. The
+nginx service is also non-root, read-only, capability-free, and uses a temporary
+filesystem for its runtime files.
 
 Logs exclude authorization headers and request query strings. Source and error
 logging redacts token-like parameters and signed URL material. Do not add exact

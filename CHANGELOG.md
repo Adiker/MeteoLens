@@ -10,6 +10,17 @@ All notable changes to MeteoLens will be documented in this file.
   header safeguards; non-root read-only production containers; restricted,
   commit-pinned AI workflows; dependency/secret/container scanning; safe-log
   redaction; `SECURITY.md`; and focused regression tests/documentation.
+- Fixed Stage 19 review findings: production CSP now permits OSM basemap tiles,
+  geometry upgrades safely reuse UID-10001-owned volumes, Caddy keeps nginx as
+  the single application entrypoint with trusted proxy addresses, and custom
+  API errors preserve authentication and cooldown headers.
+- Added documentation-only planning for Stages 19-26: public-internet security
+  and abuse protection, production observability/backup/recovery,
+  current-main `v0.1.0-alpha` validation, hydro basin geometry, hydrological
+  archive backfill, warning history, performance/scalability hardening, and
+  PDF reports. The plan renumbers the old unimplemented candidate items and
+  originally kept all Stage 19-26 work explicitly planned; Stage 19 is now
+  implemented by the hardening work above.
 - Added Stage 18 reviewed synop station coordinates: bundled a reviewed WMO
   OSCAR/Surface `synop_stations` Point dataset for all 62 current IMGW SYNOP
   station IDs, added a reproducible fetch/import pipeline, documented

@@ -4,6 +4,14 @@ set -eu
 GEOMETRY_DIR="${METEOLENS_GEOMETRY_DIR:-/data/geometry}"
 BUNDLED_GEOMETRY_DIR="${METEOLENS_BUNDLED_GEOMETRY_DIR:-/app/bundled/geometry}"
 
+# A previously initialized volume belongs to the long-running UID 10001.
+# The init container deliberately has CHOWN but not DAC_OVERRIDE, so take
+# ownership before attempting to merge newly bundled geometry files.
+if [ "$(id -u)" = "0" ]; then
+  mkdir -p /data
+  chown -R root:root /data
+fi
+
 if [ -f "$BUNDLED_GEOMETRY_DIR/manifest.json" ]; then
   mkdir -p "$GEOMETRY_DIR"
   if [ ! -f "$GEOMETRY_DIR/manifest.json" ]; then
@@ -69,12 +77,8 @@ PY
   fi
 fi
 
-# The one-shot Compose init service runs this script as root so a fresh named
-# volume becomes writable by the long-running, non-root backend. This must run
-# after geometry seeding: with capabilities dropped except CHOWN, root cannot
-# create files in a directory it has already handed to the service user.
+# Hand the initialized or upgraded volume back to the long-running service.
 if [ "$(id -u)" = "0" ]; then
-  mkdir -p /data
   chown -R meteolens:meteolens /data
 fi
 

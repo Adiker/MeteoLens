@@ -4,6 +4,12 @@ Recorded local development and production smoke tests against **live IMGW-PIB
 data** (no fixtures). Reproduce with the commands below; results were captured
 on Linux with Docker 29.6.1 / Compose 5.1.4.
 
+Historical scope note: this Stage 12 record predates bundled PRG geometry,
+COSMO product rendering, daily SYNOP archive backfill, public API/client/export
+stabilization, and bundled WMO OSCAR/Surface SYNOP station coordinates. It is
+not a substitute for the current-main production validation planned in Stage 21
+before tagging `v0.1.0-alpha`.
+
 ## Port overrides used in this run
 
 The documented default ports were taken by unrelated local services, so the

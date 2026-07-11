@@ -233,8 +233,8 @@ unit metadata where available. Historical observations may also include
 Administrative route. It is disabled unless `METEOLENS_ADMIN_TOKEN` is set.
 When enabled, clients must send the matching value in the
 `X-MeteoLens-Admin-Token` header. Missing configuration returns `403`; missing
-or invalid credentials return `401`. This deployment-local token is not an
-end-user account system.
+or invalid credentials return `401` with `WWW-Authenticate: MeteoLensAdmin`.
+This deployment-local token is not an end-user account system.
 
 Query parameters:
 
@@ -249,6 +249,10 @@ the existing observation-history schema. The endpoint is bounded by
 the browser to fetch IMGW archive files directly. Duplicate records are handled
 by upsert on `station_id + metric + observed_at`; repeated runs refresh import
 metadata without creating duplicate observations.
+
+Only one archive import may run per backend process. A successfully completed
+date range enters the configured duplicate cooldown; repeating it during that
+window returns `429` with `Retry-After`.
 
 Response shape:
 
@@ -511,11 +515,16 @@ Returns cached product detail manifest slices with parsed frame metadata:
   renderable frames — `render_url` and `render_ready` (PNG already cached)
 - `empty_state.code` may be `cache_empty`, `product_unavailable`, or `frame_missing`
 
-### `GET /api/v1/products/{product_id}/render/{file}?variable=t2m`
+### `GET /api/v1/products/{product_id}/render/{filename}?variable=t2m`
 
 Serves the rendered PNG overlay for one renderable frame (`image/png`). The
 first request downloads the source GRIB server-side (can take seconds to tens
 of seconds; downloads are serialized), then the cached PNG is served.
+
+Public deployment note: this endpoint is expensive. Production nginx applies a
+route-specific rate limit, while the backend bounds concurrent renders and
+coalesces identical in-flight work so anonymous traffic cannot multiply large
+downloads or CPU-heavy renders.
 
 - Response headers: `X-MeteoLens-Frame-Time`, `X-MeteoLens-Run-Time`,
   `X-MeteoLens-Retrieved-At`, `X-MeteoLens-Rendered-At`, `X-MeteoLens-Variable`

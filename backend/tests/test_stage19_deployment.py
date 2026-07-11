@@ -9,12 +9,26 @@ def test_nginx_has_request_limits_security_headers_and_product_limit() -> None:
 
     assert "client_max_body_size 64k" in nginx
     assert "Content-Security-Policy" in nginx
+    assert "connect-src 'self' https://tile.openstreetmap.org" in nginx
+    assert "img-src 'self' data: blob: https://tile.openstreetmap.org" in nginx
     assert "X-Content-Type-Options" in nginx
     assert "Referrer-Policy" in nginx
     assert "limit_req zone=public_api" in nginx
     assert "limit_req zone=product_render" in nginx
     assert "proxy_read_timeout 240s" in nginx
     assert "limit_req_zone $binary_remote_addr zone=public_api" in nginx_root
+    assert "set_real_ip_from 172.16.0.0/12" in nginx_root
+    assert "real_ip_header X-Forwarded-For" in nginx_root
+
+
+def test_caddy_keeps_nginx_as_the_single_application_entrypoint() -> None:
+    caddy = (ROOT / "deploy" / "caddy" / "Caddyfile.example").read_text(
+        encoding="utf-8"
+    )
+
+    assert "reverse_proxy frontend:8080" in caddy
+    assert "backend:8000" not in caddy
+    assert "frontend:80\n" not in caddy
 
 
 def test_production_containers_are_restricted_and_backend_is_non_root() -> None:
@@ -29,6 +43,18 @@ def test_production_containers_are_restricted_and_backend_is_non_root() -> None:
     assert "USER meteolens" in backend_dockerfile
     assert "USER nginx" in frontend_dockerfile
     assert "meteolens-data:/data" in compose
+
+
+def test_data_init_takes_volume_ownership_before_geometry_upgrade() -> None:
+    entrypoint = (ROOT / "backend" / "docker-entrypoint.prod.sh").read_text(
+        encoding="utf-8"
+    )
+
+    take_ownership = entrypoint.index("chown -R root:root /data")
+    merge_geometry = entrypoint.index("if [ -f \"$BUNDLED_GEOMETRY_DIR/manifest.json\" ]")
+    hand_back = entrypoint.index("chown -R meteolens:meteolens /data")
+
+    assert take_ownership < merge_geometry < hand_back
 
 
 def test_ai_workflows_require_trusted_comment_authors_and_pin_actions() -> None:

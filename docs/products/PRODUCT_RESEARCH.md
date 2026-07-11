@@ -149,7 +149,7 @@ Implemented now:
 
 - `GET /api/v1/products` — manifest + research classification
 - `GET /api/v1/products/{id}/frames` — frame metadata parsed from cached manifest files
-- `GET /api/v1/products/{id}/render/{file}` — rendered PNG overlay for
+- `GET /api/v1/products/{id}/render/{filename}` — rendered PNG overlay for
   renderable COSMO frames (2 m temperature), server-side download + render
   cache with retention limits
 - `GET /api/v1/map/timeline` — time-aware layer descriptors; COSMO layers

@@ -23,6 +23,11 @@ headers. The backend coalesces duplicate in-flight renders, limits render
 concurrency, permits only one archive import, and applies an archive duplicate
 range cooldown. Product download size remains bounded.
 
+The documented Caddy TLS proxy sends all traffic through nginx rather than
+bypassing these controls. Nginx accepts forwarded client addresses only from
+its configured trusted proxy ranges. If the proxy uses a custom network, narrow
+the trusted range to that network before treating the limits as per-client.
+
 The production backend is non-root, read-only outside `/data`, capability-free,
 and uses `no-new-privileges`. Nginx is likewise non-root and read-only apart
 from its temporary filesystem.

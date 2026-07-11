@@ -82,11 +82,17 @@ def test_admin_backfill_requires_and_accepts_configured_token(monkeypatch, tmp_p
 
     denied = client.post(url)
     allowed = client.post(url, headers={"X-MeteoLens-Admin-Token": "test-admin-token"})
+    duplicate = client.post(
+        url, headers={"X-MeteoLens-Admin-Token": "test-admin-token"}
+    )
 
     assert denied.status_code == 401
     assert denied.json()["detail"]["error"]["code"] == "admin_authentication_required"
+    assert denied.headers["www-authenticate"] == "MeteoLensAdmin"
     assert allowed.status_code == 200
     assert allowed.json()["id"] == "run-1"
+    assert duplicate.status_code == 429
+    assert duplicate.headers["retry-after"] == "60"
 
 
 def test_archive_gate_rejects_concurrent_and_duplicate_imports() -> None:

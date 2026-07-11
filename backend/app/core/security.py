@@ -89,15 +89,14 @@ class ExpensiveOperationGate:
                     headers={"Retry-After": str(cooldown_seconds)},
                 )
             self._active = True
+        succeeded = False
         try:
             yield
-        except Exception:
-            raise
-        else:
-            with self._lock:
-                self._recent_successes[key] = time.monotonic()
+            succeeded = True
         finally:
             with self._lock:
+                if succeeded:
+                    self._recent_successes[key] = time.monotonic()
                 self._active = False
 
     def reset(self) -> None:
