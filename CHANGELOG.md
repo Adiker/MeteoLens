@@ -4,6 +4,10 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Aligned GitHub Actions maintenance with `keyboard-volume-app`: fixed
+  `ubuntu-24.04` runners, current commit-pinned actions, daily Actions
+  Dependabot updates, lockfile-driven `uv` backend CI, and separately guarded
+  Claude automatic-review/verifier workflow scaffolds adapted to MeteoLens.
 - Added Stage 19 public-internet security and abuse protection: public,
   expensive, and administrative route classification; fail-closed admin-token
   archive backfill; rate/concurrency/duplicate-work controls; nginx request and

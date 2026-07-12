@@ -470,6 +470,12 @@ authentication, rate and concurrency limits, proxy safeguards, non-root
 containers, and workflow restrictions. Stages 20-21 still need to add
 observability, backups, restore tests, and current-main release validation.
 
+GitHub Actions use a fixed Ubuntu 24.04 runner and commit-pinned actions. Backend
+CI installs the lockfile-resolved Python 3.12 environment with `uv`, while npm
+continues to use `npm ci` for frontend and Playwright E2E jobs. Path filtering
+keeps the MeteoLens backend/frontend split, and security CI adds dependency,
+secret, and production-backend-image scans. Dependabot checks action pins daily.
+
 ## Observability
 
 MVP should log:

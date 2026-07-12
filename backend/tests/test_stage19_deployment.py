@@ -59,13 +59,26 @@ def test_data_init_takes_volume_ownership_before_geometry_upgrade() -> None:
 
 def test_ai_workflows_require_trusted_comment_authors_and_pin_actions() -> None:
     claude = (ROOT / ".github" / "workflows" / "claude.yml").read_text(encoding="utf-8")
+    automatic_review = (
+        ROOT / ".github" / "workflows" / "claude-code-review.yml"
+    ).read_text(encoding="utf-8")
+    verifier = (ROOT / ".github" / "workflows" / "claude-verifier.yml").read_text(
+        encoding="utf-8"
+    )
     opencode = (ROOT / ".github" / "workflows" / "opencode.yml").read_text(encoding="utf-8")
     ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    dependabot = (ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
 
     assert "author_association" in claude
     assert "author_association" in opencode
     assert "@latest" not in opencode
-    assert "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683" in ci
+    assert "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0" in ci
+    assert "astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990" in ci
+    assert "uv sync --frozen --extra dev" in ci
+    assert "runs-on: ubuntu-24.04" in ci
+    assert "if: false" in automatic_review
+    assert "false &&" in verifier
+    assert 'package-ecosystem: "github-actions"' in dependabot
 
 
 def test_security_workflow_covers_dependencies_secrets_and_container_images() -> None:

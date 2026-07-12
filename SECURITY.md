@@ -37,7 +37,15 @@ from its temporary filesystem.
 AI workflows with paid-service tokens run only when an `OWNER`, `MEMBER`, or
 `COLLABORATOR` invokes them. Fork pull requests receive read-only CI/security
 checks but not those credentials. Workflow permissions are scoped per job and
-actions are commit-pinned where practical.
+actions are commit-pinned. Action pins, the fixed `ubuntu-24.04` runner, and the
+daily GitHub Actions Dependabot configuration follow the repository owner's
+`keyboard-volume-app` maintenance pattern. MeteoLens keeps its own backend,
+frontend, E2E, and production-container jobs rather than copying C++ jobs.
+
+Manual `@claude` and `/oc` workflows remain available only to trusted actors.
+Automatic Claude PR review and Claude verification of Codex reviews are
+scaffolded separately but fail closed behind explicit `if: false` guards until
+their paid execution and OAuth behavior are deliberately revalidated.
 
 `.github/workflows/security.yml` performs pull-request dependency review,
 Gitleaks secret scanning, and a Trivy scan of the production backend image.
