@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sqlite3
 import tarfile
@@ -16,6 +17,8 @@ from app.core.config import get_settings
 from app.db.engine import database_path_from_url
 
 FORMAT_VERSION = 1
+BACKEND_UID = 10001
+BACKEND_GID = 10001
 
 
 def create_backup(*, scope: str, output_dir: Path, offline_confirmed: bool = False) -> Path:
@@ -103,6 +106,8 @@ def restore_backup(*, archive_path: Path, target_dir: Path) -> dict[str, object]
             target_dir / ".operations" / "last-restore.json",
             {"completed_at": datetime.now(UTC).isoformat(), "archive": archive_path.name},
         )
+        if os.geteuid() == 0:
+            _chown_tree(target_dir, uid=BACKEND_UID, gid=BACKEND_GID)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
     return {"archive": archive_path.name, "restored": True, "scope": manifest["scope"]}
@@ -185,6 +190,13 @@ def _verify_manifest(root: Path, manifest: dict[str, object]) -> None:
 def _write_state(path: Path, payload: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _chown_tree(root: Path, *, uid: int, gid: int) -> None:
+    """Hand a restored volume back to the non-root production backend."""
+    os.chown(root, uid, gid)
+    for path in root.rglob("*"):
+        os.chown(path, uid, gid, follow_symlinks=False)
 
 
 def main() -> None:

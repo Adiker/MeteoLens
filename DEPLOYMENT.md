@@ -254,7 +254,8 @@ docker compose --profile ops --env-file .env.production -f docker-compose.prod.y
 ```
 
 The tool rejects unsafe archives, path traversal, checksum failures, corrupt
-SQLite, and nonempty targets. After restore, start the stack and verify
+SQLite, and nonempty targets. A root-run restore hands the completed data tree
+back to the backend runtime user (`10001:10001`). After restore, start the stack and verify
 `/health/ready`, `/api/v1/sources`, `python -m app.geometry.import_cli status
 --geometry-dir /data/geometry`, and a cached station-history request. Before an
 upgrade, create an essential backup and retain the prior image/environment; on

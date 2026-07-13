@@ -14,6 +14,9 @@ Date: 2026-07-13 (local Docker recovery smoke test)
 - `data-ops verify` succeeded; restore into the empty target succeeded;
   `PRAGMA integrity_check` returned `ok`; the bundled geometry manifest loaded
   successfully after restore.
+- Review follow-up repeated the fresh-volume restore with the production image;
+  the restored database and cache were writable by the backend's non-root
+  `10001:10001` user.
 - Isolated production Compose smoke test also passed with startup refresh
   disabled: `/health/live` returned `ok`, `/health/ready` returned expected
   `degraded` for an empty cache, Prometheus scraped `backend:8000` as `up=1`,

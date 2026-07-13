@@ -1,10 +1,11 @@
 import json
+import os
 
 import pytest
 
 from app.core.config import Settings
 from app.db.engine import init_db
-from app.operations.backup import create_backup, restore_backup, verify_backup
+from app.operations.backup import _chown_tree, create_backup, restore_backup, verify_backup
 from tests.settings_helpers import apply_test_settings
 
 
@@ -29,6 +30,13 @@ def test_essential_backup_restores_sqlite_cache_and_geometry(monkeypatch, tmp_pa
     assert verify_backup(archive)["verified"] is True
 
     target = tmp_path / "restored"
+    chown_calls: list[tuple[object, int, int, bool]] = []
+
+    def fake_chown(path, uid, gid, *, follow_symlinks=True):
+        chown_calls.append((path, uid, gid, follow_symlinks))
+
+    monkeypatch.setattr(os, "geteuid", lambda: 0)
+    monkeypatch.setattr(os, "chown", fake_chown)
     result = restore_backup(archive_path=archive, target_dir=target)
 
     assert result["restored"] is True
@@ -36,6 +44,8 @@ def test_essential_backup_restores_sqlite_cache_and_geometry(monkeypatch, tmp_pa
     assert (target / "cache" / "synop.json").exists()
     assert (target / "geometry" / "manifest.json").exists()
     assert not (target / "products").exists()
+    assert (target, 10001, 10001, True) in chown_calls
+    assert (target / "meteolens.sqlite3", 10001, 10001, False) in chown_calls
 
 
 def test_full_backup_requires_explicit_offline_confirmation(monkeypatch, tmp_path) -> None:
@@ -57,3 +67,20 @@ def test_backup_verification_rejects_tampered_manifest(monkeypatch, tmp_path) ->
     archive.write_bytes(b"not a tar archive")
     with pytest.raises((ValueError, OSError, EOFError, json.JSONDecodeError)):
         verify_backup(archive)
+
+
+def test_chown_tree_assigns_restored_files_to_backend_uid(monkeypatch, tmp_path) -> None:
+    restored = tmp_path / "restored"
+    restored.mkdir()
+    (restored / "meteolens.sqlite3").write_bytes(b"db")
+    calls: list[tuple[object, int, int, bool]] = []
+
+    def fake_chown(path, uid, gid, *, follow_symlinks=True):
+        calls.append((path, uid, gid, follow_symlinks))
+
+    monkeypatch.setattr(os, "chown", fake_chown)
+
+    _chown_tree(restored, uid=10001, gid=10001)
+
+    assert (restored, 10001, 10001, True) in calls
+    assert (restored / "meteolens.sqlite3", 10001, 10001, False) in calls
