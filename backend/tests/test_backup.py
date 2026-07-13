@@ -1,5 +1,6 @@
 import json
 import os
+import tarfile
 
 import pytest
 
@@ -67,6 +68,30 @@ def test_backup_verification_rejects_tampered_manifest(monkeypatch, tmp_path) ->
     archive.write_bytes(b"not a tar archive")
     with pytest.raises((ValueError, OSError, EOFError, json.JSONDecodeError)):
         verify_backup(archive)
+
+
+def test_backup_verification_rejects_unlisted_files(monkeypatch, tmp_path) -> None:
+    settings = _settings(tmp_path)
+    apply_test_settings(monkeypatch, settings)
+    init_db()
+    archive = create_backup(scope="essential", output_dir=tmp_path / "backups")
+    extracted = tmp_path / "extracted"
+    with tarfile.open(archive, "r:gz") as source:
+        source.extractall(extracted, filter="data")
+    unexpected = extracted / "data" / ".operations" / "unchecked.json"
+    unexpected.parent.mkdir(parents=True, exist_ok=True)
+    unexpected.write_text('{"unchecked":true}', encoding="utf-8")
+    tampered = tmp_path / "tampered.tar.gz"
+    with tarfile.open(tampered, "w:gz") as destination:
+        destination.add(extracted / "manifest.json", arcname="manifest.json")
+        destination.add(extracted / "data", arcname="data")
+
+    with pytest.raises(ValueError, match="unlisted files"):
+        verify_backup(tampered)
+    target = tmp_path / "rejected-restore"
+    with pytest.raises(ValueError, match="unlisted files"):
+        restore_backup(archive_path=tampered, target_dir=target)
+    assert not any(target.iterdir())
 
 
 def test_chown_tree_assigns_restored_files_to_backend_uid(monkeypatch, tmp_path) -> None:

@@ -179,12 +179,29 @@ def _verify_manifest(root: Path, manifest: dict[str, object]) -> None:
     files = manifest.get("files")
     if not isinstance(files, list):
         raise ValueError("backup manifest has no file inventory")
+    resolved_root = root.resolve()
+    expected_files = {"manifest.json"}
     for item in files:
         if not isinstance(item, dict):
             raise ValueError("backup manifest contains an invalid file entry")
-        path = root / str(item.get("path", ""))
+        raw_path = item.get("path")
+        if not isinstance(raw_path, str) or not raw_path or Path(raw_path).is_absolute():
+            raise ValueError("backup manifest contains an invalid file entry")
+        path = (root / raw_path).resolve()
+        if not path.is_relative_to(resolved_root):
+            raise ValueError("backup manifest contains an invalid file entry")
+        relative_path = path.relative_to(resolved_root).as_posix()
+        if relative_path in expected_files:
+            raise ValueError("backup manifest contains a duplicate file entry")
+        expected_files.add(relative_path)
         if not path.is_file() or _sha256(path) != item.get("sha256"):
             raise ValueError(f"backup checksum mismatch: {item.get('path')}")
+    actual_files = {
+        path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()
+    }
+    unlisted_files = actual_files - expected_files
+    if unlisted_files:
+        raise ValueError(f"backup contains unlisted files: {', '.join(sorted(unlisted_files))}")
 
 
 def _write_state(path: Path, payload: dict[str, object]) -> None:
