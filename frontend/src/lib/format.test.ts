@@ -26,6 +26,12 @@ describe("format helpers", () => {
 
   it("labels known metrics and falls back for unknown ones", () => {
     expect(metricLabel("temperature")).toBe("Temperatura");
+    expect(metricLabel("air_temperature")).toBe("Temperatura powietrza");
+    expect(metricLabel("ground_temperature")).toBe("Temperatura przy gruncie");
+    expect(metricLabel("wind_average_speed")).toBe("Średnia prędkość wiatru");
+    expect(metricLabel("wind_max_speed")).toBe("Maksymalna prędkość wiatru");
+    expect(metricLabel("wind_gust_10min")).toBe("Poryw wiatru (10 min)");
+    expect(metricLabel("precipitation_10min")).toBe("Opad (10 min)");
     expect(metricLabel("custom_metric")).toBe("custom metric");
   });
 

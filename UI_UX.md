@@ -52,7 +52,8 @@ Station panel:
 - source ID,
 - coordinates if available,
 - reviewed coordinate source when coordinates come from a geometry dataset,
-- latest metrics,
+- latest metric snapshot with Polish labels (historical points belong in the
+  chart instead of repeating rows in the measurement list),
 - measurement timestamp,
 - retrieval timestamp,
 - data delay,

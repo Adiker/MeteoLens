@@ -157,6 +157,82 @@ describe("DetailsPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows a localized current snapshot without flattening history into duplicate rows", async () => {
+    const meteoStation: StationResponse = {
+      ...stationResponse,
+      station: {
+        ...stationResponse.station,
+        id: "meteo:252170210",
+        source_id: "252170210",
+        source_key: "meteo",
+        station_type: "meteo",
+        name: "Kórnik",
+        observations: [
+          {
+            metric: "ground_temperature",
+            value: 24.5,
+            unit: "°C",
+            observed_at: "2026-07-13T11:10:00+02:00",
+            raw_field: "temperatura_gruntu",
+            missing: false,
+          },
+          {
+            metric: "air_temperature",
+            value: 21.7,
+            unit: "°C",
+            observed_at: "2026-07-13T11:10:00+02:00",
+            raw_field: "temperatura_powietrza",
+            missing: false,
+          },
+        ],
+      },
+    };
+    const meteoHistory: ObservationResponse = {
+      ...observationsResponse,
+      station_id: meteoStation.station.id,
+      series_kind: "history",
+      observations: [
+        ...meteoStation.station.observations,
+        {
+          metric: "ground_temperature",
+          value: 30.3,
+          unit: "°C",
+          observed_at: "2026-07-13T10:10:00+02:00",
+          raw_field: "temperatura_gruntu",
+          missing: false,
+        },
+        {
+          metric: "air_temperature",
+          value: 25.5,
+          unit: "°C",
+          observed_at: "2026-07-13T10:10:00+02:00",
+          raw_field: "temperatura_powietrza",
+          missing: false,
+        },
+      ],
+    };
+
+    mockFetchByPath({
+      "/stations/meteo%3A252170210/observations": { status: 200, body: meteoHistory },
+      "/stations/meteo%3A252170210": { status: 200, body: meteoStation },
+    });
+    useAppStore.setState({
+      selection: { kind: "station", id: "meteo:252170210" },
+      mode: "simple",
+    });
+
+    renderWithClient();
+
+    expect(await screen.findByText("Kórnik")).toBeInTheDocument();
+    expect(await screen.findByText("Seria z odświeżeń live IMGW-PIB")).toBeInTheDocument();
+    expect(screen.getAllByText("Temperatura przy gruncie")).toHaveLength(1);
+    expect(screen.getAllByText("Temperatura powietrza")).toHaveLength(1);
+    expect(screen.getByText("24,5 °C")).toBeInTheDocument();
+    expect(screen.getByText("21,7 °C")).toBeInTheDocument();
+    expect(screen.queryByText("30,3 °C")).not.toBeInTheDocument();
+    expect(screen.queryByText("25,5 °C")).not.toBeInTheDocument();
+  });
+
   it("shows warning details with the missing-geometry notice and attribution", async () => {
     mockFetchByPath({
       "/warnings/warningsmeteo%3ASk1": { status: 200, body: warningResponse },

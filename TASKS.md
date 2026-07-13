@@ -101,6 +101,8 @@ filters wait for area geometry and archive series.
 - [x] Add basic E2E tests.
 - [x] Verify attribution in UI and exports.
 - [x] Verify missing values are not converted to zero.
+- [x] Keep station measurement lists localized and limited to the latest
+  snapshot while the chart uses observation history.
 - [x] Document known limitations before MVP release.
 - [x] Wire live IMGW startup cache refresh for Docker Compose and add refresh
   tests.
