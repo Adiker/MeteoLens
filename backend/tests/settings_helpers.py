@@ -8,5 +8,6 @@ def apply_test_settings(monkeypatch, settings: Settings) -> None:
     monkeypatch.setattr("app.core.config.get_settings", lambda: settings)
     monkeypatch.setattr("app.db.engine.get_settings", lambda: settings)
     monkeypatch.setattr("app.api.v1.get_settings", lambda: settings)
+    monkeypatch.setattr("app.core.security.get_settings", lambda: settings)
     monkeypatch.setattr("app.main.get_settings", lambda: settings)
     monkeypatch.setattr("app.geometry.loader.get_settings", lambda: settings)

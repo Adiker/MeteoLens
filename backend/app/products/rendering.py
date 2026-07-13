@@ -11,6 +11,7 @@ import json
 import logging
 import re
 import threading
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -27,9 +28,33 @@ from app.products.rotated_grid import RotatedGridSpec, resample_to_mercator, tru
 
 logger = logging.getLogger(__name__)
 
-# Serialize downloads+renders: source files are ~160 MB, so concurrent
-# render requests must not multiply bandwidth or memory use.
-_RENDER_LOCK = threading.Lock()
+class _RenderGate:
+    """Bound product rendering and coalesce concurrent requests for one frame."""
+
+    def __init__(self) -> None:
+        self._condition = threading.Condition()
+        self._active = 0
+        self._keys: set[str] = set()
+
+    @contextmanager
+    def acquire(self, *, key: str, limit: int):
+        with self._condition:
+            while key in self._keys or self._active >= limit:
+                self._condition.wait()
+            self._keys.add(key)
+            self._active += 1
+        try:
+            yield
+        finally:
+            with self._condition:
+                self._keys.remove(key)
+                self._active -= 1
+                self._condition.notify_all()
+
+
+# Product files can be ~160 MB. The gate prevents both duplicate upstream
+# downloads for a frame and unbounded decode/render memory use.
+_RENDER_GATE = _RenderGate()
 
 _LEAD_PATTERN = re.compile(r"_lfff(\d{2})(\d{2})(\d{2})(\d{2})(c?)$")
 _SAFE_COMPONENT = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -237,7 +262,11 @@ def render_frame(
     if png_path.exists() and metadata is not None:
         return RenderResult(png_path=png_path, metadata=metadata, from_cache=True)
 
-    with _RENDER_LOCK:
+    render_key = f"{product_id}:{filename}:{variable.key}"
+    with _RENDER_GATE.acquire(
+        key=render_key,
+        limit=settings.product_render_max_concurrent,
+    ):
         metadata = read_render_metadata(png_path)
         if png_path.exists() and metadata is not None:
             return RenderResult(png_path=png_path, metadata=metadata, from_cache=True)

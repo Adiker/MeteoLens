@@ -13,7 +13,7 @@ met.
 
 ## Before tagging
 
-- [ ] Stage 19 public-internet security and abuse-protection acceptance
+- [x] Stage 19 public-internet security and abuse-protection acceptance
   criteria are met.
 - [ ] Stage 20 production observability, backup, and recovery acceptance
   criteria are met.

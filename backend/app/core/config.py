@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     version: str = "0.1.0"
     imgw_base_url: AnyUrl = "https://danepubliczne.imgw.pl"
     frontend_origin: str = "http://localhost:5173"
+    admin_token: str | None = None
     database_url: str = "sqlite:///../data/meteolens.sqlite3"
     cache_dir: Path = Path("../data/cache")
     geometry_dir: Path = Path("../data/geometry")
@@ -38,17 +39,34 @@ class Settings(BaseSettings):
     product_render_lead_step_hours: int = Field(default=3, ge=1)
     product_render_width: int = Field(default=700, ge=100, le=2000)
     product_render_prefetch_frames: int = Field(default=0, ge=0)
+    product_render_max_concurrent: int = Field(default=1, ge=1, le=4)
     observation_retention_days: int = Field(default=30, ge=1)
     archive_backfill_max_days: int = Field(default=31, ge=1, le=366)
     archive_backfill_max_files: int = Field(default=12, ge=1, le=500)
     archive_backfill_rate_limit_seconds: float = Field(default=0.5, ge=0)
+    archive_backfill_cooldown_seconds: int = Field(default=900, ge=0, le=86_400)
     imgw_timeout_seconds: float = Field(default=20.0, gt=0)
     imgw_max_retries: int = Field(default=2, ge=0)
     imgw_retry_delay_seconds: float = Field(default=0.25, ge=0)
 
     @property
     def frontend_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.frontend_origin.split(",") if origin.strip()]
+        # A direct production backend must not accidentally grant browser access
+        # to a development or wildcard origin. Same-origin nginx traffic does not
+        # require CORS at all, so an empty list is the safe default.
+        if self.env.lower() in {"production", "prod"}:
+            return [
+                origin
+                for origin in origins
+                if origin.startswith("https://")
+            ]
+        return [origin for origin in origins if origin != "*"]
+
+    @property
+    def admin_operations_enabled(self) -> bool:
+        """Whether administrative HTTP operations are deliberately enabled."""
+        return bool(self.admin_token)
 
     @property
     def product_refresh_id_list(self) -> list[str]:

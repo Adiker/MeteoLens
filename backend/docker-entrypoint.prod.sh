@@ -4,10 +4,21 @@ set -eu
 GEOMETRY_DIR="${METEOLENS_GEOMETRY_DIR:-/data/geometry}"
 BUNDLED_GEOMETRY_DIR="${METEOLENS_BUNDLED_GEOMETRY_DIR:-/app/bundled/geometry}"
 
+# A previously initialized volume belongs to the long-running UID 10001.
+# The init container deliberately has CHOWN but not DAC_OVERRIDE, so take
+# ownership before attempting to merge newly bundled geometry files.
+if [ "$(id -u)" = "0" ]; then
+  mkdir -p /data
+  chown -R root:root /data
+fi
+
 if [ -f "$BUNDLED_GEOMETRY_DIR/manifest.json" ]; then
   mkdir -p "$GEOMETRY_DIR"
   if [ ! -f "$GEOMETRY_DIR/manifest.json" ]; then
-    cp -a "$BUNDLED_GEOMETRY_DIR/." "$GEOMETRY_DIR/"
+    # Do not preserve owner/timestamp metadata here: the init container drops
+    # all capabilities except CHOWN, and this runtime data is subsequently
+    # assigned to the non-root application user.
+    cp -R "$BUNDLED_GEOMETRY_DIR/." "$GEOMETRY_DIR/"
     echo "Seeded reviewed geometry datasets into $GEOMETRY_DIR"
   else
     python - <<'PY'
@@ -64,6 +75,11 @@ if added:
     )
 PY
   fi
+fi
+
+# Hand the initialized or upgraded volume back to the long-running service.
+if [ "$(id -u)" = "0" ]; then
+  chown -R meteolens:meteolens /data
 fi
 
 exec "$@"

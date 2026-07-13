@@ -62,12 +62,10 @@ Docker healthcheck should call `/health`.
 - Keep source attribution visible in public deployments.
 - Verify current IMGW-PIB terms before public or commercial use.
 
-Unrestricted public deployment is not release-ready until the Stage 19-21 plan
-is implemented and validated. The public repository can be reviewed and run
-locally, but internet-exposed instances still need endpoint protection,
-expensive-route limits, workflow restrictions, container hardening,
-observability, backup/restore verification, and a fresh current-main production
-smoke-test record. See
+Stage 19 endpoint protection, expensive-route limits, workflow restrictions,
+and container hardening are implemented. Unrestricted public deployment is not
+release-ready until Stage 20 observability/backup/recovery and Stage 21
+current-main production validation are complete. See
 `docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md`.
 
 ## Stage 7 Production Target
@@ -107,7 +105,8 @@ from `/usr/share/nginx/html`.
   without overwriting already registered datasets.
 - `frontend/Dockerfile.prod` — multi-stage build + nginx runtime.
 - `deploy/nginx/frontend.conf` — static UI, API proxy, SPA fallback.
-- `deploy/caddy/Caddyfile.example` — TLS termination example in front of the stack.
+- `deploy/caddy/Caddyfile.example` — TLS termination example that sends all
+  traffic through the hardened frontend nginx entrypoint on port 8080.
 - `deploy/.env.production.example` — production environment template.
 - `deploy/PRODUCTION_CHECKLIST.md` — public deployment checklist.
 
@@ -122,6 +121,50 @@ METEOLENS_FRONTEND_ORIGIN=https://meteolens.example.com,https://www.meteolens.ex
 
 When nginx serves the UI and proxies `/api` on the same origin, CORS is mainly
 relevant for direct backend access during diagnostics.
+
+In production, a missing, wildcard, or `localhost` frontend-origin setting
+produces no CORS allow-list. This is intentional fail-closed behavior; set only
+the exact HTTPS browser origins that need direct backend access. MeteoLens does
+not use browser credentials, so credentialed CORS is disabled.
+
+### Public-internet security (Stage 19)
+
+Production route categories are public (read-only data, exports, and metadata),
+expensive (product renders), and administrative (archive backfill). Archive
+backfill is disabled by default. To deliberately enable it, store a high-entropy
+`METEOLENS_ADMIN_TOKEN` outside git and supply it in the
+`X-MeteoLens-Admin-Token` header. Do not put this value in the frontend or
+browser configuration.
+
+The bundled nginx configuration rejects bodies over 64 KB, applies finite
+client/proxy timeouts, restricts public API and product-render request rates,
+and emits CSP, anti-framing, content-type, referrer, and permissions headers.
+Its CSP explicitly permits the configured OpenStreetMap tile host used by the
+map-first UI. The bundled Caddy example never proxies API routes directly to
+the backend, so these controls remain active behind TLS. Nginx trusts forwarded
+client addresses only from loopback and Docker's standard `172.16.0.0/12`
+private bridge range; deployments using a custom proxy network must replace
+that trusted range with their exact proxy subnet before relying on per-IP
+limits.
+
+Product renders are additionally limited in the backend to one concurrent
+render by default and identical simultaneous render requests share the cached
+result. Archive imports permit one active run and rate-limit a recently
+completed identical range.
+
+Production Compose exposes only nginx; the backend has no host port. The
+long-running backend runs as UID/GID 10001 with a read-only root filesystem,
+all Linux capabilities dropped, and `no-new-privileges`. `/data` remains the
+intentional writable persistent volume. A short-lived `data-init` service seeds
+or upgrades bundled geometry, temporarily takes ownership when an existing
+volume belongs to UID 10001, and assigns it back before the backend starts. The
+nginx service is also non-root, read-only, capability-free, and uses a temporary
+filesystem for its runtime files.
+
+Logs exclude authorization headers and request query strings. Source and error
+logging redacts token-like parameters and signed URL material. Do not add exact
+caller coordinates to application logs; use aggregate operational metrics when
+location diagnostics are necessary.
 
 ### Reviewed geometry data
 

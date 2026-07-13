@@ -25,17 +25,15 @@ missing-field metadata, and processed-data notices.
 
 ## Responsible Use
 
-- Current public-read APIs are alpha APIs. Before unrestricted public
-  deployment, Stage 19 must classify routes as public, expensive, or
-  administrative and turn that classification into authentication, rate-limit,
-  concurrency, proxy, and workflow protections.
-- Deployed instances should rate-limit public traffic at the reverse proxy.
-  Suggested starting point for unauthenticated public demos: 60-120 requests per
-  minute per IP, with lower limits for product render downloads and archive
-  backfill.
+- Route categories are deliberately small and deployment-visible: **public**
+  (read-only health/data/map/export/product-metadata routes), **expensive**
+  (product rendering), and **administrative** (archive backfill).
+- Production nginx limits public API traffic to 60 requests/minute/IP (burst
+  30) and product renders to 10 requests/minute/IP (burst 2).
 - Public users should call MeteoLens, not IMGW archive/product files directly.
-  Archive backfill and product rendering are server-side and bounded to protect
-  upstream services.
+  Product rendering has a configurable one-render default concurrency bound and
+  coalesces simultaneous identical requests. Archive import is single-concurrent
+  and suppresses recently completed duplicate date ranges.
 - MeteoLens local alerts, dashboards, and warning/station comparisons are not
   official IMGW-PIB warnings and must keep the disclaimer visible in UI and
   downstream integrations.
@@ -232,6 +230,12 @@ unit metadata where available. Historical observations may also include
 
 `POST /api/v1/archive/backfill/synop-daily`
 
+Administrative route. It is disabled unless `METEOLENS_ADMIN_TOKEN` is set.
+When enabled, clients must send the matching value in the
+`X-MeteoLens-Admin-Token` header. Missing configuration returns `403`; missing
+or invalid credentials return `401` with `WWW-Authenticate: MeteoLensAdmin`.
+This deployment-local token is not an end-user account system.
+
 Query parameters:
 
 - `from`: required date (`YYYY-MM-DD`), inclusive.
@@ -246,9 +250,9 @@ the browser to fetch IMGW archive files directly. Duplicate records are handled
 by upsert on `station_id + metric + observed_at`; repeated runs refresh import
 metadata without creating duplicate observations.
 
-Public deployment note: this endpoint is administrative. Stage 19 must protect
-or disable it by default for internet-exposed deployments before the alpha
-release is tagged.
+Only one archive import may run per backend process. A successfully completed
+date range enters the configured duplicate cooldown; repeating it during that
+window returns `429` with `Retry-After`.
 
 Response shape:
 
@@ -517,9 +521,10 @@ Serves the rendered PNG overlay for one renderable frame (`image/png`). The
 first request downloads the source GRIB server-side (can take seconds to tens
 of seconds; downloads are serialized), then the cached PNG is served.
 
-Public deployment note: this endpoint is expensive. Stage 19 must add
-route-specific rate limits, concurrency limits, and a safe execution model so
-anonymous traffic cannot repeatedly force large downloads or CPU-heavy renders.
+Public deployment note: this endpoint is expensive. Production nginx applies a
+route-specific rate limit, while the backend bounds concurrent renders and
+coalesces identical in-flight work so anonymous traffic cannot multiply large
+downloads or CPU-heavy renders.
 
 - Response headers: `X-MeteoLens-Frame-Time`, `X-MeteoLens-Run-Time`,
   `X-MeteoLens-Retrieved-At`, `X-MeteoLens-Rendered-At`, `X-MeteoLens-Variable`

@@ -18,11 +18,11 @@ PWA/power-user features, public-alpha release polish, the reviewed geometry
 dataset MVP with bundled PRG voivodeship/county polygons, and the product
 rendering MVP with the COSMO 2 m temperature map overlay, bounded SYNOP daily
 archive backfill, the public API/SDK/export stabilization pass, documentation
-status stabilization, and reviewed WMO OSCAR/Surface synop station
-coordinates) are implemented. Stages 19-26 are planned only and prioritize
-public-internet hardening, operations, fresh release validation, hydrology,
-warning history, performance, and PDF reports. See [TASKS.md](TASKS.md) for
-the full staged backlog.
+status stabilization, reviewed WMO OSCAR/Surface synop station coordinates,
+and Stage 19 public-internet security hardening) are implemented. Stages 20-26
+remain planned and prioritize operations, fresh release validation, hydrology,
+warning history, performance, and PDF reports. See [TASKS.md](TASKS.md) for the
+full staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.

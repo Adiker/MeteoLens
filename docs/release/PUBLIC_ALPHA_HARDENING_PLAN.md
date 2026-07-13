@@ -77,11 +77,11 @@ deployments:
 - future archive backfill endpoints
 - future manual refresh, import, or cache-management endpoints
 
-Stage 19 should turn this classification into testable backend/proxy behavior.
+Stage 19 turned this classification into tested backend/proxy behavior.
 
 ## Stage 19-21 Sequence
 
-Stage 19 - Public Internet Security And Abuse Protection:
+Stage 19 - Public Internet Security And Abuse Protection (implemented):
 
 - protect or disable administrative imports by default,
 - add admin authentication for administrative operations,
@@ -130,9 +130,9 @@ Stage 21 - Current-Main Production Validation And `v0.1.0-alpha` Release:
 
 ## Rollout Strategy
 
-1. Land Stage 19 as its own implementation PR with tests for endpoint
-   protection, expensive-route bounds, workflow restrictions, proxy safeguards,
-   and container hardening.
+1. Stage 19 landed endpoint protection, expensive-route bounds, workflow
+   restrictions, proxy safeguards, and container hardening with regression
+   tests.
 2. Land Stage 20 as its own implementation PR with monitoring, logging,
    resource-limit, backup, restore, and runbook updates.
 3. Run Stage 21 validation from current `main` after Stages 19-20 merge.

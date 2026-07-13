@@ -111,7 +111,7 @@ reviewed WMO OSCAR/Surface coordinate dataset for current IMGW SYNOP stations.
 
 ## Implemented And Planned Stages
 
-Stages 0-18 are implemented and documented. Stages 19-26 are planned only:
+Stages 0-19 are implemented and documented. Stages 20-26 are planned only:
 their tasks remain unchecked in `TASKS.md` until matching implementation, docs,
 and tests land.
 
@@ -123,7 +123,7 @@ pass against the current `main` branch. This sequence keeps the first prerelease
 honest: the repository can stay public, but unrestricted public deployment
 should wait for the following stages.
 
-- Stage 19 - Public internet security and abuse protection: classify endpoints
+- Stage 19 - Public internet security and abuse protection (done): classify endpoints
   as public, expensive, or administrative; protect or disable administrative
   archive imports by default; bound expensive product rendering; harden nginx,
   CORS, security headers, production containers, and GitHub AI workflows; add

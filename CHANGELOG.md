@@ -4,12 +4,27 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Aligned GitHub Actions maintenance with `keyboard-volume-app`: fixed
+  `ubuntu-24.04` runners, current commit-pinned actions, daily Actions
+  Dependabot updates, lockfile-driven `uv` backend CI, and separately guarded
+  Claude automatic-review/verifier workflow scaffolds adapted to MeteoLens.
+- Added Stage 19 public-internet security and abuse protection: public,
+  expensive, and administrative route classification; fail-closed admin-token
+  archive backfill; rate/concurrency/duplicate-work controls; nginx request and
+  header safeguards; non-root read-only production containers; restricted,
+  commit-pinned AI workflows; dependency/secret/container scanning; safe-log
+  redaction; `SECURITY.md`; and focused regression tests/documentation.
+- Fixed Stage 19 review findings: production CSP now permits OSM basemap tiles,
+  geometry upgrades safely reuse UID-10001-owned volumes, Caddy keeps nginx as
+  the single application entrypoint with trusted proxy addresses, and custom
+  API errors preserve authentication and cooldown headers.
 - Added documentation-only planning for Stages 19-26: public-internet security
   and abuse protection, production observability/backup/recovery,
   current-main `v0.1.0-alpha` validation, hydro basin geometry, hydrological
   archive backfill, warning history, performance/scalability hardening, and
   PDF reports. The plan renumbers the old unimplemented candidate items and
-  keeps all Stage 19-26 work explicitly planned, not implemented.
+  originally kept all Stage 19-26 work explicitly planned; Stage 19 is now
+  implemented by the hardening work above.
 - Added Stage 18 reviewed synop station coordinates: bundled a reviewed WMO
   OSCAR/Surface `synop_stations` Point dataset for all 62 current IMGW SYNOP
   station IDs, added a reproducible fetch/import pipeline, documented

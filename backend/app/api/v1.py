@@ -5,12 +5,13 @@ from math import asin, cos, radians, sin, sqrt
 from typing import Annotated, Any, Literal, NoReturn
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from app.core.config import get_settings
+from app.core.security import archive_backfill_gate, require_admin
 from app.geometry.loader import get_geometry_store
 from app.geometry.spatial import (
     resolve_warning_geometries,
@@ -378,13 +379,20 @@ def list_sources() -> SourcesResponse:
 def backfill_synop_daily_archive(
     observed_from: Annotated[date, Query(alias="from")],
     observed_to: Annotated[date, Query(alias="to")],
+    _: Annotated[None, Depends(require_admin)] = None,
 ) -> ArchiveBackfillResponse:
     """Import a bounded server-side slice of public IMGW daily SYNOP archives."""
+    settings = get_settings()
     try:
-        result = SynopDailyArchiveBackfiller(get_settings()).run(
-            observed_from=observed_from,
-            observed_to=observed_to,
-        )
+        key = f"synop-daily:{observed_from.isoformat()}:{observed_to.isoformat()}"
+        with archive_backfill_gate.acquire(
+            key=key,
+            cooldown_seconds=settings.archive_backfill_cooldown_seconds,
+        ):
+            result = SynopDailyArchiveBackfiller(settings).run(
+                observed_from=observed_from,
+                observed_to=observed_to,
+            )
     except ArchiveBackfillError as exc:
         raise HTTPException(
             status_code=422,

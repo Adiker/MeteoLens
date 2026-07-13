@@ -540,76 +540,31 @@ Acceptance criteria:
 
 ## Stage 19 - Public Internet Security And Abuse Protection
 
-Goal: make an internet-exposed MeteoLens instance resistant to trivial abuse and
-reduce the security impact of compromised or malformed requests.
+Goal: safely expose Stage 0-18 functionality to public internet traffic.
 
-Implementation tasks:
-
-- [ ] Classify API routes as public, expensive, or administrative.
-- [ ] Protect or disable the archive-backfill endpoint by default in public
-  deployments.
-- [ ] Define and implement an admin authentication mechanism for administrative
-  operations.
-- [ ] Add request and per-IP rate limiting at the proxy or backend boundary.
-- [ ] Add lower limits for expensive product-render requests.
-- [ ] Limit concurrent downloads, renders, and archive imports.
-- [ ] Define queueing, cache-only serving, pre-rendering, or another safe
-  execution model for large COSMO frames.
-- [ ] Prevent repeated public requests from forcing unnecessary approximately
-  160 MB downloads or CPU-heavy renders.
-- [ ] Add nginx request, connection, timeout, and response-size safeguards.
-- [ ] Review CORS behavior for same-origin production and diagnostic access.
-- [ ] Add recommended HTTP security headers.
-- [ ] Run the backend production container as a non-root user.
-- [ ] Drop unnecessary Linux capabilities in production Compose.
-- [ ] Enable `no-new-privileges` for production containers.
-- [ ] Evaluate a read-only root filesystem while preserving writable `/data`.
-- [ ] Restrict Claude and OpenCode workflows to trusted actors or repository
-  collaborators.
-- [ ] Prevent arbitrary public comments from consuming paid AI workflow
-  credentials.
-- [ ] Pin third-party GitHub Actions to stable versions or commit SHAs.
-- [ ] Add dependency, secret, and container scanning.
-- [ ] Add or plan a `SECURITY.md` vulnerability-reporting policy.
-- [ ] Ensure logs do not expose secrets or unnecessary sensitive location data.
-
-Documentation tasks:
-
-- [ ] Document public, expensive, and administrative endpoint categories.
-- [ ] Document geolocation and request-log privacy expectations.
-- [ ] Update `API_CONTRACT.md` with public-use and admin-operation guidance.
-- [ ] Update `DEPLOYMENT.md` and `deploy/PRODUCTION_CHECKLIST.md` with the
-  selected hardening controls.
-- [ ] Update workflow documentation with trusted-actor restrictions.
-- [ ] Keep security limitations explicit.
-
-Test tasks:
-
-- [ ] Add backend tests for admin-only archive imports.
-- [ ] Add backend or proxy tests for rate limits and render concurrency limits.
-- [ ] Add tests proving expensive rendering cannot be trivially multiplied.
-- [ ] Add nginx configuration tests or smoke checks for request, timeout,
-  response-size, and security-header behavior.
-- [ ] Add workflow tests or documented dry-runs for trusted-actor gating.
-- [ ] Add deployment checks confirming the backend container does not run as
-  root and uses the intended capability restrictions.
-
-Non-goals and blocked items:
-
-- [ ] Do not add new public data products in this stage.
-- [ ] Do not turn MeteoLens into an official warning service.
-- [ ] Do not design a Kubernetes-only security model; keep Docker Compose as
-  the reference deployment.
+- [x] Classify public, expensive, and administrative routes.
+- [x] Disable archive backfill by default and protect enabled backfill with a
+  deployment-local admin token.
+- [x] Add authentication and public-deployment fail-closed tests.
+- [x] Bound public requests, rendering/downloads, imports, concurrency, and
+  duplicate expensive work.
+- [x] Harden nginx and production containers with tested limits and restrictions.
+- [x] Restrict credential-backed AI workflows to trusted actors and pin actions
+  where practical.
+- [x] Add dependency review, secret scanning, container scanning, and
+  `SECURITY.md`.
+- [x] Redact sensitive log values and avoid location query logging.
+- [x] Update API, deployment, production checklist, security, task, and changelog
+  documentation.
 
 Acceptance criteria:
 
-- [ ] Unauthenticated users cannot trigger administrative archive imports.
-- [ ] Expensive product rendering is bounded and cannot be trivially multiplied.
-- [ ] Public users cannot trigger credential-backed AI workflows unless
-  explicitly allowed.
-- [ ] The backend production container does not run as root.
-- [ ] Production HTTP safeguards are documented and testable.
-- [ ] Security limitations remain explicit.
+- [x] Unauthenticated users cannot run archive imports.
+- [x] Expensive render/import operations are bounded and duplicate render work
+  is coalesced.
+- [x] Production containers and nginx safeguards are active and testable.
+- [x] Untrusted commenters cannot trigger credential-backed AI workflows.
+- [x] Logs do not emit tokens, signed URL signatures, or location query strings.
 
 ## Stage 20 - Production Observability, Backup And Recovery
 

@@ -179,6 +179,18 @@ observation-history repository. Imports are limited by date range and file count
 rate-limited between files, and resumable through upserts on
 `station_id + metric + observed_at`.
 
+Stage 19 classifies read-only data routes as public, product renders as
+expensive, and archive imports as administrative. The archive HTTP endpoint is
+disabled without a deployment-local admin token; MeteoLens stores no user
+accounts. Product work is bounded by a cache-aware render gate, while archive
+imports use a one-at-a-time gate plus duplicate-range cooldown. Nginx enforces
+public internet request limits before requests reach the backend. The documented
+Caddy TLS edge proxies every path through nginx on port 8080; nginx accepts
+forwarded client addresses only from configured trusted proxy ranges so its
+per-IP limit key remains both accurate and resistant to direct-header spoofing.
+The one-shot data initializer temporarily owns `/data` while seeding or merging
+bundled geometry, then returns the volume to backend UID/GID 10001.
+
 Stage 10 defines a separate cache policy for large product, radar-like,
 and GRIB files. Detail manifest cache lives under `cache/product_details/`
 (TTL plus a manifest-count cap, refreshed by the scheduler when
@@ -452,13 +464,17 @@ Stage 10 deployment planning must cover large product-file storage, cache
 retention, tile/raster generation storage, and operational limits before any
 radar or GRIB product layer is exposed.
 
-Stages 19-21 are planned to close the gap between a public repository and an
-unrestricted public deployment: endpoint classification, admin authentication,
-rate and concurrency limits, proxy safeguards, non-root containers, workflow
-restrictions, observability, backups, restore tests, and current-main release
-validation. Until those stages land, archive backfill remains an administrative
-operation and product rendering remains an expensive route that needs public
-abuse protection.
+Stage 19 closed the security portion of the gap between a public repository and
+an unrestricted public deployment: endpoint classification, admin
+authentication, rate and concurrency limits, proxy safeguards, non-root
+containers, and workflow restrictions. Stages 20-21 still need to add
+observability, backups, restore tests, and current-main release validation.
+
+GitHub Actions use a fixed Ubuntu 24.04 runner and commit-pinned actions. Backend
+CI installs the lockfile-resolved Python 3.12 environment with `uv`, while npm
+continues to use `npm ci` for frontend and Playwright E2E jobs. Path filtering
+keeps the MeteoLens backend/frontend split, and security CI adds dependency,
+secret, and production-backend-image scans. Dependabot checks action pins daily.
 
 ## Observability
 
