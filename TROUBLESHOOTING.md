@@ -121,3 +121,24 @@ implemented.
 
 If an export or UI view lacks attribution, treat it as a release blocker. Check
 shared attribution components and export metadata builders.
+
+## Production Readiness And Recovery
+
+`/health/live` only proves that the backend process can answer requests.
+`/health/ready` returns `degraded` when IMGW is unavailable but cached data can
+still be served; inspect `/api/v1/sources` and Prometheus source metrics before
+restarting a healthy cache-backed service. A `503 not_ready` indicates SQLite,
+startup, or `/data` write failure: check disk space, ownership of the named
+volume (UID 10001), and the backend JSON logs with the response's
+`X-Request-ID`.
+
+When `/data` free-space alerts fire, stop archive imports and cold product
+renders, remove only documented regenerable product cache through its retention
+settings, create an essential backup, and increase host storage. Never delete
+`meteolens.sqlite3`, geometry, or a backup archive to free space.
+
+For failed upgrades, retain the previous image and `.env.production`, stop the
+new stack, return to the previous image, and verify readiness plus source state.
+Restore a backup into a fresh empty volume only when persistent data is damaged;
+run `data-ops verify` before any restore and preserve the failed volume until
+the recovery is confirmed.

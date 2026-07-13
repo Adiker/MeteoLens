@@ -572,42 +572,42 @@ Goal: make a public deployment diagnosable and recoverable.
 
 Implementation tasks:
 
-- [ ] Separate liveness and readiness semantics.
-- [ ] Monitor IMGW source freshness and parser failures.
-- [ ] Monitor refresh durations and failures.
-- [ ] Monitor product downloads, render duration, queue state, and cache hits.
-- [ ] Monitor archive imports and failures.
-- [ ] Monitor SQLite size, cache size, product-cache size, disk usage, memory,
+- [x] Separate liveness and readiness semantics.
+- [x] Monitor IMGW source freshness and parser failures.
+- [x] Monitor refresh durations and failures.
+- [x] Monitor product downloads, render duration, queue state, and cache hits.
+- [x] Monitor archive imports and failures.
+- [x] Monitor SQLite size, cache size, product-cache size, disk usage, memory,
   and CPU.
-- [ ] Add structured and rotation-safe logs.
-- [ ] Add correlation or request identifiers where useful.
-- [ ] Add container resource limits suitable for a small self-hosted deployment.
-- [ ] Define operational thresholds and alert recommendations.
-- [ ] Improve graceful degradation when IMGW sources are unavailable.
-- [ ] Define `/data` backup scope for database, cache metadata, reviewed
+- [x] Add structured and rotation-safe logs.
+- [x] Add correlation or request identifiers where useful.
+- [x] Add container resource limits suitable for a small self-hosted deployment.
+- [x] Define operational thresholds and alert recommendations.
+- [x] Improve graceful degradation when IMGW sources are unavailable.
+- [x] Define `/data` backup scope for database, cache metadata, reviewed
   geometry, product manifests, rendered products, and local history.
-- [ ] Define restore commands and validation checks.
-- [ ] Verify restore from backup on a fresh volume.
-- [ ] Document persistent-volume upgrade and rollback guidance.
-- [ ] Write an incident-response and troubleshooting runbook.
-- [ ] Document what can be recreated from IMGW and what must be backed up.
+- [x] Define restore commands and validation checks.
+- [x] Verify restore from backup on a fresh volume.
+- [x] Document persistent-volume upgrade and rollback guidance.
+- [x] Write an incident-response and troubleshooting runbook.
+- [x] Document what can be recreated from IMGW and what must be backed up.
 
 Documentation tasks:
 
-- [ ] Update `DEPLOYMENT.md` with monitoring, thresholds, resource budgets, and
+- [x] Update `DEPLOYMENT.md` with monitoring, thresholds, resource budgets, and
   backup/restore procedures.
-- [ ] Update `deploy/PRODUCTION_CHECKLIST.md` with observability, backup,
+- [x] Update `deploy/PRODUCTION_CHECKLIST.md` with observability, backup,
   restore-test, and incident-response gates.
-- [ ] Update `TROUBLESHOOTING.md` with public-deployment failure modes.
-- [ ] Record a restore-test result in `docs/release/` or another release note.
+- [x] Update `TROUBLESHOOTING.md` with public-deployment failure modes.
+- [x] Record a restore-test result in `docs/release/` or another release note.
 
 Test tasks:
 
-- [ ] Add health/readiness tests.
-- [ ] Add tests for degraded source and stale-cache reporting.
-- [ ] Add tests or smoke checks for backup and restore commands.
-- [ ] Add resource-exhaustion or cache-size smoke checks where practical.
-- [ ] Add log-shape tests for source failures, render failures, and archive
+- [x] Add health/readiness tests.
+- [x] Add tests for degraded source and stale-cache reporting.
+- [x] Add tests or smoke checks for backup and restore commands.
+- [x] Add resource-exhaustion or cache-size smoke checks where practical.
+- [x] Add log-shape tests for source failures, render failures, and archive
   import failures.
 
 Non-goals and blocked items:
@@ -618,12 +618,12 @@ Non-goals and blocked items:
 
 Acceptance criteria:
 
-- [ ] An operator can identify stale or failed sources without reading raw
+- [x] An operator can identify stale or failed sources without reading raw
   container output.
-- [ ] Disk and resource exhaustion risks are visible.
-- [ ] `/data` can be backed up and restored through documented commands.
-- [ ] A restore test is recorded.
-- [ ] Public deployment failure modes and recovery actions are documented.
+- [x] Disk and resource exhaustion risks are visible.
+- [x] `/data` can be backed up and restored through documented commands.
+- [x] A restore test is recorded.
+- [x] Public deployment failure modes and recovery actions are documented.
 
 ## Stage 21 - Current-Main Production Validation And v0.1.0-alpha Release
 

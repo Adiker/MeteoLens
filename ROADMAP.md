@@ -111,7 +111,7 @@ reviewed WMO OSCAR/Surface coordinate dataset for current IMGW SYNOP stations.
 
 ## Implemented And Planned Stages
 
-Stages 0-19 are implemented and documented. Stages 20-26 are planned only:
+Stages 0-20 are implemented and documented. Stages 21-26 are planned only:
 their tasks remain unchecked in `TASKS.md` until matching implementation, docs,
 and tests land.
 
@@ -128,10 +128,10 @@ should wait for the following stages.
   archive imports by default; bound expensive product rendering; harden nginx,
   CORS, security headers, production containers, and GitHub AI workflows; add
   scanning and a vulnerability-reporting policy.
-- Stage 20 - Production observability, backup and recovery: split liveness and
-  readiness semantics; monitor source freshness, parser failures, refresh
-  duration, product render/import state, resource usage, and cache sizes; define
-  `/data` backups, restore tests, resource limits, and incident response.
+- Stage 20 - Production observability, backup and recovery (done): separate
+  liveness/readiness, private Prometheus metrics and alerts, JSON correlation
+  logs, resource limits, verified `/data` backup/restore, and an incident
+  runbook.
 - Stage 21 - Current-main production validation and `v0.1.0-alpha` release:
   rerun local and production smoke tests against the release commit, test fresh
   and upgraded volumes, verify Stage 13-20 behavior, update screenshots and

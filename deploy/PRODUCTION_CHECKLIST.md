@@ -89,8 +89,10 @@ requires the remaining Stage 20-21 operational-readiness and validation plan in
 
 ## Observability
 
-- [ ] `/health` monitored for liveness.
+- [ ] `/health/live` monitored for liveness.
 - [ ] Readiness or source-freshness signal monitored separately from liveness.
+- [ ] `/health/ready` returns `ready` or documented `degraded`; `503 not_ready` is alerted.
+- [ ] Prometheus runs only on the private Compose network and its host port is loopback-only.
 - [ ] `/api/v1/sources` monitored for cache freshness, source failures, and
   parser errors.
 - [ ] Refresh durations and failures monitored.
@@ -123,6 +125,7 @@ requires the remaining Stage 20-21 operational-readiness and validation plan in
 - [ ] Restore from backup tested on a fresh volume.
 - [ ] Persistent-volume upgrade and rollback steps documented.
 - [ ] Incident-response and troubleshooting runbook available.
+- [ ] Essential backup runs daily, full backup policy is documented, and archives are copied off-host.
 
 ## Demo media
 

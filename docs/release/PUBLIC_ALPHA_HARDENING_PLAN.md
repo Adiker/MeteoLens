@@ -92,7 +92,7 @@ Stage 19 - Public Internet Security And Abuse Protection (implemented):
 - add dependency, secret, and container scanning,
 - document security and privacy limitations.
 
-Stage 20 - Production Observability, Backup And Recovery:
+Stage 20 - Production Observability, Backup And Recovery (implemented):
 
 - separate liveness and readiness,
 - monitor IMGW freshness, parser failures, refreshes, product renders, imports,

@@ -208,8 +208,57 @@ Production logging writes structured single-line records for:
   retrieval timestamp, record count, parser warning count),
 - API errors (`meteolens.api`: path, status code, error code).
 
-Monitor `/health` for liveness and `/api/v1/sources` for cache freshness,
-parser warnings, and stale/error states.
+Monitor `/health/live` for liveness and `/health/ready` for SQLite and `/data`
+readiness. A `degraded` readiness response means IMGW cache is stale or failed
+but the cached application remains usable; only `503 not_ready` is a core
+service failure. `/api/v1/sources` remains the operator-facing cache detail.
+
+Start the optional private Prometheus profile when the host has local operator
+access:
+
+```bash
+docker compose --profile observability --env-file .env.production -f docker-compose.prod.yml up -d
+```
+
+Prometheus binds to `127.0.0.1:${PROMETHEUS_HTTP_PORT:-9090}` and scrapes the
+backend-only `/metrics` endpoint. Its supplied rules flag unavailable backend,
+degraded source states, refresh/render failures, `/data` pressure, and backup
+age. Do not proxy `/metrics` publicly. Production logs are JSON on stdout and
+Compose retains five 10 MiB log files by default; `X-Request-ID` correlates
+nginx and backend records without logging query strings.
+
+### Backup and restore
+
+Use the `ops` profile with a host directory outside the data volume. The manual
+networkless service runs as restricted root so it can initialize fresh
+Docker-managed volumes; protect the host backup directory with normal host ACLs.
+
+```bash
+docker compose --profile ops --env-file .env.production -f docker-compose.prod.yml run --rm data-ops create --scope essential --output-dir /backups
+docker compose --profile ops --env-file .env.production -f docker-compose.prod.yml run --rm data-ops verify /backups/<archive>.tar.gz
+```
+
+Essential backups are online-safe: they contain a SQLite Backup API snapshot,
+source/product-manifest cache, reviewed and local geometry, and operational
+metadata. They deliberately exclude product binaries and rendered PNGs, which
+can be recreated from public IMGW paths. Use `--scope full --offline-confirmed`
+only after stopping the backend when those binary/render caches are required.
+Copy resulting archives off-host; a backup stored only on the same host is not
+a recovery plan.
+
+Restore is deliberately limited to an empty fresh volume. Stop the production
+stack, create or select an empty test volume/project, then run:
+
+```bash
+docker compose --profile ops --env-file .env.production -f docker-compose.prod.yml run --rm data-ops restore /backups/<archive>.tar.gz --target-dir /data
+```
+
+The tool rejects unsafe archives, path traversal, checksum failures, corrupt
+SQLite, and nonempty targets. After restore, start the stack and verify
+`/health/ready`, `/api/v1/sources`, `python -m app.geometry.import_cli status
+--geometry-dir /data/geometry`, and a cached station-history request. Before an
+upgrade, create an essential backup and retain the prior image/environment; on
+rollback, restore data only if the failed upgrade corrupted persistent state.
 
 ### License and terms
 

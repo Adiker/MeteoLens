@@ -17,6 +17,7 @@ from uuid import uuid4
 import httpx
 
 from app.core.config import Settings
+from app.core.observability import metrics
 from app.db.engine import get_engine, init_db
 from app.db.repository import ArchiveObservationRow, ObservationRepository, _iso
 from app.normalization.models import ATTRIBUTION, PROCESSED_NOTICE
@@ -208,6 +209,8 @@ class SynopDailyArchiveBackfiller:
 
         run_id = str(uuid4())
         started_at = datetime.now(UTC)
+        started_monotonic = time.perf_counter()
+        metrics.archive_import_active.inc()
         files: list[ArchiveFile] = []
         rows_seen = 0
         observations_seen = 0
@@ -334,7 +337,21 @@ class SynopDailyArchiveBackfiller:
                 errors=errors,
             )
             if isinstance(exc, ArchiveBackfillError):
+                metrics.archive_imports.labels(
+                    source_key="synop", archive_kind="synop_daily", status="failed"
+                ).inc()
+                metrics.archive_import_duration.labels(
+                    source_key="synop", archive_kind="synop_daily", status="failed"
+                ).observe(time.perf_counter() - started_monotonic)
+                metrics.archive_import_active.dec()
                 raise
+            metrics.archive_imports.labels(
+                source_key="synop", archive_kind="synop_daily", status="failed"
+            ).inc()
+            metrics.archive_import_duration.labels(
+                source_key="synop", archive_kind="synop_daily", status="failed"
+            ).observe(time.perf_counter() - started_monotonic)
+            metrics.archive_import_active.dec()
             raise ArchiveBackfillError(str(exc)) from exc
 
         finished_at = datetime.now(UTC)
@@ -356,6 +373,13 @@ class SynopDailyArchiveBackfiller:
             parser_warnings=parser_warnings,
             errors=errors,
         )
+        metrics.archive_imports.labels(
+            source_key="synop", archive_kind="synop_daily", status=status
+        ).inc()
+        metrics.archive_import_duration.labels(
+            source_key="synop", archive_kind="synop_daily", status=status
+        ).observe(time.perf_counter() - started_monotonic)
+        metrics.archive_import_active.dec()
         return SynopDailyBackfillResult(
             id=run_id,
             source_key="synop",
@@ -469,6 +493,27 @@ class SynopDailyArchiveBackfiller:
             ),
         )
         connection.commit()
+
+
+def mark_interrupted_archive_runs() -> int:
+    """Close runs left as running after a process or host restart."""
+    init_db()
+    finished_at = datetime.now(UTC).isoformat()
+    connection = get_engine()
+    cursor = connection.execute(
+        """
+        UPDATE archive_import_runs
+        SET status = 'interrupted', finished_at = ?,
+            errors = CASE
+                WHEN errors = '[]' THEN '["process_restarted"]'
+                ELSE errors
+            END
+        WHERE status = 'running'
+        """,
+        (finished_at,),
+    )
+    connection.commit()
+    return cursor.rowcount
 
 
 def parse_synop_daily_zip(

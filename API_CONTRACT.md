@@ -83,7 +83,8 @@ exists but the requested object is absent.
 
 `GET /health`
 
-Returns service status and version.
+Backward-compatible liveness endpoint. `GET /health/live` has the same
+response and is the explicit liveness probe.
 
 ```json
 {
@@ -92,6 +93,20 @@ Returns service status and version.
   "version": "0.1.0"
 }
 ```
+
+`GET /health/ready`
+
+Checks completed startup, SQLite access, and write access to `/data`. It returns
+`200` with `status: "ready"` or `"degraded"`; degraded IMGW cache never makes
+the cached application unavailable. It returns `503` with `"not_ready"` only
+when a core dependency cannot serve data. The `checks` object exposes safe
+status codes for `startup`, `database`, `data`, and `sources`.
+
+`GET /metrics`
+
+Prometheus/OpenMetrics endpoint for the private Compose network. It is disabled
+unless `METEOLENS_METRICS_ENABLED=true`, excluded from OpenAPI, and deliberately
+not proxied by the public nginx service.
 
 ## Sources
 

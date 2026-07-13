@@ -4,6 +4,11 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 20 production observability, backup, and recovery: explicit
+  liveness/readiness semantics, internal Prometheus metrics/alerts, JSON
+  request-correlated logs, Compose resource/log limits, deterministic SQLite
+  backup/restore tooling, a fresh-volume restore record, and operational
+  runbooks.
 - Aligned GitHub Actions maintenance with `keyboard-volume-app`: fixed
   `ubuntu-24.04` runners, current commit-pinned actions, daily Actions
   Dependabot updates, lockfile-driven `uv` backend CI, and separately guarded

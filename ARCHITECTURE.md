@@ -492,11 +492,15 @@ source availability.
 Stage 7 defined production logging and monitoring requirements for source
 fetches, parser failures, stale cache, and API errors. Stage 11 added a
 user-facing source availability dashboard and data freshness monitor from the
-same underlying metadata. Stage 20 is planned to add production readiness and
-recovery signals such as readiness semantics, product-render/import metrics,
-resource and disk visibility, backup/restore validation, and incident-response
-runbooks. Stage 25 is planned to add measured performance and scalability
-thresholds.
+same underlying metadata. Stage 20 adds explicit liveness/readiness endpoints,
+low-cardinality OpenMetrics instrumentation, JSON request-correlated logs, and
+a private optional Prometheus profile. Source outages produce a degraded
+readiness state while stale cache continues to serve; SQLite or `/data` failures
+produce `503 not_ready`. Storage gauges report SQLite, cache, geometry, product
+files, and `/data` disk usage. `app.operations.backup` uses SQLite's backup API
+for portable backups and validates checksums plus `PRAGMA integrity_check`
+before restore. Stage 25 remains responsible for measured performance and
+scalability thresholds.
 
 ## Extension Points
 
