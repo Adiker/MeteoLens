@@ -94,6 +94,31 @@ def test_backup_verification_rejects_unlisted_files(monkeypatch, tmp_path) -> No
     assert not any(target.iterdir())
 
 
+def test_backup_verification_rejects_database_path_outside_payload(monkeypatch, tmp_path) -> None:
+    settings = _settings(tmp_path)
+    apply_test_settings(monkeypatch, settings)
+    init_db()
+    archive = create_backup(scope="essential", output_dir=tmp_path / "backups")
+    extracted = tmp_path / "database-path"
+    with tarfile.open(archive, "r:gz") as source:
+        source.extractall(extracted, filter="data")
+    manifest_path = extracted / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["database_file"] = "/data/meteolens.sqlite3"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    tampered = tmp_path / "external-database.tar.gz"
+    with tarfile.open(tampered, "w:gz") as destination:
+        destination.add(manifest_path, arcname="manifest.json")
+        destination.add(extracted / "data", arcname="data")
+
+    with pytest.raises(ValueError, match="invalid database file"):
+        verify_backup(tampered)
+    target = tmp_path / "rejected-database-restore"
+    with pytest.raises(ValueError, match="invalid database file"):
+        restore_backup(archive_path=tampered, target_dir=target)
+    assert not any(target.iterdir())
+
+
 def test_chown_tree_assigns_restored_files_to_backend_uid(monkeypatch, tmp_path) -> None:
     restored = tmp_path / "restored"
     restored.mkdir()

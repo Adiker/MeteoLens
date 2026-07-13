@@ -77,7 +77,7 @@ def verify_backup(archive_path: Path) -> dict[str, object]:
         _extract_safely(archive_path, staging)
         manifest = _read_manifest(staging)
         _verify_manifest(staging, manifest)
-        database = staging / "data" / str(manifest["database_file"])
+        database = _database_from_manifest(staging, manifest)
         with sqlite3.connect(database) as connection:
             result = connection.execute("PRAGMA integrity_check").fetchone()[0]
         if result != "ok":
@@ -94,7 +94,7 @@ def restore_backup(*, archive_path: Path, target_dir: Path) -> dict[str, object]
         _extract_safely(archive_path, staging)
         manifest = _read_manifest(staging)
         _verify_manifest(staging, manifest)
-        database = staging / "data" / str(manifest["database_file"])
+        database = _database_from_manifest(staging, manifest)
         with sqlite3.connect(database) as connection:
             result = connection.execute("PRAGMA integrity_check").fetchone()[0]
         if result != "ok":
@@ -202,6 +202,20 @@ def _verify_manifest(root: Path, manifest: dict[str, object]) -> None:
     unlisted_files = actual_files - expected_files
     if unlisted_files:
         raise ValueError(f"backup contains unlisted files: {', '.join(sorted(unlisted_files))}")
+
+
+def _database_from_manifest(root: Path, manifest: dict[str, object]) -> Path:
+    database_file = manifest.get("database_file")
+    if (
+        not isinstance(database_file, str)
+        or not database_file
+        or Path(database_file).name != database_file
+    ):
+        raise ValueError("backup manifest contains an invalid database file")
+    database = root / "data" / database_file
+    if not database.is_file():
+        raise ValueError("backup manifest database file is missing")
+    return database
 
 
 def _write_state(path: Path, payload: dict[str, object]) -> None:
