@@ -1,4 +1,5 @@
 import csv
+import time
 from datetime import UTC, date, datetime
 from io import StringIO
 from math import asin, cos, radians, sin, sqrt
@@ -11,6 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, TypeAdapter, ValidationError
 
 from app.core.config import get_settings
+from app.core.observability import metrics
 from app.core.security import archive_backfill_gate, require_admin
 from app.geometry.loader import get_geometry_store
 from app.geometry.spatial import (
@@ -491,6 +493,7 @@ def get_product_render(
                 }
             },
         )
+    started = time.perf_counter()
     try:
         result = rendering.render_frame(
             settings,
@@ -500,6 +503,12 @@ def get_product_render(
             variable_key=variable,
         )
     except rendering.RenderError as exc:
+        metrics.product_renders.labels(
+            product_id=product_id, status="error", cache="none"
+        ).inc()
+        metrics.product_render_duration.labels(product_id=product_id, status="error").observe(
+            time.perf_counter() - started
+        )
         raise HTTPException(
             status_code=exc.status_code,
             detail={
@@ -512,6 +521,13 @@ def get_product_render(
             },
         ) from exc
 
+    cache_state = "hit" if result.from_cache else "miss"
+    metrics.product_renders.labels(
+        product_id=product_id, status="success", cache=cache_state
+    ).inc()
+    metrics.product_render_duration.labels(product_id=product_id, status="success").observe(
+        time.perf_counter() - started
+    )
     metadata = result.metadata
     headers = {
         "Cache-Control": "public, max-age=3600",

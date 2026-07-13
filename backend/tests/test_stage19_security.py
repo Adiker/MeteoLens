@@ -1,4 +1,5 @@
 import json
+import logging
 import threading
 import time
 from datetime import UTC, date, datetime
@@ -9,7 +10,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.core.config import Settings
-from app.core.logging import log_api_error, log_source_fetch
+from app.core.logging import JsonFormatter, log_api_error, log_source_fetch
 from app.core.security import archive_backfill_gate
 from app.main import create_app
 from app.products import rendering
@@ -195,3 +196,18 @@ def test_logs_redact_tokens_signed_urls_and_precise_query_locations(caplog) -> N
     # API logs record route paths rather than query strings, so caller
     # latitude/longitude from location queries cannot reach this helper.
     assert "location/summary?" not in output
+
+
+def test_json_log_formatter_keeps_request_correlation_and_safe_fields() -> None:
+    record = logging.LogRecord(
+        "meteolens.source", logging.INFO, __file__, 1, "refresh complete", (), None
+    )
+    record.request_id = "request-123"
+    record.event = "source_fetch"
+    record.source_key = "synop"
+
+    payload = json.loads(JsonFormatter().format(record))
+
+    assert payload["request_id"] == "request-123"
+    assert payload["event"] == "source_fetch"
+    assert payload["source_key"] == "synop"

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import sys
+from contextvars import ContextVar, Token
+from datetime import UTC, datetime
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from app.core.config import Settings
@@ -22,6 +25,7 @@ _SENSITIVE_QUERY_KEYS = {
     "x-amz-credential",
     "x-amz-security-token",
 }
+request_id_context: ContextVar[str] = ContextVar("request_id", default="-")
 
 
 def redact_log_value(value: str) -> str:
@@ -44,22 +48,61 @@ def redact_log_value(value: str) -> str:
 class RequestIdFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if not hasattr(record, "request_id"):
-            record.request_id = "-"
+            record.request_id = request_id_context.get()
         return True
+
+
+class JsonFormatter(logging.Formatter):
+    """One-line JSON logs suitable for Docker's rotating stdout driver."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, object] = {
+            "timestamp": datetime.fromtimestamp(record.created, UTC).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "request_id": getattr(record, "request_id", request_id_context.get()),
+        }
+        for key in (
+            "event",
+            "path",
+            "status_code",
+            "code",
+            "source_key",
+            "operation",
+            "duration_ms",
+            "record_count",
+            "parser_warnings",
+        ):
+            value = getattr(record, key, None)
+            if value is not None:
+                payload[key] = value
+        return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
+def set_request_id(value: str) -> Token[str]:
+    return request_id_context.set(value)
+
+
+def reset_request_id(token: Token[str]) -> None:
+    request_id_context.reset(token)
 
 
 def configure_logging(settings: Settings) -> None:
     level = getattr(logging, settings.log_level.upper(), logging.INFO)
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(
-        logging.Formatter(
-            fmt=(
-                "%(asctime)s %(levelname)s %(name)s "
-                "request_id=%(request_id)s %(message)s"
-            ),
-            datefmt="%Y-%m-%dT%H:%M:%S%z",
+    if settings.log_format.lower() == "json":
+        handler.setFormatter(JsonFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter(
+                fmt=(
+                    "%(asctime)s %(levelname)s %(name)s "
+                    "request_id=%(request_id)s %(message)s"
+                ),
+                datefmt="%Y-%m-%dT%H:%M:%S%z",
+            )
         )
-    )
     handler.addFilter(RequestIdFilter())
 
     root = logging.getLogger()
@@ -90,9 +133,25 @@ def log_source_fetch(
         message += f" parser_warnings={parser_warning_count}"
     if error:
         message += f" error={redact_log_value(error)}"
-        logger.warning(message, extra={"request_id": "-"})
+        logger.warning(
+            message,
+            extra={
+                "event": "source_fetch",
+                "source_key": source_key,
+                "record_count": record_count,
+                "parser_warnings": parser_warning_count,
+            },
+        )
         return
-    logger.info(message, extra={"request_id": "-"})
+    logger.info(
+        message,
+        extra={
+            "event": "source_fetch",
+            "source_key": source_key,
+            "record_count": record_count,
+            "parser_warnings": parser_warning_count,
+        },
+    )
 
 
 def log_api_error(*, path: str, status_code: int, code: str, message: str) -> None:
@@ -101,5 +160,10 @@ def log_api_error(*, path: str, status_code: int, code: str, message: str) -> No
             f"path={path} status_code={status_code} code={code} "
             f"message={redact_log_value(message)}"
         ),
-        extra={"request_id": "-"},
+        extra={
+            "event": "api_error",
+            "path": path,
+            "status_code": status_code,
+            "code": code,
+        },
     )

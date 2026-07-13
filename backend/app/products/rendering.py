@@ -11,6 +11,7 @@ import json
 import logging
 import re
 import threading
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -21,6 +22,7 @@ import httpx
 import numpy as np
 
 from app.core.config import Settings
+from app.core.observability import metrics
 from app.normalization.models import ATTRIBUTION, PROCESSED_NOTICE
 from app.products import grib1
 from app.products.png import write_rgba_png
@@ -34,21 +36,30 @@ class _RenderGate:
     def __init__(self) -> None:
         self._condition = threading.Condition()
         self._active = 0
+        self._waiting = 0
         self._keys: set[str] = set()
 
     @contextmanager
     def acquire(self, *, key: str, limit: int):
         with self._condition:
-            while key in self._keys or self._active >= limit:
-                self._condition.wait()
+            self._waiting += 1
+            metrics.product_render_waiting.set(self._waiting)
+            try:
+                while key in self._keys or self._active >= limit:
+                    self._condition.wait()
+            finally:
+                self._waiting -= 1
+                metrics.product_render_waiting.set(self._waiting)
             self._keys.add(key)
             self._active += 1
+            metrics.product_render_active.set(self._active)
         try:
             yield
         finally:
             with self._condition:
                 self._keys.remove(key)
                 self._active -= 1
+                metrics.product_render_active.set(self._active)
                 self._condition.notify_all()
 
 
@@ -379,9 +390,28 @@ def _read_or_fetch_binary(
             retrieved_at = datetime.fromtimestamp(
                 binary_path.stat().st_mtime, tz=UTC
             ).isoformat()
+        metrics.product_downloads.labels(
+            product_id=product_id, status="success", cache="hit"
+        ).inc()
         return binary_path.read_bytes(), retrieved_at
 
-    data, retrieved_at = _download_binary(settings, url=url, filename=filename)
+    started = time.perf_counter()
+    try:
+        data, retrieved_at = _download_binary(settings, url=url, filename=filename)
+    except RenderError:
+        metrics.product_downloads.labels(
+            product_id=product_id, status="error", cache="miss"
+        ).inc()
+        metrics.product_download_duration.labels(product_id=product_id, status="error").observe(
+            time.perf_counter() - started
+        )
+        raise
+    metrics.product_downloads.labels(
+        product_id=product_id, status="success", cache="miss"
+    ).inc()
+    metrics.product_download_duration.labels(product_id=product_id, status="success").observe(
+        time.perf_counter() - started
+    )
     binary_path.parent.mkdir(parents=True, exist_ok=True)
     binary_path.write_bytes(data)
     meta_path.write_text(

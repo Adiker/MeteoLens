@@ -1,10 +1,12 @@
 import asyncio
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
 from app.core.logging import log_source_fetch
+from app.core.observability import metrics
 from app.imgw.cache import SourceCache
 from app.imgw.client import ImgwClient
 from app.imgw.parsers import parse_source
@@ -27,6 +29,8 @@ async def refresh_source(
     client: ImgwClient,
     cache: SourceCache,
 ) -> SourceRefreshResult:
+    started = time.perf_counter()
+    stage = "fetch"
     try:
         fetch = await client.fetch_json(source)
         metadata = SourceMetadata(
@@ -34,6 +38,7 @@ async def refresh_source(
             url=fetch.url,
             retrieved_at=fetch.retrieved_at,
         )
+        stage = "parse"
         parse_result = parse_source(source.key, fetch.payload, metadata)
         normalized_payload = [
             record.model_dump(mode="json") for record in parse_result.records
@@ -50,6 +55,7 @@ async def refresh_source(
         from app.normalization.models import Station
         from app.services.observation_history import persist_station
 
+        stage = "persist"
         init_db()
         for record in parse_result.records:
             if isinstance(record, Station):
@@ -61,6 +67,12 @@ async def refresh_source(
             retrieved_at=fetch.retrieved_at.isoformat(),
             record_count=len(normalized_payload),
             parser_warning_count=len(parse_result.warnings),
+        )
+        metrics.source_refreshes.labels(
+            source_key=source.key, status="success", stage="complete"
+        ).inc()
+        metrics.source_refresh_duration.labels(source_key=source.key, status="success").observe(
+            time.perf_counter() - started
         )
         return SourceRefreshResult(
             source_key=source.key,
@@ -77,6 +89,12 @@ async def refresh_source(
             status="error",
             retrieved_at=datetime.now(UTC).isoformat(),
             error=error,
+        )
+        metrics.source_refreshes.labels(
+            source_key=source.key, status="error", stage=stage
+        ).inc()
+        metrics.source_refresh_duration.labels(source_key=source.key, status="error").observe(
+            time.perf_counter() - started
         )
         return SourceRefreshResult(source_key=source.key, status="error", error=error)
 

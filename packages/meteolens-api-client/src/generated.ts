@@ -163,6 +163,18 @@ export const OPENAPI_METADATA = {
       "path": "/health",
       "operationId": "health_health_get",
       "summary": "Health"
+    },
+    {
+      "method": "GET",
+      "path": "/health/live",
+      "operationId": "live_health_live_get",
+      "summary": "Live"
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "operationId": "ready_health_ready_get",
+      "summary": "Ready"
     }
   ],
   "schemas": [
@@ -184,6 +196,8 @@ export const OPENAPI_METADATA = {
     "ProductFramesResponse",
     "ProductsResponse",
     "RankingsResponse",
+    "ReadinessResponse",
+    "ReadyCheck",
     "SourceDescriptor",
     "SourceFreshnessItem",
     "SourceMetadata",

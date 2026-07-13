@@ -1,0 +1,51 @@
+groups:
+  - name: meteolens-operations
+    rules:
+      - alert: MeteoLensBackendDown
+        expr: up{job="meteolens"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "MeteoLens metrics endpoint is unreachable"}
+      - alert: MeteoLensNotReady
+        expr: meteolens_readiness == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "MeteoLens cannot use SQLite or /data"}
+      - alert: MeteoLensSourceStale
+        expr: meteolens_source_status{status=~"stale|error|empty|invalid"} == 1
+        for: 15m
+        labels: {severity: warning}
+        annotations: {summary: "An IMGW source cache is stale"}
+      - alert: MeteoLensRefreshFailure
+        expr: increase(meteolens_source_refresh_total{status="error"}[15m]) > 0
+        labels: {severity: warning}
+        annotations: {summary: "An IMGW refresh failed"}
+      - alert: MeteoLensRenderFailure
+        expr: increase(meteolens_product_render_total{status="error"}[15m]) > 0
+        labels: {severity: warning}
+        annotations: {summary: "A product render failed"}
+      - alert: MeteoLensDataDiskLow
+        expr: meteolens_data_disk_bytes{state="free"} / meteolens_data_disk_bytes{state="total"} < 0.15
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Less than 15% free space remains for /data"}
+      - alert: MeteoLensDataDiskCritical
+        expr: meteolens_data_disk_bytes{state="free"} / meteolens_data_disk_bytes{state="total"} < 0.05
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "Less than 5% free space remains for /data"}
+      - alert: MeteoLensMemoryHigh
+        expr: meteolens_container_memory_limit_bytes > 0 and process_resident_memory_bytes / meteolens_container_memory_limit_bytes > 0.85
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "MeteoLens backend is using over 85% of its memory limit"}
+      - alert: MeteoLensCpuHigh
+        expr: meteolens_container_cpu_limit > 0 and rate(process_cpu_seconds_total[5m]) / meteolens_container_cpu_limit > 0.9
+        for: 15m
+        labels: {severity: warning}
+        annotations: {summary: "MeteoLens backend is using over 90% of its CPU quota"}
+      - alert: MeteoLensBackupOverdue
+        expr: time() - meteolens_last_successful_backup_timestamp_seconds > 108000
+        for: 30m
+        labels: {severity: warning}
+        annotations: {summary: "No successful MeteoLens backup has been recorded in 30 hours"}

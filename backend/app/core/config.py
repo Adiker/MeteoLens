@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     cache_dir: Path = Path("../data/cache")
     geometry_dir: Path = Path("../data/geometry")
     log_level: str = "INFO"
+    log_format: str = "text"
+    metrics_enabled: bool = False
     sync_on_startup: bool = False
     refresh_enabled: bool = False
     refresh_synop_seconds: int = Field(default=600, ge=60)
