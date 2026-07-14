@@ -274,8 +274,9 @@ the existing observation-history schema. The endpoint is bounded by
 `METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`, waits
 `METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS` between files, and never asks
 the browser to fetch IMGW archive files directly. Duplicate records are handled
-by upsert on `station_id + metric + observed_at`; repeated runs refresh import
-metadata without creating duplicate observations. Import fails if the reviewed
+by upsert on `station_id + metric + observed_at + origin`; repeated runs refresh
+archive-import metadata without creating duplicate archive observations, while
+an equal-time live observation remains a separate point. Import fails if the reviewed
 mapping artifact cannot be loaded or validated. An unmapped `NSP` does not fail
 the whole bounded run: it is retained under `synop-archive:<NSP>` and reported
 in `parser_warnings`.

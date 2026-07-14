@@ -117,6 +117,9 @@ exact merged commit.
 Follow-up automated checks on the fix branch passed: backend Ruff and 219
 pytest tests; frontend ESLint, 87 Vitest tests, and production build; and five
 Playwright E2E tests. The existing Stage 25 large-chunk build warning remains.
+The observation-history migration and API tests also cover an exact timestamp
+collision: `live_refresh` and `archive_import` rows now remain separate under a
+key that includes `origin`, so neither source can overwrite the other.
 
 ## Fresh install, upgrade, and recovery
 

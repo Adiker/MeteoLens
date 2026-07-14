@@ -177,7 +177,10 @@ Stage 15 added an opt-in server-side archive importer for daily SYNOP archives.
 SYNOP rows, preserves status-driven missing/null values, and writes through the
 observation-history repository. Imports are limited by date range and file count,
 rate-limited between files, and resumable through upserts on
-`station_id + metric + observed_at`.
+`station_id + metric + observed_at + origin`. Including `origin` prevents a
+daily archive point from overwriting a live refresh at the same normalized UTC
+timestamp. Existing SQLite databases are rebuilt in place to use this key while
+preserving rows and indexes.
 
 The Stage 21 reconciliation follow-up adds
 `app/imgw/station_mapping.py` and the versioned

@@ -279,8 +279,8 @@ def test_observation_api_labels_mixed_live_and_archive_series(monkeypatch, tmp_p
             "temperature",
             17.5,
             "°C",
-            datetime(2026, 5, 2, tzinfo=UTC).isoformat(),
-            datetime(2026, 5, 2, 8, tzinfo=UTC).isoformat(),
+            datetime(2026, 5, 1, tzinfo=UTC).isoformat(),
+            datetime(2026, 5, 1, 8, tzinfo=UTC).isoformat(),
             "temperatura",
         ),
     )

@@ -105,9 +105,10 @@ class ObservationRepository:
             resolution = mapping.resolve(nsp)
             existing = connection.execute(
                 """
-                SELECT id, origin
+                SELECT id
                 FROM observation_history
-                WHERE station_id = ? AND metric = ? AND observed_at = ? AND id != ?
+                WHERE station_id = ? AND metric = ? AND observed_at = ?
+                    AND origin = 'archive_import' AND id != ?
                 """,
                 (
                     resolution.station_id,
@@ -117,9 +118,6 @@ class ObservationRepository:
                 ),
             ).fetchone()
             if existing is not None:
-                if existing["origin"] != "archive_import":
-                    summary["skipped"] += 1
-                    continue
                 connection.execute(
                     "DELETE FROM observation_history WHERE id = ?", (row["id"],)
                 )
@@ -164,7 +162,7 @@ class ObservationRepository:
                     station_mapping_version, station_mapping_source_url,
                     station_mapping_retrieved_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(station_id, metric, observed_at) DO UPDATE SET
+                ON CONFLICT(station_id, metric, observed_at, origin) DO UPDATE SET
                     station_name = excluded.station_name,
                     source_key = excluded.source_key,
                     station_type = excluded.station_type,
@@ -230,6 +228,7 @@ class ObservationRepository:
                        station_mapping_source_url, station_mapping_retrieved_at
                 FROM observation_history
                 WHERE station_id = ? AND metric = ? AND observed_at = ?
+                    AND origin = 'archive_import'
                 """,
                 key,
             ).fetchone()
@@ -243,7 +242,7 @@ class ObservationRepository:
                     station_mapping_version, station_mapping_source_url,
                     station_mapping_retrieved_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(station_id, metric, observed_at) DO UPDATE SET
+                ON CONFLICT(station_id, metric, observed_at, origin) DO UPDATE SET
                     station_name = excluded.station_name,
                     source_key = excluded.source_key,
                     station_type = excluded.station_type,

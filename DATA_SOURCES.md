@@ -259,7 +259,9 @@ data delay, missing/null values, source attribution, processed-data notices,
 archive source URL, import-run ID, source `NSP`, and mapping status, version,
 source URL, and retrieval time. Stage 15 imports are server-side only, bounded
 by configured date/file limits, rate-limited between files, and resumable
-through upserts on `station_id + metric + observed_at`.
+through upserts on `station_id + metric + observed_at + origin`, so equal-time
+live and archive observations remain separate and can produce honest `mixed`
+counts.
 
 ## External Geometry Dependencies
 
