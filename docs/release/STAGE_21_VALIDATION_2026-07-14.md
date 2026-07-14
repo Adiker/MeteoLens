@@ -114,7 +114,7 @@ than the original production validation and does not authorize tagging: the
 affected automated checks and final pre-tag suite still need to pass on the
 exact merged commit.
 
-Follow-up automated checks on the fix branch passed: backend Ruff and 219
+Follow-up automated checks on the fix branch passed: backend Ruff and 220
 pytest tests; frontend ESLint, 87 Vitest tests, and production build; and five
 Playwright E2E tests. The existing Stage 25 large-chunk build warning remains.
 The observation-history migration and API tests also cover an exact timestamp

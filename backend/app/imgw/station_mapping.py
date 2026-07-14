@@ -245,15 +245,35 @@ class SynopStationMapping:
         ):
             raise StationMappingError("SYNOP station mapping structure is invalid.")
         catalog = sources.get("station_catalog")
-        if not isinstance(catalog, dict):
-            raise StationMappingError("SYNOP station mapping has no catalogue provenance.")
+        current_synop = sources.get("current_synop")
+        if not isinstance(catalog, dict) or not isinstance(current_synop, dict):
+            raise StationMappingError("SYNOP station mapping has incomplete provenance.")
         try:
             retrieved_at = datetime.fromisoformat(str(catalog["retrieved_at"]))
             source_url = str(catalog["url"])
+            current_retrieved_at = datetime.fromisoformat(
+                str(current_synop["retrieved_at"])
+            )
+            current_source_url = str(current_synop["url"])
         except (KeyError, ValueError) as exc:
-            raise StationMappingError("Invalid station catalogue provenance.") from exc
+            raise StationMappingError("Invalid station mapping provenance.") from exc
+        if source_url != IMGW_STATION_CATALOG_URL:
+            raise StationMappingError("Station catalogue provenance is not official IMGW.")
+        if current_source_url != IMGW_CURRENT_SYNOP_URL:
+            raise StationMappingError("Current SYNOP provenance is not official IMGW.")
+        if retrieved_at.utcoffset() is None or current_retrieved_at.utcoffset() is None:
+            raise StationMappingError("Station mapping retrieval time has no timezone.")
+        if catalog.get("encoding") != "CP1250":
+            raise StationMappingError("Station catalogue provenance has invalid encoding.")
+        if not re.fullmatch(r"[0-9a-f]{64}", str(catalog.get("sha256") or "")):
+            raise StationMappingError("Station catalogue provenance has invalid SHA-256.")
+        if not re.fullmatch(
+            r"[0-9a-f]{64}", str(current_synop.get("sha256_canonical_json") or "")
+        ):
+            raise StationMappingError("Current SYNOP provenance has invalid SHA-256.")
 
         by_nsp: dict[str, dict[str, Any]] = {}
+        mapped_current_ids: set[str] = set()
         for entry in entries:
             if not isinstance(entry, dict):
                 raise StationMappingError("SYNOP station mapping entry is not an object.")
@@ -267,8 +287,13 @@ class SynopStationMapping:
             current_id = str(entry.get("current_synop_id") or "")
             if not re.fullmatch(r"12\d{3}", current_id):
                 raise StationMappingError(f"Mapped NSP {nsp} has invalid current ID.")
+            if current_id in mapped_current_ids:
+                raise StationMappingError(
+                    f"Multiple NSP values map to current SYNOP ID {current_id}."
+                )
             if stable_id != f"synop:{current_id}":
                 raise StationMappingError(f"Mapped NSP {nsp} has invalid stable ID.")
+            mapped_current_ids.add(current_id)
             by_nsp[nsp] = entry
 
         unmapped_nsp: set[str] = set()
@@ -281,6 +306,43 @@ class SynopStationMapping:
             ):
                 raise StationMappingError(f"Invalid or duplicate unmapped NSP: {nsp!r}.")
             unmapped_nsp.add(nsp)
+
+        unmapped_current = payload.get("unmapped_current_synop")
+        if not isinstance(unmapped_current, list):
+            raise StationMappingError("SYNOP station mapping has no current-ID gaps.")
+        unmapped_current_ids: set[str] = set()
+        for entry in unmapped_current:
+            if not isinstance(entry, dict):
+                raise StationMappingError("Unmapped current SYNOP entry is invalid.")
+            current_id = str(entry.get("current_synop_id") or "")
+            if (
+                not re.fullmatch(r"12\d{3}", current_id)
+                or current_id in mapped_current_ids
+                or current_id in unmapped_current_ids
+                or entry.get("stable_station_id") != f"synop:{current_id}"
+                or entry.get("mapping_status") != "unmapped_no_archive_catalog_entry"
+            ):
+                raise StationMappingError(
+                    f"Invalid or duplicate unmapped current SYNOP ID: {current_id!r}."
+                )
+            unmapped_current_ids.add(current_id)
+
+        counts = payload.get("counts")
+        expected_counts = {
+            "mapped": len(by_nsp),
+            "unmapped_catalog_entries": len(unmapped_nsp),
+            "catalog_entries": len(by_nsp) + len(unmapped_nsp),
+            "unmapped_current_synop_ids": len(unmapped_current_ids),
+        }
+        if not isinstance(counts, dict) or any(
+            counts.get(key) != value for key, value in expected_counts.items()
+        ):
+            raise StationMappingError("SYNOP station mapping counts are inconsistent.")
+        catalog_records = counts.get("catalog_records")
+        if not isinstance(catalog_records, int) or catalog_records < len(by_nsp) + len(
+            unmapped_nsp
+        ):
+            raise StationMappingError("SYNOP station catalogue record count is invalid.")
 
         self.version = version
         self.source_url = source_url

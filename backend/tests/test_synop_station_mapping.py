@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from datetime import UTC, datetime
 
 import pytest
@@ -90,6 +91,33 @@ def test_mapping_loader_requires_approved_method_and_review() -> None:
     payload["mapping_method"] = "station_name"
     with pytest.raises(StationMappingError, match="Unapproved"):
         SynopStationMapping(payload)
+
+
+def test_mapping_loader_rejects_unofficial_or_inconsistent_artifact() -> None:
+    payload = _dataset(_catalog(("349190600", "BIELSKO-BIAŁA", "600")), ["12600"])
+
+    unofficial = deepcopy(payload)
+    unofficial["sources"]["station_catalog"]["url"] = "https://example.test/stations.csv"
+    with pytest.raises(StationMappingError, match="not official IMGW"):
+        SynopStationMapping(unofficial)
+
+    duplicate_target = deepcopy(payload)
+    duplicate_target["entries"].append(
+        {
+            **duplicate_target["entries"][0],
+            "nsp": "111111111",
+        }
+    )
+    duplicate_target["counts"]["mapped"] = 2
+    duplicate_target["counts"]["catalog_entries"] = 2
+    duplicate_target["counts"]["catalog_records"] = 2
+    with pytest.raises(StationMappingError, match="Multiple NSP values map"):
+        SynopStationMapping(duplicate_target)
+
+    inconsistent_counts = deepcopy(payload)
+    inconsistent_counts["counts"]["mapped"] = 2
+    with pytest.raises(StationMappingError, match="counts are inconsistent"):
+        SynopStationMapping(inconsistent_counts)
 
 
 def test_committed_mapping_is_approved_and_resolves_real_imgw_ids() -> None:
