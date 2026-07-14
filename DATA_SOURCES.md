@@ -228,7 +228,10 @@ blocked at the source (`rendering_status: download_blocked`). See
 - Update frequency: archive-specific.
 - Stability: useful but larger than MVP.
 - Limitations: encoding, schema variants, archive volume, and station list
-  reconciliation.
+  reconciliation. Stage 21 validation confirmed that live SYNOP `id_stacji`
+  values and daily archive `NSP` values differ in real data; no name-based or
+  hardcoded reconciliation is used, so combined live/archive series remain
+  blocked until a reviewed mapping source is documented.
 - Cache: manifest-based refresh, file checksum, and parser version.
 - Parser: `synop_daily_archive` implemented for bounded daily SYNOP imports;
   hydrological and non-SYNOP meteorological archives remain researched/planned.

@@ -634,32 +634,36 @@ prerelease.
 
 Implementation tasks:
 
-- [ ] Rerun development smoke tests against the current `main` release commit.
-- [ ] Rerun production smoke tests against the current `main` release commit.
-- [ ] Record exact commit SHA, date, Docker version, Compose version, and test
+- [x] Rerun development smoke tests against the current `main` validation commit.
+- [x] Rerun production smoke tests against the current `main` validation commit.
+- [x] Record exact commit SHA, date, Docker version, Compose version, and test
   environment.
-- [ ] Test a fresh named volume.
-- [ ] Test an upgrade from an existing pre-Stage-18 volume.
-- [ ] Verify bundled PRG geometry.
-- [ ] Verify bundled SYNOP station coordinates.
-- [ ] Verify SYNOP markers and `coordinate_source`.
-- [ ] Verify meteorological warning polygons.
-- [ ] Verify explicit missing hydro basin geometry.
-- [ ] Verify one real COSMO temperature frame render.
-- [ ] Verify cached replay of the rendered frame.
-- [ ] Verify render failure and source-unavailable states.
-- [ ] Verify a bounded archive backfill.
-- [ ] Verify live/archive/mixed observation series.
-- [ ] Verify exports and attribution.
-- [ ] Verify source outage behavior.
-- [ ] Test backup and restore.
-- [ ] Run a small abuse/load smoke test for expensive routes.
-- [ ] Update screenshots to match the current implementation.
-- [ ] Update release notes.
+- [x] Test a fresh named volume.
+- [x] Test an upgrade from an existing pre-Stage-18 volume.
+- [x] Verify bundled PRG geometry.
+- [x] Verify bundled SYNOP station coordinates.
+- [x] Verify SYNOP markers and `coordinate_source`.
+- [x] Verify meteorological warning polygons.
+- [x] Verify explicit missing hydro basin geometry.
+- [x] Verify one real COSMO temperature frame render.
+- [x] Verify cached replay of the rendered frame.
+- [x] Verify render failure and source-unavailable states.
+- [x] Verify a bounded archive backfill.
+- [ ] Verify live/archive/mixed observation series with reconciled real IMGW
+  station identifiers. Stage 21 found that live SYNOP `id_stacji` and daily
+  archive `NSP` identifiers are not yet reconciled; live and archive series
+  pass separately, but their real-data combined series is not release-ready.
+- [x] Verify exports and attribution.
+- [x] Verify source outage behavior.
+- [x] Test backup and restore.
+- [x] Run a small abuse/load smoke test for expensive routes.
+- [x] Update screenshots to match the current implementation.
+- [x] Prepare release notes.
 - [ ] Move relevant `CHANGELOG.md` entries from `Unreleased` to a dated
   `0.1.0-alpha` section.
-- [ ] Align backend, frontend, README, and release version metadata.
-- [ ] Define rollback steps.
+- [x] Align backend and frontend version metadata; keep README as an alpha
+  candidate until the release is cut.
+- [x] Define rollback steps.
 - [ ] Tag `v0.1.0-alpha`.
 - [ ] Create a GitHub prerelease.
 - [ ] Verify rendered release notes, screenshots, links, license, attribution,
@@ -667,38 +671,39 @@ Implementation tasks:
 
 Documentation tasks:
 
-- [ ] Update `docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md` as checks pass.
-- [ ] Record the current-main smoke-test run in `docs/release/`.
+- [x] Update `docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md` as checks pass.
+- [x] Record the current-main smoke-test run in `docs/release/`.
 - [ ] Update `README.md` screenshots and alpha status if the release is cut.
 - [ ] Update `CHANGELOG.md` only when the release is actually performed.
-- [ ] Keep known limitations prominently visible.
+- [x] Keep known limitations prominently visible.
 
 Test tasks:
 
-- [ ] Run backend tests and lint.
-- [ ] Run frontend tests, lint, and build.
-- [ ] Run E2E tests.
-- [ ] Run production smoke tests against nginx and runtime images.
-- [ ] Run fresh-volume and upgrade-path smoke tests.
-- [ ] Run backup/restore verification.
-- [ ] Run a small abuse/load smoke test for archive and product-render routes.
+- [x] Run backend tests and lint.
+- [x] Run frontend tests, lint, and build.
+- [x] Run E2E tests.
+- [x] Run production smoke tests against nginx and runtime images.
+- [x] Run fresh-volume and upgrade-path smoke tests.
+- [x] Run backup/restore verification.
+- [x] Run a small abuse/load smoke test for archive and product-render routes.
 
 Non-goals and blocked items:
 
-- [ ] Do not tag or publish the release until Stages 19-20 acceptance criteria
+- [x] Do not tag or publish the release until Stages 19-20 acceptance criteria
   are met.
-- [ ] Do not promote the release beyond alpha.
-- [ ] Do not claim legal certainty for deployers who must re-review source
+- [x] Do not promote the release beyond alpha.
+- [x] Do not claim legal certainty for deployers who must re-review source
   terms.
 
 Acceptance criteria:
 
-- [ ] A production smoke-test record exists for the current release commit.
-- [ ] Both fresh install and persistent-volume upgrade paths pass.
-- [ ] Stage 13-20 behavior is covered.
+- [x] A production smoke-test record exists for the current validation commit.
+- [x] Both fresh install and persistent-volume upgrade paths pass.
+- [ ] Stage 13-20 behavior is covered. The real SYNOP live/archive identifier
+  reconciliation blocker above remains unresolved.
 - [ ] The release checklist has no unresolved release-blocking items.
-- [ ] The release remains clearly labelled as alpha.
-- [ ] Known limitations are prominently visible.
+- [x] The release remains clearly labelled as alpha.
+- [x] Known limitations are prominently visible.
 
 ## Stage 22 - Hydro Basin Geometry MVP
 

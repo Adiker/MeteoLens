@@ -4,6 +4,13 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Completed Stage 21 current-main validation for the untagged `v0.1.0-alpha`
+  candidate: repeatable live development and nginx production smoke tests,
+  fresh-volume and pre-Stage-18 upgrade checks, COSMO render/cache checks,
+  source-outage, bounded archive, abuse-limit, backup/restore checks, refreshed
+  screenshots, and a detailed validation/rollback record. It surfaced an
+  unresolved real SYNOP `id_stacji` ↔ daily archive `NSP` reconciliation gap,
+  so tagging and GitHub prerelease publication remain intentionally pending.
 - Fixed station details so normalized meteo metric names are shown in Polish
   and the measurement list displays only the current snapshot instead of
   flattening historical points into apparent duplicate rows; charts continue

@@ -63,10 +63,11 @@ Docker healthcheck should call `/health`.
 - Verify current IMGW-PIB terms before public or commercial use.
 
 Stage 19 endpoint protection, expensive-route limits, workflow restrictions,
-and container hardening are implemented. Unrestricted public deployment is not
-release-ready until Stage 20 observability/backup/recovery and Stage 21
-current-main production validation are complete. See
-`docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md`.
+and container hardening are implemented. Stage 20 operations and Stage 21
+current-main validation are recorded in
+`docs/release/STAGE_21_VALIDATION_2026-07-14.md`. This does not approve a
+public demo: complete `deploy/PRODUCTION_CHECKLIST.md` on the target host and
+re-review source terms before exposure. The alpha tag remains pending.
 
 ## Stage 7 Production Target
 

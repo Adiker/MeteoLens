@@ -1,12 +1,14 @@
 # Populated-cache screenshots for README.md
 
 Demo media must show real IMGW-backed data, not fixtures. The committed
-screenshots were captured on 2026-07-03 from a live cache (see
-`docs/release/SMOKE_TEST_2026-07-03.md`):
+screenshots were refreshed on 2026-07-14 from a live cache (see
+`docs/release/STAGE_21_VALIDATION_2026-07-14.md`):
 
-- `map-stations-light.png` — map view, station layers, active warning list.
+- `map-stations-light.png` — map view, reviewed SYNOP markers, resolved meteo
+  warning polygons, explicit missing hydro geometry, and a COSMO timeline.
 - `station-details-expert.png` — station details in expert mode with raw JSON.
-- `warning-details-list.png` — warning details with the missing-geometry notice.
+- `warning-details-list.png` — meteorological warning details with resolved
+  reviewed administrative geometry.
 - `power-user-panel.png` — expert power-user panel with the freshness monitor.
 
 ## Re-capturing

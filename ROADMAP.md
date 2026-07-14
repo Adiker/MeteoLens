@@ -111,9 +111,10 @@ reviewed WMO OSCAR/Surface coordinate dataset for current IMGW SYNOP stations.
 
 ## Implemented And Planned Stages
 
-Stages 0-20 are implemented and documented. Stages 21-26 are planned only:
-their tasks remain unchecked in `TASKS.md` until matching implementation, docs,
-and tests land.
+Stages 0-20 are implemented and documented. Stage 21 current-main validation
+is documented for the untagged alpha candidate and has an unresolved real SYNOP
+identifier-reconciliation blocker; the tag and GitHub prerelease remain pending.
+Stages 22-26 remain planned only.
 
 ## v7 - Public Alpha Readiness
 
@@ -132,11 +133,13 @@ should wait for the following stages.
   liveness/readiness, private Prometheus metrics and alerts, JSON correlation
   logs, resource limits, verified `/data` backup/restore, and an incident
   runbook.
-- Stage 21 - Current-main production validation and `v0.1.0-alpha` release:
-  rerun local and production smoke tests against the release commit, test fresh
-  and upgraded volumes, verify Stage 13-20 behavior, update screenshots and
-  release notes, move changelog entries only when the release is cut, tag
-  `v0.1.0-alpha`, and create a GitHub prerelease.
+- Stage 21 - Current-main production validation and `v0.1.0-alpha` release
+  (validation recorded; blocked): local and production smoke tests, fresh and
+  upgraded volumes, screenshots, release notes, rollback, backup/restore, and
+  abuse checks are recorded in `docs/release/STAGE_21_VALIDATION_2026-07-14.md`.
+  Real SYNOP live/archive identifier reconciliation remains unresolved. Move
+  changelog entries, tag `v0.1.0-alpha`, and create a GitHub prerelease only
+  after that blocker is fixed and the release is explicitly cut.
 
 ## v8 - Hydrology And Warning History
 
