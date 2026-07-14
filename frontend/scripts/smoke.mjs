@@ -4,14 +4,17 @@
 // exports, expert tools, and the timeline shell, and optionally captures the
 // populated-cache screenshots referenced from README.md.
 //
-// Usage (dev stack): node scripts/smoke.mjs http://localhost:5173 http://localhost:8000 [screenshotDir]
-// Usage (prod stack): node scripts/smoke.mjs http://localhost:8080 http://localhost:8080 [screenshotDir]
+// Usage (dev stack): node scripts/smoke.mjs http://localhost:5173 http://localhost:8000 [screenshotDir] [--stage21]
+// Usage (prod stack): node scripts/smoke.mjs http://localhost:8080 http://localhost:8080 [screenshotDir] [--stage21]
 import { mkdir } from "node:fs/promises";
 import { chromium } from "@playwright/test";
 
-const BASE = process.argv[2] ?? "http://localhost:5173";
-const API_BASE = process.argv[3] ?? "http://localhost:8000";
-const OUT = process.argv[4] ?? null;
+const args = process.argv.slice(2);
+const STAGE21 = args.includes("--stage21");
+const positional = args.filter((arg) => arg !== "--stage21");
+const BASE = positional[0] ?? "http://localhost:5173";
+const API_BASE = positional[1] ?? "http://localhost:8000";
+const OUT = positional[2] ?? null;
 
 const results = [];
 function record(name, ok, note = "") {
@@ -23,17 +26,24 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-async function chooseStationName() {
+async function chooseStation() {
   const stationsApi = await fetch(`${API_BASE}/api/v1/stations`)
     .then((res) => res.json())
     .catch(() => null);
   const stations = stationsApi?.stations ?? [];
   const station =
+    stations.find(
+      (item) =>
+        item.station_type === "synop" &&
+        item.lat != null &&
+        item.lon != null &&
+        item.coordinate_source,
+    ) ??
     stations.find((item) => /Warszawa/i.test(item.name)) ??
     stations.find((item) => item.lat != null && item.lon != null) ??
     stations[0];
 
-  return station?.name ?? "Warszawa";
+  return station ?? { name: "Warszawa" };
 }
 
 const browser = await chromium.launch();
@@ -78,7 +88,8 @@ try {
   }
 
   // 3. Expert mode + station details via search
-  const stationName = await chooseStationName();
+  const station = await chooseStation();
+  const stationName = station.name;
   await page.getByLabel("Przełącz tryb prosty/ekspercki").click();
   await page.getByLabel("Szukaj stacji").fill(stationName);
   await page
@@ -99,6 +110,15 @@ try {
     // the heading is CSS-uppercased, so innerText returns capitals
     /surowe dane źródła/i.test(panelText),
   );
+  if (STAGE21) {
+    const expectsCoordinateSource =
+      station.station_type === "synop" && station.coordinate_source;
+    record(
+      "SYNOP details expose reviewed coordinate_source when enriched",
+      !expectsCoordinateSource || panelText.includes(station.coordinate_source),
+      expectsCoordinateSource ? station.coordinate_source : "selected station has source coordinates or no enrichment",
+    );
+  }
   const csvVisible = await panel.getByRole("link", { name: "CSV" }).first().isVisible();
   const jsonVisible = await panel.getByRole("link", { name: "JSON" }).first().isVisible();
   record("station CSV/JSON export links present", csvVisible && jsonVisible);
@@ -126,9 +146,12 @@ try {
       "warning details show validity + office metadata",
       /Ważne|Obowiązuje|Biuro|IMGW/i.test(warnText),
     );
+    const geometryVisible = /Geometria obszaru dostępna/i.test(warnText);
+    const missingGeometryVisible = /Brak geometrii obszaru/i.test(warnText);
     record(
-      "missing area geometry stays explicit",
-      /Brak geometrii obszaru/i.test(warnText),
+      "warning geometry state stays explicit",
+      geometryVisible || missingGeometryVisible,
+      geometryVisible ? "resolved polygon" : missingGeometryVisible ? "missing geometry" : "no geometry state",
     );
     await page.waitForTimeout(1000);
     if (OUT) await page.screenshot({ path: `${OUT}/warning-details-list.png` });

@@ -12,7 +12,7 @@ def test_health_endpoint_returns_ok() -> None:
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["service"] == "meteolens-backend"
-    assert payload["version"] == "0.1.0"
+    assert payload["version"] == "0.1.0-alpha"
     assert "checked_at" in payload
 
 

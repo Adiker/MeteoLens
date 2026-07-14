@@ -5,7 +5,7 @@ export const OPENAPI_METADATA = {
   "info": {
     "title": "MeteoLens API",
     "description": "Backend API for MeteoLens public IMGW-PIB data visualisation.",
-    "version": "0.1.0"
+    "version": "0.1.0-alpha"
   },
   "operations": [
     {

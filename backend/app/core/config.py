@@ -10,7 +10,9 @@ class Settings(BaseSettings):
 
     env: str = "development"
     service_name: str = "meteolens-backend"
-    version: str = "0.1.0"
+    # Keep the public API/health label aligned with the GitHub prerelease tag.
+    # Packaging itself uses the PEP 440 equivalent, ``0.1.0a0``.
+    version: str = "0.1.0-alpha"
     imgw_base_url: AnyUrl = "https://danepubliczne.imgw.pl"
     frontend_origin: str = "http://localhost:5173"
     admin_token: str | None = None
