@@ -90,7 +90,7 @@ response and is the explicit liveness probe.
 {
   "status": "ok",
   "service": "meteolens-backend",
-  "version": "0.1.0"
+  "version": "0.1.0-alpha"
 }
 ```
 
