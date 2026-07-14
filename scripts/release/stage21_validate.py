@@ -103,6 +103,12 @@ def require_status(status: int, expected: int, path: str) -> None:
         raise ValidationError(f"{path}: expected HTTP {expected}, got {status}")
 
 
+def header_value(headers: dict[str, str], name: str) -> str | None:
+    """Return an HTTP header without relying on a client's display casing."""
+    target = name.lower()
+    return next((value for key, value in headers.items() if key.lower() == target), None)
+
+
 def baseline(client: Client, evidence: Evidence) -> None:
     status, _, health = client.json("/health/live")
     require_status(status, 200, "/health/live")
@@ -206,7 +212,9 @@ def render(client: Client, evidence: Evidence) -> str:
     for index, (status_code, headers, body) in enumerate((first, second), start=1):
         evidence.check(
             f"cold COSMO render request {index}",
-            status_code == 200 and headers.get("Content-Type", "").startswith("image/png") and body.startswith(b"\x89PNG"),
+            status_code == 200
+            and (header_value(headers, "Content-Type") or "").startswith("image/png")
+            and body.startswith(b"\x89PNG"),
             f"status={status_code} bytes={len(body)}",
         )
     digest_one = hashlib.sha256(first[2]).hexdigest()
@@ -234,7 +242,7 @@ def archive(client: Client, evidence: Evidence, args: argparse.Namespace) -> Non
         evidence.check("bounded archive backfill", status == 200 and payload.get("status") in {"completed", "completed_with_warnings"}, f"status={status}")
         status, headers, repeated = client.json(path, method="POST", headers={"X-MeteoLens-Admin-Token": token})
         evidence.payload("archive_repeat", repeated)
-        retry_after = headers.get("Retry-After") or headers.get("Retry-after")
+        retry_after = header_value(headers, "Retry-After")
         evidence.check("archive cooldown", status == 429 and bool(retry_after), f"status={status} retry_after={retry_after}")
     else:
         status, _, payload = client.json(path, method="POST")
