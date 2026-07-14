@@ -238,6 +238,11 @@ endpoint may return archive history with source metadata pointing at the archive
 directory; map/list station discovery still depends on current cache data and
 reviewed geometry.
 
+`mixed` means both origins exist under the same normalized station ID. The
+current live SYNOP `id_stacji` and daily archive `NSP` identifiers are not yet
+reconciled in real data, so the API must not claim a combined real SYNOP series
+until a reviewed mapping source is added. Archive-only history stays explicit.
+
 Each observation preserves `null` values and includes `missing`,
 `raw_field`, `observed_at`, `retrieved_at`, `data_delay_seconds`, and
 unit metadata where available. Historical observations may also include

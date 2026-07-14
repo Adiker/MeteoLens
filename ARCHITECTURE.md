@@ -235,7 +235,10 @@ Stage 15 extends `observation_history` with `origin`, `import_run_id`, and
 archive rows use `origin='archive_import'`; aggregated API responses may report
 `mixed`. `archive_import_runs` records run status, observed range, file progress,
 insert/update/unchanged counts, warnings, errors, attribution, and processed-data
-notice.
+notice. Stage 21 validation found that current live SYNOP `id_stacji` and daily
+archive `NSP` identifiers differ in real data. Until a reviewed reconciliation
+source is introduced, archive and live series remain explicit separate station
+histories; no name-based or hardcoded merge is allowed.
 
 Stage 9 geometry design should add imported geometry metadata without mixing
 external dataset ingestion into IMGW parsers. Candidate tables include:
@@ -467,8 +470,9 @@ radar or GRIB product layer is exposed.
 Stage 19 closed the security portion of the gap between a public repository and
 an unrestricted public deployment: endpoint classification, admin
 authentication, rate and concurrency limits, proxy safeguards, non-root
-containers, and workflow restrictions. Stages 20-21 still need to add
-observability, backups, restore tests, and current-main release validation.
+containers, and workflow restrictions. Stage 20 adds observability, backups,
+and restore tests; Stage 21 current-main release validation is recorded in
+`docs/release/STAGE_21_VALIDATION_2026-07-14.md`. Tagging remains pending.
 
 GitHub Actions use a fixed Ubuntu 24.04 runner and commit-pinned actions. Backend
 CI installs the lockfile-resolved Python 3.12 environment with `uv`, while npm
@@ -492,7 +496,7 @@ source availability.
 Stage 7 defined production logging and monitoring requirements for source
 fetches, parser failures, stale cache, and API errors. Stage 11 added a
 user-facing source availability dashboard and data freshness monitor from the
-same underlying metadata. Stage 20 adds explicit liveness/readiness endpoints,
+same underlying metadata. Stage 20 provides explicit liveness/readiness endpoints,
 low-cardinality OpenMetrics instrumentation, JSON request-correlated logs, and
 a private optional Prometheus profile. Source outages produce a degraded
 readiness state while stale cache continues to serve; SQLite or `/data` failures

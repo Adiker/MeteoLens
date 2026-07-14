@@ -1,8 +1,10 @@
 # Public Alpha Hardening Plan
 
-This is a planning document. It describes work that must happen before an
-unrestricted public MeteoLens deployment is considered release-ready. It does
-not claim that the controls below already exist.
+This document now combines historical planning with the release gates that
+remain applicable. Stages 19-20 are implemented, and Stage 21 validation is
+recorded in `STAGE_21_VALIDATION_2026-07-14.md`; its real SYNOP archive
+identifier-reconciliation blocker must be resolved before tagging. This does
+not by itself approve an unrestricted public deployment or create a release tag.
 
 ## Why This Exists
 
@@ -102,7 +104,8 @@ Stage 20 - Production Observability, Backup And Recovery (implemented):
 - record a restore test,
 - document upgrade, rollback, incident-response, and troubleshooting steps.
 
-Stage 21 - Current-Main Production Validation And `v0.1.0-alpha` Release:
+Stage 21 - Current-Main Production Validation And `v0.1.0-alpha` Release
+(validation recorded; publication blocked):
 
 - rerun local and production smoke tests against the release commit,
 - verify fresh-volume and persistent-volume upgrade paths,
@@ -133,9 +136,11 @@ Stage 21 - Current-Main Production Validation And `v0.1.0-alpha` Release:
 1. Stage 19 landed endpoint protection, expensive-route bounds, workflow
    restrictions, proxy safeguards, and container hardening with regression
    tests.
-2. Land Stage 20 as its own implementation PR with monitoring, logging,
-   resource-limit, backup, restore, and runbook updates.
-3. Run Stage 21 validation from current `main` after Stages 19-20 merge.
+2. Stage 20 landed monitoring, logging, resource limits, backup, restore, and
+   runbook updates.
+3. Stage 21 validation ran from current `main`; see
+   `STAGE_21_VALIDATION_2026-07-14.md`. Resolve its SYNOP identifier
+   reconciliation blocker before publication.
 4. Publish only a prerelease, with alpha limitations and deployer legal-review
    responsibilities visible.
 5. Treat public demo exposure as an operator decision gated by

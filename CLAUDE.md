@@ -14,11 +14,12 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
   PWA shell, browser-local power-user tools, public-alpha release polish,
   bounded daily SYNOP archive backfill, public API exports, and the repo-local
   TypeScript API client, Stage 18 reviewed WMO OSCAR/Surface synop station
-  coordinates, and Stage 19 public-internet security. Stages 20-26 are planned
-  only: production observability/backup/recovery, current-main release validation,
-  hydro basin geometry, hydrological archive backfill, warning history,
-  performance/scalability hardening, and PDF reports remain future work until
-  their own implementation, docs, and tests land.
+  coordinates, Stage 19 public-internet security, and Stage 20 production
+  observability/backup/recovery. Stage 21 current-main validation is recorded
+  for the untagged alpha candidate but is blocked by real SYNOP live/archive
+  identifier reconciliation. Hydro basin geometry, hydrological archive backfill,
+  warning history, performance/scalability hardening, and PDF reports remain
+  future work until their own implementation, docs, and tests land.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
   GL, ECharts, TanStack Query, Zustand.
 - **Backend plan:** Python FastAPI, Pydantic, httpx, scheduler, cache, SQLite
@@ -102,7 +103,9 @@ and must stay test-only.
   backfill is opt-in and bounded, and the generated SDK/examples live under
   `packages/` and `examples/`. Stage 18 bundles reviewed WMO OSCAR/Surface
   synop station coordinates. Stage 19 security hardening is implemented;
-  Stage 20-26 tasks remain unchecked planning items.
+  Stage 20 is implemented and Stage 21 validation is recorded, but real SYNOP
+  archive reconciliation, tag, and prerelease steps remain unchecked. Stages
+  22-26 remain planning items.
   Do not mark future work such as `hydro_basins`, hydrological archive imports,
   warning history, PDF reports, or radar rendering as implemented until the repo
   contains matching implementation, docs, tests, and source/legal review.

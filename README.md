@@ -1,14 +1,13 @@
 # MeteoLens
 
-**Status: public alpha (`v0.1.0-alpha` candidate).** MeteoLens works end to
-end against live IMGW-PIB data, but it is an alpha: expect the gaps listed in
-[Known Limitations](#known-limitations) (hydro warning basins still lack
-reviewed polygons, radar downloads are blocked at the source, history starts
-empty unless backfilled). The existing smoke-test record in
-[docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md)
-predates several implemented features; unrestricted public deployment is gated
-on the hardening and current-main validation plan in
-[docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md](docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md).
+**Status: public alpha (`v0.1.0-alpha` candidate; not tagged yet).** MeteoLens
+works end to end against live IMGW-PIB data, but it is an alpha: expect the
+gaps listed in [Known Limitations](#known-limitations) (hydro warning basins
+still lack reviewed polygons, radar downloads are blocked at the source,
+history starts empty unless backfilled). The current-main validation record is
+[docs/release/STAGE_21_VALIDATION_2026-07-14.md](docs/release/STAGE_21_VALIDATION_2026-07-14.md).
+It found an unresolved SYNOP live/archive station-ID reconciliation blocker, so
+tagging and GitHub prerelease publication remain pending.
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
 hydrological data for Poland. Stages 0-18 (research, documentation, backend
@@ -20,10 +19,12 @@ rendering MVP with the COSMO 2 m temperature map overlay, bounded SYNOP daily
 archive backfill, the public API/SDK/export stabilization pass, documentation
 status stabilization, reviewed WMO OSCAR/Surface synop station coordinates,
 and Stage 19 public-internet security hardening, plus Stage 20 production
-observability, backup, and recovery) are implemented. Stages 21-26 remain
-planned and prioritize current-main release validation, hydrology, warning
-history, performance, and PDF reports. See [TASKS.md](TASKS.md) for the full
-staged backlog.
+observability, backup, and recovery) are implemented. Stage 21 current-main
+validation is recorded for the alpha candidate and has an unresolved SYNOP
+identifier-reconciliation blocker; tagging and prerelease publication are
+pending. Stages 22-26 remain planned and cover hydrology, warning history,
+performance, and PDF reports. See [TASKS.md](TASKS.md) for the full staged
+backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -133,8 +134,10 @@ Implemented now:
   history with `origin: "archive_import"`, import-run metadata, IMGW-PIB
   attribution, processed-data notices, missing/null preservation, duplicate
   upserts, and retention interaction. The station observations API labels
-  `live_refresh`, `archive_import`, and `mixed` series so charts can show
-  multi-point historical data immediately after a successful import.
+  `live_refresh`, `archive_import`, and `mixed` series. Real current SYNOP
+  `id_stacji` ↔ archive `NSP` reconciliation is not implemented yet, so the
+  imported archive series remains explicit and separate until a reviewed
+  mapping source is available.
 
 - Stage 16 public API, SDK, and power-user exports: the `/api/v1` contract now
   documents versioning, compatibility, and responsible-use guidance; station
@@ -257,13 +260,11 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 
 ## Screenshots
 
-Captured on 2026-07-03 from a populated live IMGW-PIB cache (not fixtures);
+Captured on 2026-07-14 from a populated live IMGW-PIB cache (not fixtures);
 every view keeps the IMGW-PIB attribution and processed-data notice visible.
-Note the honest gaps in the shots: synoptic stations report "0 na mapie · 62
-bez współrzędnych" and warnings show "0 poligonów" because the shots predate
-the Stage 13 bundled PRG polygons and Stage 18 bundled synop coordinates. With
-the current bundled datasets, meteo warnings render county/voivodeship polygons
-and current synop stations render as markers (see
+The map now shows 62 reviewed-coordinate SYNOP markers and resolved PRG meteo
+warning polygons. Hydro warnings deliberately remain list-only when their
+`kod_zlewni` has no reviewed basin geometry (see
 [Known Limitations](#known-limitations)).
 
 Map view with live station layers and the active warning list:
@@ -275,7 +276,7 @@ missing fields, and raw source JSON:
 
 ![Station details panel in expert mode](docs/screenshots/station-details-expert.png)
 
-Warning details with the explicit missing-area-geometry notice:
+Meteorological warning details with resolved reviewed administrative geometry:
 
 ![Warning details with missing geometry notice](docs/screenshots/warning-details-list.png)
 
@@ -287,7 +288,7 @@ local alert rules (clearly labelled as not an official alerting system):
 To re-capture against a fresh live cache, follow
 [docs/screenshots/README.md](docs/screenshots/README.md) or run the smoke
 script with a screenshot directory (see
-[docs/release/SMOKE_TEST_2026-07-03.md](docs/release/SMOKE_TEST_2026-07-03.md)).
+[docs/release/STAGE_21_VALIDATION_2026-07-14.md](docs/release/STAGE_21_VALIDATION_2026-07-14.md)).
 The target layout is specified in [UI_UX.md](UI_UX.md).
 
 ## Exports
@@ -350,6 +351,12 @@ data (see `AGENTS.md`).
   still serve imported station observations by stable station ID, but map/list
   station discovery still depends on current cache data and reviewed geometry.
   Retention is capped by `METEOLENS_OBSERVATION_RETENTION_DAYS`.
+- **Real SYNOP live/archive series are not reconciled yet.** Current IMGW
+  SYNOP uses `id_stacji`, while the bounded daily archive uses a different
+  `NSP` identifier. Both origins are preserved and exposed separately, but a
+  reviewed reconciliation map is required before a current station can show a
+  real combined `mixed` series. This is the outstanding Stage 21 release
+  blocker; it must not be papered over with name matching or hardcoded IDs.
 - **Timeline/animation for products.** When cached product frame manifests exist,
   the bottom timeline shows frame metadata with play/step controls and explicit
   “metadata only / not renderable on map” labels. COSMO 2 m temperature frames
@@ -391,11 +398,11 @@ data (see `AGENTS.md`).
   verify current IMGW-PIB terms before public or commercial use (see
   `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use" and
   [deploy/PRODUCTION_CHECKLIST.md](deploy/PRODUCTION_CHECKLIST.md)).
-- **Unrestricted public deployment is not release-ready yet.** The repository is
-  public, but the production path still needs explicit endpoint protection,
-  abuse limits, workflow restrictions, container hardening, observability,
-  backup/restore verification, and a fresh current-main smoke-test pass before
-  `v0.1.0-alpha` is tagged.
+- **This is an untagged alpha candidate, not a public-demo approval.** Current-
+  main validation, abuse protection, observability, and backup/restore checks
+  are recorded, but a deployer must still review source terms and complete the
+  per-host [production checklist](deploy/PRODUCTION_CHECKLIST.md). The tag and
+  GitHub prerelease have not yet been created.
 
 ## Troubleshooting
 

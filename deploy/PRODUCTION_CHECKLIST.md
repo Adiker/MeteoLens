@@ -3,9 +3,9 @@
 Use this checklist before exposing a public demo or production instance. The
 boxes are intentionally unchecked: complete them per deployment on the target
 host. A historical smoke-test run is recorded in
-`docs/release/SMOKE_TEST_2026-07-03.md`, but unrestricted public deployment now
-requires the remaining Stage 20-21 operational-readiness and validation plan in
-`docs/release/PUBLIC_ALPHA_HARDENING_PLAN.md`.
+`docs/release/SMOKE_TEST_2026-07-03.md`. A newer repository-level validation is
+recorded in `docs/release/STAGE_21_VALIDATION_2026-07-14.md`; it does not replace
+these per-host gates or the deployer's current source-terms review.
 
 ## Legal and attribution
 
