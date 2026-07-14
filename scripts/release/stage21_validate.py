@@ -234,7 +234,8 @@ def archive(client: Client, evidence: Evidence, args: argparse.Namespace) -> Non
         evidence.check("bounded archive backfill", status == 200 and payload.get("status") in {"completed", "completed_with_warnings"}, f"status={status}")
         status, headers, repeated = client.json(path, method="POST", headers={"X-MeteoLens-Admin-Token": token})
         evidence.payload("archive_repeat", repeated)
-        evidence.check("archive cooldown", status == 429 and bool(headers.get("Retry-After")), f"status={status} retry_after={headers.get('Retry-After')}")
+        retry_after = headers.get("Retry-After") or headers.get("Retry-after")
+        evidence.check("archive cooldown", status == 429 and bool(retry_after), f"status={status} retry_after={retry_after}")
     else:
         status, _, payload = client.json(path, method="POST")
         evidence.payload("archive_disabled", payload)
