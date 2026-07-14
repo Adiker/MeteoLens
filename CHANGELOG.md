@@ -4,6 +4,9 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added `CONTRIBUTING.md` with the repository's branch, commit, pull request,
+  and squash/rebase/merge policy; existing `main` history is explicitly kept
+  unchanged.
 - Completed Stage 21 current-main validation for the untagged `v0.1.0-alpha`
   candidate: repeatable live development and nginx production smoke tests,
   fresh-volume and pre-Stage-18 upgrade checks, COSMO render/cache checks,

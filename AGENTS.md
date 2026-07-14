@@ -11,6 +11,7 @@ mandatory guardrails for AI agents and automation working in this repository.
 - Do not force-push `main`.
 - Do not delete branches without explicit consent.
 - Do not rewrite published history without explicit consent.
+- Follow `CONTRIBUTING.md` for the recommended commit and merge strategy.
 - Before opening a PR, run the tests relevant to the changed parts.
 - If tests are not available yet, state that clearly in the PR description.
 
