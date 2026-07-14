@@ -179,6 +179,18 @@ observation-history repository. Imports are limited by date range and file count
 rate-limited between files, and resumable through upserts on
 `station_id + metric + observed_at`.
 
+The Stage 21 reconciliation follow-up adds
+`app/imgw/station_mapping.py` and the versioned
+`app/imgw/data/synop_station_mapping.v1.json`. The reproducible fetch script
+parses the official IMGW station catalogue, groups duplicate source rows by
+`NSP`, derives a block-12 candidate only from the explicit station code, and
+requires an exact current IMGW SYNOP `id_stacji`. Ambiguous candidates fail the
+build. Runtime archive parsing accepts only reviewed `mapped` entries;
+unresolved rows use `synop-archive:<NSP>` and emit a parser warning.
+Before a controlled backfill, legacy pre-map `archive_import` rows are also
+reconciled through the same reviewed artifact, so upgraded persistent databases
+do not require a manual identifier list or destructive reset.
+
 Stage 19 classifies read-only data routes as public, product renders as
 expensive, and archive imports as administrative. The archive HTTP endpoint is
 disabled without a deployment-local admin token; MeteoLens stores no user
@@ -231,14 +243,16 @@ schema and repository boundaries should leave room for PostgreSQL/PostGIS and
 TimescaleDB.
 
 Stage 15 extends `observation_history` with `origin`, `import_run_id`, and
-`import_source_url`. Live refresh rows use `origin='live_refresh'`; imported
-archive rows use `origin='archive_import'`; aggregated API responses may report
-`mixed`. `archive_import_runs` records run status, observed range, file progress,
+`import_source_url`. The Stage 21 mapping follow-up adds `source_station_id`,
+`station_mapping_status`, `station_mapping_version`,
+`station_mapping_source_url`, and `station_mapping_retrieved_at`. Live refresh
+rows use `origin='live_refresh'`; imported archive rows use
+`origin='archive_import'`; aggregated API responses may report `mixed`.
+`archive_import_runs` records run status, observed range, file progress,
 insert/update/unchanged counts, warnings, errors, attribution, and processed-data
-notice. Stage 21 validation found that current live SYNOP `id_stacji` and daily
-archive `NSP` identifiers differ in real data. Until a reviewed reconciliation
-source is introduced, archive and live series remain explicit separate station
-histories; no name-based or hardcoded merge is allowed.
+notice. Archive and live rows share `synop:<id_stacji>` only through an approved
+map entry. Unmapped rows remain separate, and no name-based or hardcoded merge
+is allowed.
 
 Stage 9 geometry design should add imported geometry metadata without mixing
 external dataset ingestion into IMGW parsers. Candidate tables include:

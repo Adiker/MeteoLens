@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS observation_history (
     origin TEXT NOT NULL DEFAULT 'live_refresh',
     import_run_id TEXT,
     import_source_url TEXT,
+    source_station_id TEXT,
+    station_mapping_status TEXT,
+    station_mapping_version TEXT,
+    station_mapping_source_url TEXT,
+    station_mapping_retrieved_at TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     UNIQUE(station_id, metric, observed_at)
 );
@@ -81,6 +86,26 @@ MIGRATIONS: tuple[tuple[str, str], ...] = (
     (
         "observation_history",
         "ALTER TABLE observation_history ADD COLUMN import_source_url TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN source_station_id TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_status TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_version TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_source_url TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_retrieved_at TEXT",
     ),
 )
 

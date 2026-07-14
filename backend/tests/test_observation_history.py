@@ -64,7 +64,16 @@ def test_init_db_migrates_legacy_history_before_origin_index(monkeypatch, tmp_pa
 
     columns = {row["name"] for row in connection.execute("PRAGMA table_info(observation_history)")}
     indexes = {row["name"] for row in connection.execute("PRAGMA index_list(observation_history)")}
-    assert {"origin", "import_run_id", "import_source_url"} <= columns
+    assert {
+        "origin",
+        "import_run_id",
+        "import_source_url",
+        "source_station_id",
+        "station_mapping_status",
+        "station_mapping_version",
+        "station_mapping_source_url",
+        "station_mapping_retrieved_at",
+    } <= columns
     assert "idx_obs_origin" in indexes
 
 

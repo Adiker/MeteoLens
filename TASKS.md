@@ -649,10 +649,10 @@ Implementation tasks:
 - [x] Verify cached replay of the rendered frame.
 - [x] Verify render failure and source-unavailable states.
 - [x] Verify a bounded archive backfill.
-- [ ] Verify live/archive/mixed observation series with reconciled real IMGW
-  station identifiers. Stage 21 found that live SYNOP `id_stacji` and daily
-  archive `NSP` identifiers are not yet reconciled; live and archive series
-  pass separately, but their real-data combined series is not release-ready.
+- [x] Verify live/archive/mixed observation series with reconciled real IMGW
+  station identifiers. The reviewed 2026-07-14 IMGW catalogue/current mapping
+  resolved archive `NSP=349190600` to current `id_stacji=12600`; a bounded live
+  import returned `series_origin=mixed` with one point from each origin.
 - [x] Verify exports and attribution.
 - [x] Verify source outage behavior.
 - [x] Test backup and restore.
@@ -699,8 +699,8 @@ Acceptance criteria:
 
 - [x] A production smoke-test record exists for the current validation commit.
 - [x] Both fresh install and persistent-volume upgrade paths pass.
-- [ ] Stage 13-20 behavior is covered. The real SYNOP live/archive identifier
-  reconciliation blocker above remains unresolved.
+- [x] Stage 13-20 behavior is covered, including the follow-up real SYNOP
+  live/archive identifier reconciliation check.
 - [ ] The release checklist has no unresolved release-blocking items.
 - [x] The release remains clearly labelled as alpha.
 - [x] Known limitations are prominently visible.

@@ -1053,6 +1053,11 @@ def export_station_observations_csv(
             "origin",
             "import_run_id",
             "import_source_url",
+            "source_station_id",
+            "station_mapping_status",
+            "station_mapping_version",
+            "station_mapping_source_url",
+            "station_mapping_retrieved_at",
             "source_key",
             "attribution",
             "processed_notice",
@@ -1078,6 +1083,15 @@ def export_station_observations_csv(
                 "origin": observation.get("origin", response.series_origin),
                 "import_run_id": observation.get("import_run_id") or "",
                 "import_source_url": observation.get("import_source_url") or "",
+                "source_station_id": observation.get("source_station_id") or "",
+                "station_mapping_status": observation.get("station_mapping_status") or "",
+                "station_mapping_version": observation.get("station_mapping_version") or "",
+                "station_mapping_source_url": (
+                    observation.get("station_mapping_source_url") or ""
+                ),
+                "station_mapping_retrieved_at": (
+                    observation.get("station_mapping_retrieved_at") or ""
+                ),
                 "source_key": source.source_key,
                 "attribution": source.attribution,
                 "processed_notice": source.processed_notice,
