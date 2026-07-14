@@ -4,6 +4,10 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Fixed station details so normalized meteo metric names are shown in Polish
+  and the measurement list displays only the current snapshot instead of
+  flattening historical points into apparent duplicate rows; charts continue
+  to use the full observation history.
 - Added Stage 20 production observability, backup, and recovery: explicit
   liveness/readiness semantics, internal Prometheus metrics/alerts, JSON
   request-correlated logs, Compose resource/log limits, deterministic SQLite

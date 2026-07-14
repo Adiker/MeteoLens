@@ -107,7 +107,8 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
   }
 
   const { station, latest_observed_at, data_delay_seconds } = stationQuery.data;
-  const observations = observationsQuery.data?.observations ?? station.observations;
+  const currentObservations = station.observations;
+  const chartObservations = observationsQuery.data?.observations ?? currentObservations;
   const seriesOrigin = observationsQuery.data?.series_origin ?? "live_refresh";
   const hasCoords = station.lat != null && station.lon != null;
 
@@ -155,7 +156,7 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
 
       {tab === "data" ? (
         <ul className="divide-y divide-border rounded-md border border-border">
-          {observations.map((obs) => (
+          {currentObservations.map((obs) => (
             <li
               key={`${obs.metric}:${obs.observed_at ?? "snapshot"}:${obs.origin ?? "live"}`}
               className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
@@ -174,13 +175,13 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
               </span>
             </li>
           ))}
-          {observations.length === 0 && (
+          {currentObservations.length === 0 && (
             <li className="px-3 py-2 text-sm text-muted-foreground">Brak pomiarów.</li>
           )}
         </ul>
       ) : (
         <StationChart
-          observations={observations}
+          observations={chartObservations}
           seriesKind={observationsQuery.data?.series_kind ?? "snapshot"}
         />
       )}

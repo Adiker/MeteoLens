@@ -56,7 +56,9 @@ Implemented now:
   warning details (with mobile bottom sheet), station search, "My location",
   ECharts station chart, CSV/JSON/GeoJSON/PNG exports, URL permalinks, keyboard
   shortcuts, light/dark/system theme, simple/expert mode, and explicit
-  loading/empty/stale/partial/error states.
+  loading/empty/stale/partial/error states. Station metric lists use Polish
+  labels and show the latest snapshot, while historical points remain in the
+  chart.
 - Docker Compose, `.env.example`, CI (backend, frontend, and E2E jobs), lint,
   and tests.
 - IMGW-PIB HTTP client, parser layer, normalized models, file cache, and parser
