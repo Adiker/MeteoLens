@@ -1,5 +1,17 @@
 # TASKS.md - MeteoLens Implementation Queue
 
+## Repository Maintenance and Governance
+
+- [x] Document the ongoing contribution policy for allowed branch prefixes,
+  Conventional Commit-style subjects, topic-branch cleanup, pull requests, and
+  squash/rebase/merge guidance.
+
+Acceptance criteria:
+
+- [x] Mandatory guardrails and recommended workflow are clearly distinguished.
+- [x] Contributors can choose an integration strategy without rewriting the
+  published `main` history.
+
 ## Stage 0 - Research
 
 - [x] Verify IMGW-PIB API info page and current endpoint list.
@@ -483,10 +495,8 @@ tests.
   candidates.
 - [x] Update `CHANGELOG.md` with Stage 17 documentation/status cleanup.
 - [x] Keep `README.md`, `DATA_SOURCES.md`, and `LEGAL_ATTRIBUTION.md` unchanged
-  for the original Stage 17 status pass because they already described the
-  Stage 16 state and source/legal constraints consistently.
-- [x] Add `CONTRIBUTING.md` with branch, commit, pull request, and
-  squash/rebase/merge guidance, and link it from the developer documentation.
+  because they already describe the Stage 16 state and source/legal constraints
+  consistently.
 - [x] Do not add sources, change API/runtime behavior, or mark `hydro_basins`,
   `synop_stations`, PDF reports, or radar rendering as implemented.
 - [x] Run backend lint/tests and frontend lint/tests/build.
@@ -498,8 +508,6 @@ Acceptance criteria:
   describe the same Stage 0-17 project state.
 - [x] Stage 17 is clearly documentation/status stabilization only.
 - [x] Future-stage items were listed as candidates, not implemented features.
-- [x] Contributors can choose an integration strategy without rewriting the
-  published `main` history.
 
 ## Stage 18 - Reviewed Synop Station Coordinates
 

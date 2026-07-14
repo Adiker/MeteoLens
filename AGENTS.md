@@ -9,9 +9,11 @@ mandatory guardrails for AI agents and automation working in this repository.
 - Work on branches with one of these prefixes: `feature/`, `fix/`,
   `refactor/`, `docs/`, `chore/`.
 - Do not force-push `main`.
-- Do not delete branches without explicit consent.
+- Do not delete protected or shared branches, or another contributor's active
+  branch, without explicit owner consent.
 - Do not rewrite published history without explicit consent.
-- Follow `CONTRIBUTING.md` for the recommended commit and merge strategy.
+- Follow [CONTRIBUTING.md](CONTRIBUTING.md) for the recommended workflow,
+  including topic-branch cleanup and commit and merge strategy.
 - Before opening a PR, run the tests relevant to the changed parts.
 - If tests are not available yet, state that clearly in the PR description.
 

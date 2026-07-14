@@ -12,7 +12,12 @@ requests, and merge strategy. The mandatory repository guardrails remain in
   `docs/`, or `chore/`.
 - Open pull requests against `main` and keep each pull request focused on one
   coherent change.
-- Do not force-push `main`, delete branches, or rewrite published history.
+- Never force-push `main`.
+- Do not delete protected or shared branches, or rewrite published history,
+  without explicit owner consent.
+- Merged or abandoned topic branches under `feature/*`, `fix/*`, `docs/*`,
+  `refactor/*`, or `chore/*` may be deleted when they are no longer needed.
+  This cleanup does not permit deleting another contributor's active branch.
 - Before opening a pull request, run the checks relevant to the changed paths.
   For documentation-only changes, state that no runtime tests were needed and
   run the documentation checks described in the pull request description.
@@ -41,18 +46,17 @@ release context.
 
 | Change | Preferred integration | Reason |
 | --- | --- | --- |
-| Documentation, dependency update, or one small fix | Squash merge | One clear change and one useful subject on `main`. |
-| Small pull request with several review-fix commits | Squash merge | Avoids carrying temporary review steps into the shared history. |
+| Small documentation change, dependency update, or small fix | Squash merge | One clear change and one useful subject on `main`. |
+| Pull request containing temporary review-fix commits | Squash merge | Avoids carrying temporary review steps into the shared history. |
 | Larger feature with independently meaningful commits | Rebase-and-merge | Keeps the logical commit sequence while avoiding an unnecessary merge node. |
-| Release checkpoint, broad architecture change, or deliberate branch convergence | Merge commit | Preserves an explicit boundary and the branch context. |
+| Deliberate release, architecture, or branch-convergence boundary | Merge commit | Preserves the explicit boundary and branch context. |
 
 Squashing and rebasing are different choices:
 
 - **Squash merge** combines the pull request into one commit.
 - **Rebase-and-merge** preserves the pull request's individual commits on top
   of the target branch, without creating a merge commit.
-- **Merge commit** preserves both parent histories and is reserved for cases
-  where that boundary is useful.
+- **Merge commit** preserves both parent histories when that boundary is useful.
 
 The existing merge commits on `main` are retained. They already mark coherent
 pull requests and release stages, and rewriting them would change all
