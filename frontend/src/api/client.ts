@@ -89,6 +89,15 @@ export interface Observation {
   origin?: "live_refresh" | "archive_import" | "mixed";
   import_run_id?: string | null;
   import_source_url?: string | null;
+  source_station_id?: string | null;
+  station_mapping_status?:
+    | "mapped"
+    | "unmapped_not_current_synop"
+    | "unmapped_not_in_mapping_source"
+    | null;
+  station_mapping_version?: string | null;
+  station_mapping_source_url?: string | null;
+  station_mapping_retrieved_at?: string | null;
 }
 
 export interface StationListItem {

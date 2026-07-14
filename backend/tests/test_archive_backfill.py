@@ -114,6 +114,10 @@ def test_synop_daily_archive_parser_preserves_values_nulls_and_statuses() -> Non
     assert by_metric["precipitation_sum"]["value"] is None
     assert by_metric["precipitation_sum"]["missing"] is False
     assert by_metric["precipitation_sum"]["raw_field"] == "SMDB/WSMDB:9"
+    assert by_metric["temperature"]["station_id"] == "synop:12600"
+    assert by_metric["temperature"]["source_station_id"] == "349190600"
+    assert by_metric["temperature"]["station_mapping_status"] == "mapped"
+    assert by_metric["temperature"]["station_mapping_version"] == "2026-07-14"
 
 
 def test_synop_daily_backfill_is_resumable_and_counts_duplicates(monkeypatch, tmp_path) -> None:
@@ -129,8 +133,10 @@ def test_synop_daily_backfill_is_resumable_and_counts_duplicates(monkeypatch, tm
     assert first.observations_inserted == 20
     assert second.observations_inserted == 0
     assert second.observations_updated == 20
-    rows = ObservationRepository().query_observations(station_id="synop:349190600")
+    rows = ObservationRepository().query_observations(station_id="synop:12600")
     assert len(rows) == 20
+    assert {row["source_station_id"] for row in rows} == {"349190600"}
+    assert {row["station_mapping_status"] for row in rows} == {"mapped"}
 
 
 def test_synop_daily_backfill_applies_time_range_filter(monkeypatch, tmp_path) -> None:
@@ -142,7 +148,7 @@ def test_synop_daily_backfill_applies_time_range_filter(monkeypatch, tmp_path) -
 
     result = backfiller.run(observed_from=date(2026, 5, 2), observed_to=date(2026, 5, 2))
     records = ObservationRepository().query_observations(
-        station_id="synop:349190600",
+        station_id="synop:12600",
         metric="temperature",
         observed_from=datetime(2026, 5, 1, tzinfo=UTC),
         observed_to=datetime(2026, 5, 3, tzinfo=UTC),
@@ -183,6 +189,74 @@ def test_archive_rows_follow_retention_pruning(monkeypatch, tmp_path) -> None:
     assert deleted == 10
 
 
+def test_synop_daily_archive_keeps_unmapped_nsp_explicit() -> None:
+    rows, warnings = parse_synop_daily_zip(
+        _synop_zip([_row("01", station="999999999")]),
+        source_url="https://example.test/2026_05_s.zip",
+        import_run_id="run-unmapped",
+        imported_at=datetime(2026, 7, 14, tzinfo=UTC),
+        observed_from=date(2026, 5, 1),
+        observed_to=date(2026, 5, 1),
+    )
+
+    assert len(warnings) == 1
+    assert "unmapped_not_in_mapping_source" in warnings[0]
+    assert {row["station_id"] for row in rows} == {"synop-archive:999999999"}
+    assert {row["source_station_id"] for row in rows} == {"999999999"}
+    assert {row["station_mapping_status"] for row in rows} == {
+        "unmapped_not_in_mapping_source"
+    }
+
+
+def test_backfill_reconciles_legacy_archive_rows_through_reviewed_map(
+    monkeypatch, tmp_path
+) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    get_engine().execute(
+        """
+        INSERT INTO observation_history (
+            station_id, station_name, source_key, station_type, metric, value,
+            unit, observed_at, retrieved_at, missing, raw_field, origin,
+            import_run_id, import_source_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'archive_import', ?, ?)
+        """,
+        (
+            "synop:349190600",
+            "BIELSKO-BIAŁA",
+            "synop",
+            "synop",
+            "temperature",
+            11.7,
+            "°C",
+            datetime(2026, 5, 1, tzinfo=UTC).isoformat(),
+            datetime(2026, 7, 14, tzinfo=UTC).isoformat(),
+            "STD/WSTD:blank",
+            "legacy-run",
+            "https://example.test/legacy.zip",
+        ),
+    )
+    get_engine().commit()
+    backfiller = SynopDailyArchiveBackfiller(
+        settings,
+        transport=_transport(_synop_zip([_row("02")])),
+    )
+
+    backfiller.run(observed_from=date(2026, 5, 2), observed_to=date(2026, 5, 2))
+
+    legacy = ObservationRepository().query_observations(
+        station_id="synop:349190600"
+    )
+    mapped = ObservationRepository().query_observations(
+        station_id="synop:12600", metric="temperature"
+    )
+    assert legacy == []
+    assert [row["source_station_id"] for row in mapped] == [
+        "349190600",
+        "349190600",
+    ]
+    assert {row["station_mapping_status"] for row in mapped} == {"mapped"}
+
+
 def test_observation_api_labels_mixed_live_and_archive_series(monkeypatch, tmp_path) -> None:
     settings = _prepare(tmp_path, monkeypatch)
     backfiller = SynopDailyArchiveBackfiller(
@@ -198,22 +272,22 @@ def test_observation_api_labels_mixed_live_and_archive_series(monkeypatch, tmp_p
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
         """,
         (
-            "synop:349190600",
+            "synop:12600",
             "BIELSKO-BIAŁA",
             "synop",
             "synop",
             "temperature",
             17.5,
             "°C",
-            datetime(2026, 5, 2, tzinfo=UTC).isoformat(),
-            datetime(2026, 5, 2, 8, tzinfo=UTC).isoformat(),
+            datetime(2026, 5, 1, tzinfo=UTC).isoformat(),
+            datetime(2026, 5, 1, 8, tzinfo=UTC).isoformat(),
             "temperatura",
         ),
     )
     get_engine().commit()
 
     response = TestClient(app).get(
-        "/api/v1/stations/synop:349190600/observations?metric=temperature"
+        "/api/v1/stations/synop:12600/observations?metric=temperature"
     )
 
     assert response.status_code == 200
@@ -225,3 +299,8 @@ def test_observation_api_labels_mixed_live_and_archive_series(monkeypatch, tmp_p
         "archive_import",
         "live_refresh",
     }
+    archive_point = next(
+        point for point in payload["observations"] if point["origin"] == "archive_import"
+    )
+    assert archive_point["source_station_id"] == "349190600"
+    assert archive_point["station_mapping_status"] == "mapped"

@@ -5,7 +5,8 @@ the current IMGW-PIB terms before public, production, or commercial use.
 
 Research dates: 2026-06-29 (base IMGW terms), 2026-07-05 (COSMO product
 download verification and daily SYNOP archive format verification), 2026-07-07
-(WMO OSCAR/Surface synop station-coordinate review).
+(WMO OSCAR/Surface synop station-coordinate review), 2026-07-14 (official IMGW
+SYNOP archive/current identifier mapping review).
 
 Source terms reviewed:
 [https://danepubliczne.imgw.pl/pl/regulations](https://danepubliczne.imgw.pl/pl/regulations).
@@ -131,6 +132,26 @@ CSV/ZIP files under
 No new non-IMGW provider is introduced. Imported rows must keep IMGW-PIB
 attribution, the MeteoLens processed-data notice, observed timestamp,
 import/retrieval timestamp, archive source URL, and missing/null status.
+
+### Reviewed SYNOP Identifier Mapping (Stage 21 Follow-up)
+
+The mapping introduces no new data provider. Both authoritative inputs are in
+the reviewed public IMGW-PIB service: `wykaz_stacji.csv` supplies archive `NSP`
+plus the separate station code, and `/api/data/synop` supplies current
+`id_stacji`. The block-12 interpretation is consistent with the already
+reviewed WMO OSCAR/Surface WIGOS records from Stage 18. The derived artifact
+must retain this attribution:
+
+```text
+Źródło identyfikatorów stacji: IMGW-PIB; przetworzenie: MeteoLens.
+```
+
+The artifact stores source URLs, source hashes, retrieval times, version,
+method, review status, and unresolved entries. It is a processed derivative and
+does not broaden the legal conclusions already documented for IMGW data.
+Operators must still re-check current IMGW terms for public or commercial use.
+Station names are not a legal or technical mapping key and are never used for
+reconciliation.
 
 ### Reviewed Geometry Datasets (Stage 13)
 

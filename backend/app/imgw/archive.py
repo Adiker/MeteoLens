@@ -20,6 +20,7 @@ from app.core.config import Settings
 from app.core.observability import metrics
 from app.db.engine import get_engine, init_db
 from app.db.repository import ArchiveObservationRow, ObservationRepository, _iso
+from app.imgw.station_mapping import SynopStationMapping
 from app.normalization.models import ATTRIBUTION, PROCESSED_NOTICE
 
 SYNOP_DAILY_BASE_PATH = (
@@ -185,9 +186,11 @@ class SynopDailyArchiveBackfiller:
         settings: Settings,
         *,
         transport: httpx.BaseTransport | None = None,
+        station_mapping: SynopStationMapping | None = None,
     ) -> None:
         self.settings = settings
         self.transport = transport
+        self.station_mapping = station_mapping or SynopStationMapping.load()
         self.repository = ObservationRepository()
         self.base_url = str(settings.imgw_base_url).rstrip("/")
 
@@ -207,6 +210,9 @@ class SynopDailyArchiveBackfiller:
                 code="archive_range_too_large",
             )
 
+        legacy_reconciliation = self.repository.reconcile_legacy_archive_station_ids(
+            self.station_mapping
+        )
         run_id = str(uuid4())
         started_at = datetime.now(UTC)
         started_monotonic = time.perf_counter()
@@ -218,6 +224,12 @@ class SynopDailyArchiveBackfiller:
         updated = 0
         unchanged = 0
         parser_warnings: list[str] = []
+        if legacy_reconciliation["skipped"]:
+            parser_warnings.append(
+                "Legacy archive reconciliation left "
+                f"{legacy_reconciliation['skipped']} conflicting or invalid row(s) "
+                "unchanged; review the database before release."
+            )
         errors: list[str] = []
         files_processed = 0
 
@@ -283,6 +295,7 @@ class SynopDailyArchiveBackfiller:
                         imported_at=datetime.now(UTC),
                         observed_from=observed_from,
                         observed_to=observed_to,
+                        station_mapping=self.station_mapping,
                     )
                     parser_warnings.extend(warnings)
                     rows_seen += len(
@@ -524,8 +537,11 @@ def parse_synop_daily_zip(
     imported_at: datetime,
     observed_from: date,
     observed_to: date,
+    station_mapping: SynopStationMapping | None = None,
 ) -> tuple[list[ArchiveObservationRow], list[str]]:
+    mapping = station_mapping or SynopStationMapping.load()
     warnings: list[str] = []
+    warned_unmapped: set[str] = set()
     records: list[ArchiveObservationRow] = []
     with zipfile.ZipFile(BytesIO(content)) as archive:
         csv_names = [name for name in archive.namelist() if name.lower().endswith(".csv")]
@@ -547,6 +563,13 @@ def parse_synop_daily_zip(
                 if not station_id:
                     warnings.append(f"{name}:{line_number}: missing station id.")
                     continue
+                resolution = mapping.resolve(station_id)
+                if resolution.mapping_status != "mapped" and station_id not in warned_unmapped:
+                    warnings.append(
+                        f"{name}:{line_number}: NSP {station_id} has mapping status "
+                        f"{resolution.mapping_status}; stored as {resolution.station_id}."
+                    )
+                    warned_unmapped.add(station_id)
                 station_name = str(row.get("POST") or station_id).strip()
                 for field, status_field, metric, unit in SYNOP_DAILY_METRICS:
                     value = _parse_optional_float(row.get(field))
@@ -558,7 +581,7 @@ def parse_synop_daily_zip(
                         missing = True
                     records.append(
                         {
-                            "station_id": f"synop:{station_id}",
+                            "station_id": resolution.station_id,
                             "station_name": station_name,
                             "source_key": "synop",
                             "station_type": "synop",
@@ -571,6 +594,13 @@ def parse_synop_daily_zip(
                             "raw_field": f"{field}/{status_field}:{status or 'blank'}",
                             "import_run_id": import_run_id,
                             "import_source_url": source_url,
+                            "source_station_id": resolution.source_station_id,
+                            "station_mapping_status": resolution.mapping_status,
+                            "station_mapping_version": resolution.mapping_version,
+                            "station_mapping_source_url": resolution.mapping_source_url,
+                            "station_mapping_retrieved_at": (
+                                resolution.mapping_retrieved_at
+                            ),
                         }
                     )
     return records, warnings

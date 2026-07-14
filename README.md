@@ -6,8 +6,10 @@ gaps listed in [Known Limitations](#known-limitations) (hydro warning basins
 still lack reviewed polygons, radar downloads are blocked at the source,
 history starts empty unless backfilled). The current-main validation record is
 [docs/release/STAGE_21_VALIDATION_2026-07-14.md](docs/release/STAGE_21_VALIDATION_2026-07-14.md).
-It found an unresolved SYNOP live/archive station-ID reconciliation blocker, so
-tagging and GitHub prerelease publication remain pending.
+The SYNOP live/archive station-ID blocker found by that validation now has a
+reviewed source-based fix and a passing limited live-data follow-up. Tagging and
+GitHub prerelease publication still remain pending until the final pre-tag
+validation is run against the merged commit.
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
 hydrological data for Poland. Stages 0-18 (research, documentation, backend
@@ -20,8 +22,8 @@ archive backfill, the public API/SDK/export stabilization pass, documentation
 status stabilization, reviewed WMO OSCAR/Surface synop station coordinates,
 and Stage 19 public-internet security hardening, plus Stage 20 production
 observability, backup, and recovery) are implemented. Stage 21 current-main
-validation is recorded for the alpha candidate and has an unresolved SYNOP
-identifier-reconciliation blocker; tagging and prerelease publication are
+validation is recorded for the alpha candidate. Its SYNOP identifier blocker is
+fixed on a reviewed mapping path; tagging and prerelease publication are still
 pending. Stages 22-26 remain planned and cover hydrology, warning history,
 performance, and PDF reports. See [TASKS.md](TASKS.md) for the full staged
 backlog.
@@ -134,10 +136,13 @@ Implemented now:
   history with `origin: "archive_import"`, import-run metadata, IMGW-PIB
   attribution, processed-data notices, missing/null preservation, duplicate
   upserts, and retention interaction. The station observations API labels
-  `live_refresh`, `archive_import`, and `mixed` series. Real current SYNOP
-  `id_stacji` ↔ archive `NSP` reconciliation is not implemented yet, so the
-  imported archive series remains explicit and separate until a reviewed
-  mapping source is available.
+  `live_refresh`, `archive_import`, and `mixed` series. A versioned map generated
+  from the official IMGW station catalogue and current SYNOP endpoint now
+  reconciles archive `NSP` values to current `id_stacji` values by station code,
+  never by station name. Each imported point exposes the source `NSP`, mapping
+  status/version/source/retrieval time; unmapped records remain explicit under
+  `synop-archive:<NSP>`. The next controlled backfill also upgrades legacy
+  pre-map archive rows through the same reviewed artifact.
 
 - Stage 16 public API, SDK, and power-user exports: the `/api/v1` contract now
   documents versioning, compatibility, and responsible-use guidance; station
@@ -351,12 +356,14 @@ data (see `AGENTS.md`).
   still serve imported station observations by stable station ID, but map/list
   station discovery still depends on current cache data and reviewed geometry.
   Retention is capped by `METEOLENS_OBSERVATION_RETENTION_DAYS`.
-- **Real SYNOP live/archive series are not reconciled yet.** Current IMGW
-  SYNOP uses `id_stacji`, while the bounded daily archive uses a different
-  `NSP` identifier. Both origins are preserved and exposed separately, but a
-  reviewed reconciliation map is required before a current station can show a
-  real combined `mixed` series. This is the outstanding Stage 21 release
-  blocker; it must not be papered over with name matching or hardcoded IDs.
+- **SYNOP reconciliation is source-map bounded.** The reviewed 2026-07-14 map
+  resolves 61 of the 62 current SYNOP identifiers through the official IMGW
+  `NSP` + station-code catalogue; the current `Platforma` station has no archive
+  catalogue entry. Historical/non-current catalogue entries and future unknown
+  `NSP` values are not guessed: they remain under `synop-archive:<NSP>` with an
+  explicit mapping status. Refresh the versioned map with
+  `python scripts/data/fetch_synop_station_mapping.py --dataset-version DATE
+  --reviewed-at DATE` and review the diff before deployment.
 - **Timeline/animation for products.** When cached product frame manifests exist,
   the bottom timeline shows frame metadata with play/step controls and explicit
   “metadata only / not renderable on map” labels. COSMO 2 m temperature frames

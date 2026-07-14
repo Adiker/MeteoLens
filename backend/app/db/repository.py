@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
-from typing import Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 
 from app.db.engine import get_engine, init_db
 from app.imgw.parsers.utils import SOURCE_TIMEZONE
 from app.normalization.models import Station
+
+if TYPE_CHECKING:
+    from app.imgw.station_mapping import SynopStationMapping
 
 Interval = Literal["raw", "10m", "1h", "1d"]
 ObservationOrigin = Literal["live_refresh", "archive_import", "mixed"]
@@ -35,12 +38,23 @@ class ArchiveObservationRow(TypedDict):
     raw_field: str
     import_run_id: str
     import_source_url: str
+    source_station_id: str
+    station_mapping_status: str
+    station_mapping_version: str
+    station_mapping_source_url: str
+    station_mapping_retrieved_at: datetime
 
 
 class ArchivePersistSummary(TypedDict):
     inserted: int
     updated: int
     unchanged: int
+
+
+class ArchiveReconciliationSummary(TypedDict):
+    migrated: int
+    deduplicated: int
+    skipped: int
 
 
 def _iso(dt: datetime) -> str:
@@ -56,6 +70,81 @@ def _parse_iso(value: str) -> datetime:
 
 
 class ObservationRepository:
+    def reconcile_legacy_archive_station_ids(
+        self,
+        mapping: SynopStationMapping,
+    ) -> ArchiveReconciliationSummary:
+        """Upgrade pre-mapping archive rows through the reviewed artifact only."""
+        init_db()
+        connection = get_engine()
+        summary: ArchiveReconciliationSummary = {
+            "migrated": 0,
+            "deduplicated": 0,
+            "skipped": 0,
+        }
+        rows = connection.execute(
+            """
+            SELECT id, station_id, metric, observed_at
+            FROM observation_history
+            WHERE origin = 'archive_import' AND source_station_id IS NULL
+            ORDER BY id
+            """
+        ).fetchall()
+        for row in rows:
+            station_id = str(row["station_id"])
+            if station_id.startswith("synop:"):
+                nsp = station_id.removeprefix("synop:")
+            elif station_id.startswith("synop-archive:"):
+                nsp = station_id.removeprefix("synop-archive:")
+            else:
+                summary["skipped"] += 1
+                continue
+            if len(nsp) != 9 or not nsp.isdigit():
+                summary["skipped"] += 1
+                continue
+            resolution = mapping.resolve(nsp)
+            existing = connection.execute(
+                """
+                SELECT id
+                FROM observation_history
+                WHERE station_id = ? AND metric = ? AND observed_at = ?
+                    AND origin = 'archive_import' AND id != ?
+                """,
+                (
+                    resolution.station_id,
+                    row["metric"],
+                    row["observed_at"],
+                    row["id"],
+                ),
+            ).fetchone()
+            if existing is not None:
+                connection.execute(
+                    "DELETE FROM observation_history WHERE id = ?", (row["id"],)
+                )
+                summary["deduplicated"] += 1
+                continue
+            connection.execute(
+                """
+                UPDATE observation_history
+                SET station_id = ?, source_station_id = ?,
+                    station_mapping_status = ?, station_mapping_version = ?,
+                    station_mapping_source_url = ?, station_mapping_retrieved_at = ?
+                WHERE id = ?
+                """,
+                (
+                    resolution.station_id,
+                    resolution.source_station_id,
+                    resolution.mapping_status,
+                    resolution.mapping_version,
+                    resolution.mapping_source_url,
+                    _iso(resolution.mapping_retrieved_at),
+                    row["id"],
+                ),
+            )
+            summary["migrated"] += 1
+        connection.commit()
+        return summary
+
     def persist_station_observations(self, station: Station) -> int:
         init_db()
         connection = get_engine()
@@ -68,9 +157,12 @@ class ObservationRepository:
                 INSERT INTO observation_history (
                     station_id, station_name, source_key, station_type,
                     metric, value, unit, observed_at, retrieved_at,
-                    missing, raw_field, origin, import_run_id, import_source_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(station_id, metric, observed_at) DO UPDATE SET
+                    missing, raw_field, origin, import_run_id, import_source_url,
+                    source_station_id, station_mapping_status,
+                    station_mapping_version, station_mapping_source_url,
+                    station_mapping_retrieved_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(station_id, metric, observed_at, origin) DO UPDATE SET
                     station_name = excluded.station_name,
                     source_key = excluded.source_key,
                     station_type = excluded.station_type,
@@ -81,7 +173,12 @@ class ObservationRepository:
                     raw_field = excluded.raw_field,
                     origin = excluded.origin,
                     import_run_id = excluded.import_run_id,
-                    import_source_url = excluded.import_source_url
+                    import_source_url = excluded.import_source_url,
+                    source_station_id = excluded.source_station_id,
+                    station_mapping_status = excluded.station_mapping_status,
+                    station_mapping_version = excluded.station_mapping_version,
+                    station_mapping_source_url = excluded.station_mapping_source_url,
+                    station_mapping_retrieved_at = excluded.station_mapping_retrieved_at
                 """,
                 (
                     station.id,
@@ -98,6 +195,11 @@ class ObservationRepository:
                     "live_refresh",
                     None,
                     station.source.url,
+                    station.source_id,
+                    None,
+                    None,
+                    None,
+                    None,
                 ),
             )
             if cursor.rowcount:
@@ -121,9 +223,12 @@ class ObservationRepository:
             existing = connection.execute(
                 """
                 SELECT value, unit, retrieved_at, missing, raw_field, origin,
-                       import_run_id, import_source_url
+                       import_run_id, import_source_url, source_station_id,
+                       station_mapping_status, station_mapping_version,
+                       station_mapping_source_url, station_mapping_retrieved_at
                 FROM observation_history
                 WHERE station_id = ? AND metric = ? AND observed_at = ?
+                    AND origin = 'archive_import'
                 """,
                 key,
             ).fetchone()
@@ -132,9 +237,12 @@ class ObservationRepository:
                 INSERT INTO observation_history (
                     station_id, station_name, source_key, station_type,
                     metric, value, unit, observed_at, retrieved_at,
-                    missing, raw_field, origin, import_run_id, import_source_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(station_id, metric, observed_at) DO UPDATE SET
+                    missing, raw_field, origin, import_run_id, import_source_url,
+                    source_station_id, station_mapping_status,
+                    station_mapping_version, station_mapping_source_url,
+                    station_mapping_retrieved_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(station_id, metric, observed_at, origin) DO UPDATE SET
                     station_name = excluded.station_name,
                     source_key = excluded.source_key,
                     station_type = excluded.station_type,
@@ -145,7 +253,12 @@ class ObservationRepository:
                     raw_field = excluded.raw_field,
                     origin = excluded.origin,
                     import_run_id = excluded.import_run_id,
-                    import_source_url = excluded.import_source_url
+                    import_source_url = excluded.import_source_url,
+                    source_station_id = excluded.source_station_id,
+                    station_mapping_status = excluded.station_mapping_status,
+                    station_mapping_version = excluded.station_mapping_version,
+                    station_mapping_source_url = excluded.station_mapping_source_url,
+                    station_mapping_retrieved_at = excluded.station_mapping_retrieved_at
                 WHERE
                     value IS NOT excluded.value OR
                     unit IS NOT excluded.unit OR
@@ -154,7 +267,12 @@ class ObservationRepository:
                     raw_field IS NOT excluded.raw_field OR
                     origin IS NOT excluded.origin OR
                     import_run_id IS NOT excluded.import_run_id OR
-                    import_source_url IS NOT excluded.import_source_url
+                    import_source_url IS NOT excluded.import_source_url OR
+                    source_station_id IS NOT excluded.source_station_id OR
+                    station_mapping_status IS NOT excluded.station_mapping_status OR
+                    station_mapping_version IS NOT excluded.station_mapping_version OR
+                    station_mapping_source_url IS NOT excluded.station_mapping_source_url OR
+                    station_mapping_retrieved_at IS NOT excluded.station_mapping_retrieved_at
                 """,
                 (
                     observation["station_id"],
@@ -171,6 +289,11 @@ class ObservationRepository:
                     "archive_import",
                     observation["import_run_id"],
                     observation["import_source_url"],
+                    observation["source_station_id"],
+                    observation["station_mapping_status"],
+                    observation["station_mapping_version"],
+                    observation["station_mapping_source_url"],
+                    _iso(observation["station_mapping_retrieved_at"]),
                 ),
             )
             if existing is None:
@@ -225,7 +348,10 @@ class ObservationRepository:
             f"""
             SELECT station_id, station_name, source_key, station_type,
                    metric, value, unit, observed_at, retrieved_at,
-                   missing, raw_field, origin, import_run_id, import_source_url
+                   missing, raw_field, origin, import_run_id, import_source_url,
+                   source_station_id, station_mapping_status,
+                   station_mapping_version, station_mapping_source_url,
+                   station_mapping_retrieved_at
             FROM observation_history
             WHERE {where}
             ORDER BY observed_at {order_direction}
@@ -294,7 +420,10 @@ class ObservationRepository:
             f"""
             SELECT station_id, station_name, source_key, station_type,
                    metric, value, unit, observed_at, retrieved_at,
-                   missing, raw_field, origin, import_run_id, import_source_url
+                   missing, raw_field, origin, import_run_id, import_source_url,
+                   source_station_id, station_mapping_status,
+                   station_mapping_version, station_mapping_source_url,
+                   station_mapping_retrieved_at
             FROM observation_history
             WHERE {where}
             ORDER BY observed_at DESC
@@ -410,6 +539,11 @@ def _row_to_observation(row: Any) -> dict[str, Any]:
         "origin": row["origin"],
         "import_run_id": row["import_run_id"],
         "import_source_url": row["import_source_url"],
+        "source_station_id": row["source_station_id"],
+        "station_mapping_status": row["station_mapping_status"],
+        "station_mapping_version": row["station_mapping_version"],
+        "station_mapping_source_url": row["station_mapping_source_url"],
+        "station_mapping_retrieved_at": row["station_mapping_retrieved_at"],
         "station_id": row["station_id"],
         "station_name": row["station_name"],
         "station_type": row["station_type"],
@@ -462,6 +596,21 @@ def _aggregate_observations(
                 "import_source_url": None
                 if origin == "mixed"
                 else latest.get("import_source_url"),
+                "source_station_id": None
+                if origin == "mixed"
+                else latest.get("source_station_id"),
+                "station_mapping_status": None
+                if origin == "mixed"
+                else latest.get("station_mapping_status"),
+                "station_mapping_version": None
+                if origin == "mixed"
+                else latest.get("station_mapping_version"),
+                "station_mapping_source_url": None
+                if origin == "mixed"
+                else latest.get("station_mapping_source_url"),
+                "station_mapping_retrieved_at": None
+                if origin == "mixed"
+                else latest.get("station_mapping_retrieved_at"),
             }
         )
     return aggregated[-limit:]

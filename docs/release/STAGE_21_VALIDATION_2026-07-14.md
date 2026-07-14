@@ -67,7 +67,7 @@ cache and keep IMGW-PIB attribution and the processed-data notice visible.
 `/metrics` is intentionally not exposed via the public nginx route; it falls
 through to the SPA while the private Prometheus profile scrapes `backend:8000`.
 
-### Release blocker: real SYNOP live/archive reconciliation
+### Original release blocker: real SYNOP live/archive reconciliation
 
 The bounded archive import did persist 570 `archive_import` observations and a
 current station returned `live_refresh` history. However, real current SYNOP
@@ -78,6 +78,48 @@ Fixture tests cover the repository's mixed-series representation once identifier
 match, but they do not prove this source reconciliation. Name matching or
 hardcoded IDs would violate the project's data guardrails. A reviewed,
 documented mapping source and a repeatable import are required before release.
+
+### Reconciliation follow-up — 2026-07-14
+
+The blocker above is resolved in `fix/stage21-synop-id-reconciliation` by a
+versioned mapping generated from two official IMGW-PIB inputs:
+
+- `wykaz_stacji.csv`, whose documented columns contain archive `NSP`, station
+  name, and the separate station code;
+- `/api/data/synop`, which contains the current `id_stacji` values.
+
+The importer derives a block-12 candidate only from the source station code and
+requires an exact current `id_stacji`. It never compares station names. The
+committed `2026-07-14` artifact records source URLs, retrieval times, hashes,
+method, review status, 2,176 source records / 2,173 unique `NSP` entries, 61
+mapped current stations, and one current station (`12001`, `Platforma`) without
+an archive catalogue entry. Duplicate catalogue rows are grouped; multiple
+current candidates fail artifact generation. Unmapped archive records remain
+under `synop-archive:<NSP>` with parser warnings and mapping metadata.
+
+A limited isolated live-data check then:
+
+- refreshed only current SYNOP: PASS, 62 records, no parser warnings;
+- imported only 2026-05-04: PASS, one ZIP, 57 archive rows / 570 observations;
+- retained one archive station without a current map as
+  `synop-archive:349200628` with `unmapped_not_current_synop`;
+- queried `synop:12600` (`NSP=349190600`) for `temperature`: PASS,
+  `series_kind=history`, `series_origin=mixed`,
+  `origin_counts={"archive_import": 1, "live_refresh": 1}`;
+- verified the archive point exposed `source_station_id=349190600`,
+  `station_mapping_status=mapped`, and `station_mapping_version=2026-07-14`.
+
+This follow-up removes the identifier blocker. It is deliberately narrower
+than the original production validation and does not authorize tagging: the
+affected automated checks and final pre-tag suite still need to pass on the
+exact merged commit.
+
+Follow-up automated checks on the fix branch passed: backend Ruff and 220
+pytest tests; frontend ESLint, 87 Vitest tests, and production build; and five
+Playwright E2E tests. The existing Stage 25 large-chunk build warning remains.
+The observation-history migration and API tests also cover an exact timestamp
+collision: `live_refresh` and `archive_import` rows now remain separate under a
+key that includes `origin`, so neither source can overwrite the other.
 
 ## Fresh install, upgrade, and recovery
 
@@ -109,8 +151,8 @@ The known alpha limits remain unchanged: hydro basin polygons are absent,
 non-SYNOP archive families are not backfilled, radar files are unavailable for
 rendering, only the documented COSMO temperature path is renderable, and this
 small Compose deployment is not a substitute for an official warning service.
-In addition, the unreconciled SYNOP live/archive identifiers above are an
-explicit release blocker rather than an accepted alpha limitation.
+SYNOP reconciliation is bounded to reviewed map entries; missing and future
+identifiers remain explicit archive-only records rather than guessed matches.
 
 ## Rollback
 
@@ -125,8 +167,7 @@ visible attribution check. The pre-Stage-21 baseline used here was main commit
 ## Remaining release actions
 
 No tag, GitHub release, or public-demo approval was created during this work.
-Before publishing, add and validate the reviewed SYNOP `id_stacji` ↔ `NSP`
-mapping, rerun the affected checks plus the small pre-tag suite against the
-exact final commit, move `CHANGELOG.md` entries to a dated `0.1.0-alpha`
-section, tag that commit, create a GitHub prerelease, and verify the rendered
-release notes.
+Before publishing, rerun the affected checks plus the small pre-tag suite
+against the exact final merged commit, move `CHANGELOG.md` entries to a dated
+`0.1.0-alpha` section, tag that commit, create a GitHub prerelease, and verify
+the rendered release notes.

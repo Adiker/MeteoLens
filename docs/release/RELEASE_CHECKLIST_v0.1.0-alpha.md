@@ -38,9 +38,11 @@ exact release commit.
 - [x] Cached replay of the rendered COSMO frame verified.
 - [x] Render failure and IMGW source-unavailable states verified.
 - [x] Bounded archive backfill verified.
-- [ ] Live/archive/mixed observation series verified with real IMGW station
-  identifiers. Validation found that current SYNOP `id_stacji` and daily
-  archive `NSP` identifiers are not yet reconciled; this is a release blocker.
+- [x] Live/archive/mixed observation series verified with real IMGW station
+  identifiers. The reviewed mapping resolved `NSP=349190600` to
+  `id_stacji=12600`; the 2026-07-14 limited live follow-up returned `mixed` with
+  `origin_counts={"archive_import":1,"live_refresh":1}`. Final pre-tag
+  current-main validation remains required.
 - [x] Exports, attribution, processed-data notices, and known limitations
   verified.
 - [x] Backup and restore procedure verified and recorded.

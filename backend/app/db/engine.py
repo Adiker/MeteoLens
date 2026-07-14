@@ -26,8 +26,13 @@ CREATE TABLE IF NOT EXISTS observation_history (
     origin TEXT NOT NULL DEFAULT 'live_refresh',
     import_run_id TEXT,
     import_source_url TEXT,
+    source_station_id TEXT,
+    station_mapping_status TEXT,
+    station_mapping_version TEXT,
+    station_mapping_source_url TEXT,
+    station_mapping_retrieved_at TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    UNIQUE(station_id, metric, observed_at)
+    UNIQUE(station_id, metric, observed_at, origin)
 );
 
 CREATE INDEX IF NOT EXISTS idx_obs_station_metric_time
@@ -64,6 +69,15 @@ CREATE TABLE IF NOT EXISTS archive_import_runs (
 """
 
 POST_MIGRATION_SQL = """
+CREATE INDEX IF NOT EXISTS idx_obs_station_metric_time
+    ON observation_history(station_id, metric, observed_at);
+
+CREATE INDEX IF NOT EXISTS idx_obs_metric_time
+    ON observation_history(metric, observed_at);
+
+CREATE INDEX IF NOT EXISTS idx_obs_station_type
+    ON observation_history(station_type);
+
 CREATE INDEX IF NOT EXISTS idx_obs_origin
     ON observation_history(origin);
 """
@@ -81,6 +95,26 @@ MIGRATIONS: tuple[tuple[str, str], ...] = (
     (
         "observation_history",
         "ALTER TABLE observation_history ADD COLUMN import_source_url TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN source_station_id TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_status TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_version TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_source_url TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN station_mapping_retrieved_at TEXT",
     ),
 )
 
@@ -123,8 +157,80 @@ def init_db() -> None:
         column_name = statement.rsplit("ADD COLUMN ", maxsplit=1)[1].split()[0]
         if column_name not in existing_columns:
             connection.execute(statement)
+    _migrate_observation_history_origin_key(connection)
     connection.executescript(POST_MIGRATION_SQL)
     connection.commit()
+
+
+def _migrate_observation_history_origin_key(connection: sqlite3.Connection) -> None:
+    """Include origin in the history key so live and archive rows cannot overwrite."""
+    old_key = ("station_id", "metric", "observed_at")
+    unique_indexes = [
+        row
+        for row in connection.execute("PRAGMA index_list(observation_history)")
+        if row["unique"]
+    ]
+    has_old_key = any(
+        tuple(
+            column["name"]
+            for column in connection.execute(f"PRAGMA index_info({index['name']})")
+        )
+        == old_key
+        for index in unique_indexes
+    )
+    if not has_old_key:
+        return
+
+    columns = (
+        "id, station_id, station_name, source_key, station_type, metric, value, "
+        "unit, observed_at, retrieved_at, missing, raw_field, origin, import_run_id, "
+        "import_source_url, source_station_id, station_mapping_status, "
+        "station_mapping_version, station_mapping_source_url, "
+        "station_mapping_retrieved_at, created_at"
+    )
+    connection.commit()
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute(
+            """
+            CREATE TABLE observation_history_new (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                station_id TEXT NOT NULL,
+                station_name TEXT NOT NULL,
+                source_key TEXT NOT NULL,
+                station_type TEXT NOT NULL,
+                metric TEXT NOT NULL,
+                value REAL,
+                unit TEXT,
+                observed_at TEXT NOT NULL,
+                retrieved_at TEXT NOT NULL,
+                missing INTEGER NOT NULL DEFAULT 0,
+                raw_field TEXT NOT NULL,
+                origin TEXT NOT NULL DEFAULT 'live_refresh',
+                import_run_id TEXT,
+                import_source_url TEXT,
+                source_station_id TEXT,
+                station_mapping_status TEXT,
+                station_mapping_version TEXT,
+                station_mapping_source_url TEXT,
+                station_mapping_retrieved_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                UNIQUE(station_id, metric, observed_at, origin)
+            )
+            """
+        )
+        connection.execute(
+            f"INSERT INTO observation_history_new ({columns}) "
+            f"SELECT {columns} FROM observation_history"
+        )
+        connection.execute("DROP TABLE observation_history")
+        connection.execute(
+            "ALTER TABLE observation_history_new RENAME TO observation_history"
+        )
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
 
 
 def reset_engine_cache() -> None:

@@ -238,15 +238,22 @@ endpoint may return archive history with source metadata pointing at the archive
 directory; map/list station discovery still depends on current cache data and
 reviewed geometry.
 
-`mixed` means both origins exist under the same normalized station ID. The
-current live SYNOP `id_stacji` and daily archive `NSP` identifiers are not yet
-reconciled in real data, so the API must not claim a combined real SYNOP series
-until a reviewed mapping source is added. Archive-only history stays explicit.
+`mixed` means both origins exist under the same normalized station ID. Daily
+SYNOP archive rows may use a current `synop:<id_stacji>` only when their source
+`NSP` has a `mapped` entry in the reviewed versioned IMGW mapping artifact.
+Unmapped rows use `synop-archive:<NSP>` and never contribute to a current
+station's `mixed` series.
 
 Each observation preserves `null` values and includes `missing`,
 `raw_field`, `observed_at`, `retrieved_at`, `data_delay_seconds`, and
 unit metadata where available. Historical observations may also include
-`origin`, `import_run_id`, and `import_source_url`.
+`origin`, `import_run_id`, `import_source_url`, `source_station_id` (the
+original archive `NSP`, or the source `id_stacji` for persisted live history),
+`station_mapping_status`, `station_mapping_version`,
+`station_mapping_source_url`, and `station_mapping_retrieved_at`. Mapping
+status is `mapped`, `unmapped_not_current_synop`, or
+`unmapped_not_in_mapping_source`; the mapping-specific fields are `null` for
+live-only points.
 
 `POST /api/v1/archive/backfill/synop-daily`
 
@@ -267,8 +274,12 @@ the existing observation-history schema. The endpoint is bounded by
 `METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`, waits
 `METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS` between files, and never asks
 the browser to fetch IMGW archive files directly. Duplicate records are handled
-by upsert on `station_id + metric + observed_at`; repeated runs refresh import
-metadata without creating duplicate observations.
+by upsert on `station_id + metric + observed_at + origin`; repeated runs refresh
+archive-import metadata without creating duplicate archive observations, while
+an equal-time live observation remains a separate point. Import fails if the reviewed
+mapping artifact cannot be loaded or validated. An unmapped `NSP` does not fail
+the whole bounded run: it is retained under `synop-archive:<NSP>` and reported
+in `parser_warnings`.
 
 Only one archive import may run per backend process. A successfully completed
 date range enters the configured duplicate cooldown; repeating it during that

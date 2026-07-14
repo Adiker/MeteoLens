@@ -64,8 +64,64 @@ def test_init_db_migrates_legacy_history_before_origin_index(monkeypatch, tmp_pa
 
     columns = {row["name"] for row in connection.execute("PRAGMA table_info(observation_history)")}
     indexes = {row["name"] for row in connection.execute("PRAGMA index_list(observation_history)")}
-    assert {"origin", "import_run_id", "import_source_url"} <= columns
+    assert {
+        "origin",
+        "import_run_id",
+        "import_source_url",
+        "source_station_id",
+        "station_mapping_status",
+        "station_mapping_version",
+        "station_mapping_source_url",
+        "station_mapping_retrieved_at",
+    } <= columns
     assert "idx_obs_origin" in indexes
+    connection.execute(
+        """
+        INSERT INTO observation_history (
+            station_id, station_name, source_key, station_type, metric, value,
+            observed_at, retrieved_at, missing, raw_field, origin
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+        """,
+        (
+            "synop:12600",
+            "Bielsko Biała",
+            "synop",
+            "synop",
+            "temperature",
+            10.0,
+            "2026-05-01T00:00:00+00:00",
+            "2026-07-14T00:00:00+00:00",
+            "temperatura",
+            "live_refresh",
+        ),
+    )
+    connection.execute(
+        """
+        INSERT INTO observation_history (
+            station_id, station_name, source_key, station_type, metric, value,
+            observed_at, retrieved_at, missing, raw_field, origin
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+        """,
+        (
+            "synop:12600",
+            "BIELSKO-BIAŁA",
+            "synop",
+            "synop",
+            "temperature",
+            11.7,
+            "2026-05-01T00:00:00+00:00",
+            "2026-07-14T00:00:00+00:00",
+            "STD/WSTD:blank",
+            "archive_import",
+        ),
+    )
+    assert connection.execute(
+        """
+        SELECT COUNT(*) AS count FROM observation_history
+        WHERE station_id = 'synop:12600' AND metric = 'temperature'
+            AND observed_at = '2026-05-01T00:00:00+00:00'
+        """
+    ).fetchone()["count"] == 2
 
 
 def _seed_station_cache(cache: SourceCache, source_key: str = "hydro") -> Station:

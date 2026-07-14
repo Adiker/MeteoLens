@@ -40,9 +40,10 @@ backup/restore checks. Full evidence and rollback steps are in
   metadata-only.
 - Observation history is local to a deployment. Only bounded daily SYNOP
   backfill is implemented; hydro and other archive families are not imported.
-- Current live SYNOP `id_stacji` and daily archive `NSP` identifiers are not
-  reconciled, so a real combined live/archive series is not available yet. This
-  is the current prerelease blocker; do not tag until a reviewed mapping exists.
+- SYNOP archive/current reconciliation is limited to the reviewed, versioned
+  IMGW station-code map. The 2026-07-14 artifact maps 61 current stations;
+  `Platforma` and any historical/future identifiers without an approved entry
+  remain explicit archive-only records and are never matched by name.
 - Deployers must review current IMGW-PIB and other source terms before public
   or commercial use. Attribution is implemented, but this project does not
   provide legal advice.
