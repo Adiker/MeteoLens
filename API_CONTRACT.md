@@ -313,7 +313,7 @@ Response shape:
 
 Errors use the standard error envelope with codes such as
 `archive_range_too_large`, `archive_file_limit_exceeded`,
-`archive_download_too_large`, `archive_zip_too_many_entries`,
+`archive_download_too_large`, `archive_zip_invalid`, `archive_zip_too_many_entries`,
 `archive_zip_central_directory_too_large`, `archive_zip_entry_too_large`, `archive_zip_uncompressed_too_large`,
 `archive_row_limit_exceeded`, `invalid_time_range`, or
 `archive_backfill_failed`.

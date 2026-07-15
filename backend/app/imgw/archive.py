@@ -620,7 +620,7 @@ def _inspect_zip_central_directory(
     if (
         entries_on_disk == 0xFFFF
         or total_entries == 0xFFFF
-        or central_directory_size == 0xFFFF
+        or central_directory_size == 0xFFFF_FFFF
     ):
         total_entries, central_directory_size = _read_zip64_directory_metadata(
             content,
