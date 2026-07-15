@@ -15,7 +15,9 @@ from app.imgw.archive import (
     SYNOP_DAILY_COLUMNS,
     ArchiveBackfillError,
     SynopDailyArchiveBackfiller,
+    fetch_bounded_archive,
     parse_synop_daily_zip,
+    validate_archive_zip,
 )
 from app.main import app
 from tests.settings_helpers import apply_test_settings
@@ -304,3 +306,134 @@ def test_observation_api_labels_mixed_live_and_archive_series(monkeypatch, tmp_p
     )
     assert archive_point["source_station_id"] == "349190600"
     assert archive_point["station_mapping_status"] == "mapped"
+
+
+def _large_zip(*, entry_count: int = 1, payload_size: int = 0) -> bytes:
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        for index in range(entry_count):
+            payload = b"A" * payload_size if payload_size else b""
+            archive.writestr(f"entry_{index}.csv", payload)
+    return zip_buffer.getvalue()
+
+
+def _many_row_zip(row_count: int) -> bytes:
+    text_buffer = StringIO()
+    writer = csv.writer(text_buffer)
+    for day in range(1, row_count + 1):
+        row = _row(f"{day:02d}")
+        writer.writerow([row.get(column, "") for column in SYNOP_DAILY_COLUMNS])
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("s_d_05_2026.csv", text_buffer.getvalue().encode("cp1250"))
+    return zip_buffer.getvalue()
+
+
+def test_fetch_bounded_archive_rejects_declared_content_length() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"ignored", headers={"Content-Length": "2048"})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(ArchiveBackfillError, match="Content-Length") as exc_info:
+        fetch_bounded_archive(client, "https://example.test/archive.zip", max_bytes=1024)
+    assert exc_info.value.code == "archive_download_too_large"
+
+
+def test_fetch_bounded_archive_rejects_stream_without_content_length() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        response = httpx.Response(200, content=b"x" * 2048)
+        response.headers.pop("content-length", None)
+        return response
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(ArchiveBackfillError, match="byte limit") as exc_info:
+        fetch_bounded_archive(client, "https://example.test/archive.zip", max_bytes=1024)
+    assert exc_info.value.code == "archive_download_too_large"
+
+
+def test_validate_archive_zip_rejects_too_many_entries(tmp_path) -> None:
+    settings = _settings(tmp_path).model_copy(update={"archive_zip_max_entries": 2})
+    with pytest.raises(ArchiveBackfillError, match="too many entries") as exc_info:
+        validate_archive_zip(_large_zip(entry_count=3), settings)
+    assert exc_info.value.code == "archive_zip_too_many_entries"
+
+
+def test_validate_archive_zip_rejects_many_empty_entries_before_opening(tmp_path) -> None:
+    settings = _settings(tmp_path).model_copy(update={"archive_zip_max_entries": 5})
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        for index in range(20):
+            archive.writestr(f"empty_{index}.txt", "")
+    with pytest.raises(ArchiveBackfillError, match="too many entries") as exc_info:
+        validate_archive_zip(zip_buffer.getvalue(), settings)
+    assert exc_info.value.code == "archive_zip_too_many_entries"
+
+
+def test_validate_archive_zip_rejects_oversized_entry(tmp_path) -> None:
+    settings = _settings(tmp_path).model_copy(update={"archive_zip_entry_max_mb": 1})
+    with pytest.raises(ArchiveBackfillError, match="declares") as exc_info:
+        validate_archive_zip(_large_zip(payload_size=2 * 1024 * 1024), settings)
+    assert exc_info.value.code == "archive_zip_entry_too_large"
+
+
+def test_validate_archive_zip_rejects_total_uncompressed_size(tmp_path) -> None:
+    settings = _settings(tmp_path).model_copy(
+        update={
+            "archive_zip_entry_max_mb": 10,
+            "archive_zip_total_uncompressed_max_mb": 1,
+        }
+    )
+    payload = 768 * 1024
+    zip_bytes = _large_zip(entry_count=2, payload_size=payload)
+    with pytest.raises(ArchiveBackfillError, match="total uncompressed") as exc_info:
+        validate_archive_zip(zip_bytes, settings)
+    assert exc_info.value.code == "archive_zip_uncompressed_too_large"
+
+
+def test_parse_synop_daily_zip_rejects_row_limit(tmp_path) -> None:
+    settings = _settings(tmp_path).model_copy(update={"archive_max_rows_per_file": 1})
+    with pytest.raises(ArchiveBackfillError, match="row count exceeds") as exc_info:
+        parse_synop_daily_zip(
+            _many_row_zip(2),
+            source_url="https://example.test/2026_05_s.zip",
+            import_run_id="run-rows",
+            imported_at=datetime(2026, 7, 5, tzinfo=UTC),
+            observed_from=date(2026, 5, 1),
+            observed_to=date(2026, 5, 31),
+            settings=settings,
+        )
+    assert exc_info.value.code == "archive_row_limit_exceeded"
+
+
+def test_backfill_records_failed_download_limit(monkeypatch, tmp_path) -> None:
+    settings = _prepare(
+        tmp_path,
+        monkeypatch,
+    ).model_copy(update={"archive_download_max_mb": 1})
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/2026/"):
+            return httpx.Response(
+                200,
+                text='<a href="2026_05_s.zip">2026_05_s.zip</a>',
+            )
+        if request.url.path.endswith("/2026_05_s.zip"):
+            return httpx.Response(
+                200,
+                content=b"x" * (2 * 1024 * 1024),
+                headers={"Content-Length": str(2 * 1024 * 1024)},
+            )
+        return httpx.Response(404)
+
+    backfiller = SynopDailyArchiveBackfiller(
+        settings,
+        transport=httpx.MockTransport(handler),
+    )
+    with pytest.raises(ArchiveBackfillError):
+        backfiller.run(observed_from=date(2026, 5, 1), observed_to=date(2026, 5, 1))
+
+    row = get_engine().execute("SELECT * FROM archive_import_runs").fetchone()
+    assert row["status"] == "failed"
+    assert row["files_total"] == 1
+    assert row["files_processed"] == 0
+    assert "Content-Length" in row["errors"]

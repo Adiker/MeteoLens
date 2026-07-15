@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     archive_backfill_max_files: int = Field(default=12, ge=1, le=500)
     archive_backfill_rate_limit_seconds: float = Field(default=0.5, ge=0)
     archive_backfill_cooldown_seconds: int = Field(default=900, ge=0, le=86_400)
+    archive_download_max_mb: int = Field(default=50, ge=1, le=500)
+    archive_zip_max_entries: int = Field(default=10, ge=1, le=1000)
+    archive_zip_entry_max_mb: int = Field(default=100, ge=1, le=1000)
+    archive_zip_total_uncompressed_max_mb: int = Field(default=150, ge=1, le=2000)
+    archive_max_rows_per_file: int = Field(default=50_000, ge=100, le=1_000_000)
     imgw_timeout_seconds: float = Field(default=20.0, gt=0)
     imgw_max_retries: int = Field(default=2, ge=0)
     imgw_retry_delay_seconds: float = Field(default=0.25, ge=0)
@@ -75,6 +80,18 @@ class Settings(BaseSettings):
     @property
     def product_refresh_id_list(self) -> list[str]:
         return [pid.strip() for pid in self.product_refresh_ids.split(",") if pid.strip()]
+
+    @property
+    def archive_download_max_bytes(self) -> int:
+        return self.archive_download_max_mb * 1024 * 1024
+
+    @property
+    def archive_zip_entry_max_bytes(self) -> int:
+        return self.archive_zip_entry_max_mb * 1024 * 1024
+
+    @property
+    def archive_zip_total_uncompressed_max_bytes(self) -> int:
+        return self.archive_zip_total_uncompressed_max_mb * 1024 * 1024
 
 
 @lru_cache

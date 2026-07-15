@@ -287,7 +287,11 @@ class SynopDailyArchiveBackfiller:
                 transport=self.transport,
             ) as client:
                 for index, archive_file in enumerate(files):
-                    content = self._fetch_file(client, archive_file)
+                    content = fetch_bounded_archive(
+                        client,
+                        archive_file.url,
+                        max_bytes=self.settings.archive_download_max_bytes,
+                    )
                     parsed_rows, warnings = parse_synop_daily_zip(
                         content,
                         source_url=archive_file.url,
@@ -296,6 +300,7 @@ class SynopDailyArchiveBackfiller:
                         observed_from=observed_from,
                         observed_to=observed_to,
                         station_mapping=self.station_mapping,
+                        settings=self.settings,
                     )
                     parser_warnings.extend(warnings)
                     rows_seen += len(
@@ -435,11 +440,6 @@ class SynopDailyArchiveBackfiller:
                     files.append(ArchiveFile(name=href, url=f"{directory_url}{href}"))
         return sorted(files, key=lambda item: item.name)
 
-    def _fetch_file(self, client: httpx.Client, archive_file: ArchiveFile) -> bytes:
-        response = client.get(archive_file.url)
-        response.raise_for_status()
-        return response.content
-
     def _write_run(
         self,
         *,
@@ -529,6 +529,205 @@ def mark_interrupted_archive_runs() -> int:
     return cursor.rowcount
 
 
+def fetch_bounded_archive(
+    client: httpx.Client,
+    url: str,
+    *,
+    max_bytes: int,
+) -> bytes:
+    """Download an archive file with a hard byte limit."""
+    with client.stream("GET", url) as response:
+        response.raise_for_status()
+        content_length = response.headers.get("Content-Length")
+        if content_length is not None:
+            try:
+                declared = int(content_length)
+            except ValueError:
+                declared = None
+            else:
+                if declared > max_bytes:
+                    raise ArchiveBackfillError(
+                        (
+                            "Archive download Content-Length "
+                            f"({declared} bytes) exceeds the configured limit "
+                            f"({max_bytes} bytes)."
+                        ),
+                        code="archive_download_too_large",
+                    )
+        chunks: list[bytes] = []
+        size = 0
+        for chunk in response.iter_bytes():
+            size += len(chunk)
+            if size > max_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        "Archive download exceeded the configured "
+                        f"{max_bytes} byte limit."
+                    ),
+                    code="archive_download_too_large",
+                )
+            chunks.append(chunk)
+    return b"".join(chunks)
+
+
+_EOCD_SIGNATURE = b"PK\x05\x06"
+_ZIP64_EOCD_LOCATOR_SIGNATURE = b"PK\x06\x07"
+_ZIP64_EOCD_SIGNATURE = b"PK\x06\x06"
+_MAX_ZIP_COMMENT_LENGTH = 65_535
+_EOCD_MIN_SIZE = 22
+_ZIP64_EOCD_LOCATOR_SIZE = 20
+
+
+def _inspect_zip_central_directory(
+    content: bytes,
+    *,
+    max_entries: int,
+    max_central_directory_bytes: int,
+) -> tuple[int, int]:
+    """Read EOCD metadata before zipfile parses the central directory."""
+    if len(content) < _EOCD_MIN_SIZE:
+        raise ArchiveBackfillError(
+            "Archive ZIP is empty or truncated.",
+            code="archive_zip_invalid",
+        )
+    search_start = max(0, len(content) - (_MAX_ZIP_COMMENT_LENGTH + _EOCD_MIN_SIZE))
+    eocd_offset = content.rfind(_EOCD_SIGNATURE, search_start)
+    if eocd_offset < 0:
+        raise ArchiveBackfillError(
+            "Archive ZIP is missing an end-of-central-directory record.",
+            code="archive_zip_invalid",
+        )
+    if eocd_offset + _EOCD_MIN_SIZE > len(content):
+        raise ArchiveBackfillError(
+            "Archive ZIP end-of-central-directory record is truncated.",
+            code="archive_zip_invalid",
+        )
+
+    entries_on_disk = int.from_bytes(content[eocd_offset + 8 : eocd_offset + 10], "little")
+    total_entries = int.from_bytes(content[eocd_offset + 10 : eocd_offset + 12], "little")
+    central_directory_size = int.from_bytes(
+        content[eocd_offset + 12 : eocd_offset + 16],
+        "little",
+    )
+    comment_length = int.from_bytes(content[eocd_offset + 20 : eocd_offset + 22], "little")
+    expected_end = eocd_offset + _EOCD_MIN_SIZE + comment_length
+    if expected_end != len(content):
+        raise ArchiveBackfillError(
+            "Archive ZIP end-of-central-directory record does not match file size.",
+            code="archive_zip_invalid",
+        )
+
+    if (
+        entries_on_disk == 0xFFFF
+        or total_entries == 0xFFFF
+        or central_directory_size == 0xFFFF_FFFF
+    ):
+        total_entries, central_directory_size = _read_zip64_directory_metadata(
+            content,
+            eocd_offset=eocd_offset,
+        )
+
+    if total_entries > max_entries:
+        raise ArchiveBackfillError(
+            (
+                "Archive ZIP contains too many entries "
+                f"({total_entries}). Limit is {max_entries}."
+            ),
+            code="archive_zip_too_many_entries",
+        )
+    if central_directory_size > max_central_directory_bytes:
+        raise ArchiveBackfillError(
+            (
+                "Archive ZIP central directory is too large "
+                f"({central_directory_size} bytes). Limit is "
+                f"{max_central_directory_bytes} bytes."
+            ),
+            code="archive_zip_central_directory_too_large",
+        )
+    return total_entries, central_directory_size
+
+
+def _read_zip64_directory_metadata(content: bytes, *, eocd_offset: int) -> tuple[int, int]:
+    locator_offset = eocd_offset - _ZIP64_EOCD_LOCATOR_SIZE
+    if locator_offset < 0:
+        raise ArchiveBackfillError(
+            "Archive ZIP declares ZIP64 metadata but the locator is missing.",
+            code="archive_zip_invalid",
+        )
+    if content[locator_offset : locator_offset + 4] != _ZIP64_EOCD_LOCATOR_SIGNATURE:
+        raise ArchiveBackfillError(
+            "Archive ZIP declares ZIP64 entry counts but the locator is missing.",
+            code="archive_zip_invalid",
+        )
+    zip64_eocd_offset = int.from_bytes(
+        content[locator_offset + 8 : locator_offset + 16],
+        "little",
+    )
+    if zip64_eocd_offset < 0 or zip64_eocd_offset + 56 > len(content):
+        raise ArchiveBackfillError(
+            "Archive ZIP ZIP64 end-of-central-directory record is invalid.",
+            code="archive_zip_invalid",
+        )
+    if content[zip64_eocd_offset : zip64_eocd_offset + 4] != _ZIP64_EOCD_SIGNATURE:
+        raise ArchiveBackfillError(
+            "Archive ZIP ZIP64 end-of-central-directory record is invalid.",
+            code="archive_zip_invalid",
+        )
+    total_entries = int.from_bytes(
+        content[zip64_eocd_offset + 32 : zip64_eocd_offset + 40],
+        "little",
+    )
+    central_directory_size = int.from_bytes(
+        content[zip64_eocd_offset + 40 : zip64_eocd_offset + 48],
+        "little",
+    )
+    return total_entries, central_directory_size
+
+
+def validate_archive_zip(content: bytes, settings: Settings) -> None:
+    """Reject ZIP bombs and oversized archives before extraction."""
+    max_entries = settings.archive_zip_max_entries
+    max_entry_bytes = settings.archive_zip_entry_max_bytes
+    max_total_bytes = settings.archive_zip_total_uncompressed_max_bytes
+    max_central_directory_bytes = max(max_entries * 1024, 65_536)
+    _inspect_zip_central_directory(
+        content,
+        max_entries=max_entries,
+        max_central_directory_bytes=max_central_directory_bytes,
+    )
+    with zipfile.ZipFile(BytesIO(content)) as archive:
+        entries = archive.infolist()
+        if len(entries) > max_entries:
+            raise ArchiveBackfillError(
+                (
+                    "Archive ZIP contains too many entries "
+                    f"({len(entries)}). Limit is {max_entries}."
+                ),
+                code="archive_zip_too_many_entries",
+            )
+        total_uncompressed = 0
+        for info in entries:
+            if info.file_size > max_entry_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        f"Archive ZIP entry {info.filename!r} declares "
+                        f"{info.file_size} uncompressed bytes; limit is "
+                        f"{max_entry_bytes} bytes."
+                    ),
+                    code="archive_zip_entry_too_large",
+                )
+            total_uncompressed += info.file_size
+            if total_uncompressed > max_total_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        "Archive ZIP declares "
+                        f"{total_uncompressed} total uncompressed bytes; "
+                        f"limit is {max_total_bytes} bytes."
+                    ),
+                    code="archive_zip_uncompressed_too_large",
+                )
+
+
 def parse_synop_daily_zip(
     content: bytes,
     *,
@@ -538,20 +737,55 @@ def parse_synop_daily_zip(
     observed_from: date,
     observed_to: date,
     station_mapping: SynopStationMapping | None = None,
+    settings: Settings | None = None,
 ) -> tuple[list[ArchiveObservationRow], list[str]]:
+    active_settings = settings or Settings()
+    validate_archive_zip(content, active_settings)
+    max_entry_bytes = active_settings.archive_zip_entry_max_bytes
+    max_total_bytes = active_settings.archive_zip_total_uncompressed_max_bytes
+    max_rows = active_settings.archive_max_rows_per_file
     mapping = station_mapping or SynopStationMapping.load()
     warnings: list[str] = []
     warned_unmapped: set[str] = set()
     records: list[ArchiveObservationRow] = []
+    rows_seen = 0
+    total_uncompressed = 0
     with zipfile.ZipFile(BytesIO(content)) as archive:
         csv_names = [name for name in archive.namelist() if name.lower().endswith(".csv")]
         if not csv_names:
             return [], [f"{source_url}: no CSV files found in ZIP."]
         for name in csv_names:
             raw = archive.read(name)
+            total_uncompressed += len(raw)
+            if len(raw) > max_entry_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        f"Archive ZIP entry {name!r} expanded to "
+                        f"{len(raw)} bytes; limit is {max_entry_bytes} bytes."
+                    ),
+                    code="archive_zip_entry_too_large",
+                )
+            if total_uncompressed > max_total_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        "Archive ZIP expanded to "
+                        f"{total_uncompressed} total bytes; limit is "
+                        f"{max_total_bytes} bytes."
+                    ),
+                    code="archive_zip_uncompressed_too_large",
+                )
             text = _decode_archive_text(raw)
             reader = csv.DictReader(StringIO(text), fieldnames=SYNOP_DAILY_COLUMNS)
             for line_number, row in enumerate(reader, start=1):
+                rows_seen += 1
+                if rows_seen > max_rows:
+                    raise ArchiveBackfillError(
+                        (
+                            f"Archive CSV row count exceeds the configured limit "
+                            f"of {max_rows} rows."
+                        ),
+                        code="archive_row_limit_exceeded",
+                    )
                 observed_at = _parse_synop_daily_date(row)
                 if observed_at is None:
                     warnings.append(f"{name}:{line_number}: invalid observation date.")
