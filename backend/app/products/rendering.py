@@ -23,6 +23,7 @@ import numpy as np
 
 from app.core.config import Settings
 from app.core.observability import metrics
+from app.core.outbound_url import OutboundUrlError, validate_product_download_url
 from app.normalization.models import ATTRIBUTION, PROCESSED_NOTICE
 from app.products import grib1
 from app.products.png import write_rgba_png
@@ -423,6 +424,11 @@ def _read_or_fetch_binary(
 
 
 def _download_binary(settings: Settings, *, url: str, filename: str) -> tuple[bytes, str]:
+    try:
+        validate_product_download_url(url, allowed_base_url=str(settings.imgw_base_url))
+    except OutboundUrlError as exc:
+        raise RenderError(exc.code, str(exc), status_code=502) from exc
+
     max_bytes = settings.product_file_max_mb * 1024 * 1024
     retrieved_at = datetime.now(UTC).isoformat()
     try:

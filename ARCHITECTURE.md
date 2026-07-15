@@ -201,7 +201,11 @@ Stage 19 classifies read-only data routes as public, product renders as
 expensive, and archive imports as administrative. The archive HTTP endpoint is
 disabled without a deployment-local admin token; MeteoLens stores no user
 accounts. Product work is bounded by a cache-aware render gate, while archive
-imports use a one-at-a-time gate plus duplicate-range cooldown. Nginx enforces
+imports use a one-at-a-time gate plus duplicate-range cooldown. Product binary
+downloads validate every manifest URL immediately before HTTP: HTTPS only,
+approved IMGW host/path, and a public DNS resolution that rejects loopback,
+link-local, and private addresses. Cached manifests or binaries do not bypass
+those checks. Nginx enforces
 public internet request limits before requests reach the backend. The documented
 Caddy TLS edge proxies every path through nginx on port 8080; nginx accepts
 forwarded client addresses only from configured trusted proxy ranges so its
