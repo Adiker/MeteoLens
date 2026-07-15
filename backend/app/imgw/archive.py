@@ -287,7 +287,11 @@ class SynopDailyArchiveBackfiller:
                 transport=self.transport,
             ) as client:
                 for index, archive_file in enumerate(files):
-                    content = self._fetch_file(client, archive_file)
+                    content = fetch_bounded_archive(
+                        client,
+                        archive_file.url,
+                        max_bytes=self.settings.archive_download_max_bytes,
+                    )
                     parsed_rows, warnings = parse_synop_daily_zip(
                         content,
                         source_url=archive_file.url,
@@ -296,6 +300,7 @@ class SynopDailyArchiveBackfiller:
                         observed_from=observed_from,
                         observed_to=observed_to,
                         station_mapping=self.station_mapping,
+                        settings=self.settings,
                     )
                     parser_warnings.extend(warnings)
                     rows_seen += len(
@@ -435,11 +440,6 @@ class SynopDailyArchiveBackfiller:
                     files.append(ArchiveFile(name=href, url=f"{directory_url}{href}"))
         return sorted(files, key=lambda item: item.name)
 
-    def _fetch_file(self, client: httpx.Client, archive_file: ArchiveFile) -> bytes:
-        response = client.get(archive_file.url)
-        response.raise_for_status()
-        return response.content
-
     def _write_run(
         self,
         *,
@@ -529,6 +529,85 @@ def mark_interrupted_archive_runs() -> int:
     return cursor.rowcount
 
 
+def fetch_bounded_archive(
+    client: httpx.Client,
+    url: str,
+    *,
+    max_bytes: int,
+) -> bytes:
+    """Download an archive file with a hard byte limit."""
+    with client.stream("GET", url) as response:
+        response.raise_for_status()
+        content_length = response.headers.get("Content-Length")
+        if content_length is not None:
+            try:
+                declared = int(content_length)
+            except ValueError:
+                declared = None
+            else:
+                if declared > max_bytes:
+                    raise ArchiveBackfillError(
+                        (
+                            "Archive download Content-Length "
+                            f"({declared} bytes) exceeds the configured limit "
+                            f"({max_bytes} bytes)."
+                        ),
+                        code="archive_download_too_large",
+                    )
+        chunks: list[bytes] = []
+        size = 0
+        for chunk in response.iter_bytes():
+            size += len(chunk)
+            if size > max_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        "Archive download exceeded the configured "
+                        f"{max_bytes} byte limit."
+                    ),
+                    code="archive_download_too_large",
+                )
+            chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def validate_archive_zip(content: bytes, settings: Settings) -> None:
+    """Reject ZIP bombs and oversized archives before extraction."""
+    max_entries = settings.archive_zip_max_entries
+    max_entry_bytes = settings.archive_zip_entry_max_bytes
+    max_total_bytes = settings.archive_zip_total_uncompressed_max_bytes
+    with zipfile.ZipFile(BytesIO(content)) as archive:
+        entries = archive.infolist()
+        if len(entries) > max_entries:
+            raise ArchiveBackfillError(
+                (
+                    "Archive ZIP contains too many entries "
+                    f"({len(entries)}). Limit is {max_entries}."
+                ),
+                code="archive_zip_too_many_entries",
+            )
+        total_uncompressed = 0
+        for info in entries:
+            if info.file_size > max_entry_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        f"Archive ZIP entry {info.filename!r} declares "
+                        f"{info.file_size} uncompressed bytes; limit is "
+                        f"{max_entry_bytes} bytes."
+                    ),
+                    code="archive_zip_entry_too_large",
+                )
+            total_uncompressed += info.file_size
+            if total_uncompressed > max_total_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        "Archive ZIP declares "
+                        f"{total_uncompressed} total uncompressed bytes; "
+                        f"limit is {max_total_bytes} bytes."
+                    ),
+                    code="archive_zip_uncompressed_too_large",
+                )
+
+
 def parse_synop_daily_zip(
     content: bytes,
     *,
@@ -538,20 +617,55 @@ def parse_synop_daily_zip(
     observed_from: date,
     observed_to: date,
     station_mapping: SynopStationMapping | None = None,
+    settings: Settings | None = None,
 ) -> tuple[list[ArchiveObservationRow], list[str]]:
+    active_settings = settings or Settings()
+    validate_archive_zip(content, active_settings)
+    max_entry_bytes = active_settings.archive_zip_entry_max_bytes
+    max_total_bytes = active_settings.archive_zip_total_uncompressed_max_bytes
+    max_rows = active_settings.archive_max_rows_per_file
     mapping = station_mapping or SynopStationMapping.load()
     warnings: list[str] = []
     warned_unmapped: set[str] = set()
     records: list[ArchiveObservationRow] = []
+    rows_seen = 0
+    total_uncompressed = 0
     with zipfile.ZipFile(BytesIO(content)) as archive:
         csv_names = [name for name in archive.namelist() if name.lower().endswith(".csv")]
         if not csv_names:
             return [], [f"{source_url}: no CSV files found in ZIP."]
         for name in csv_names:
             raw = archive.read(name)
+            total_uncompressed += len(raw)
+            if len(raw) > max_entry_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        f"Archive ZIP entry {name!r} expanded to "
+                        f"{len(raw)} bytes; limit is {max_entry_bytes} bytes."
+                    ),
+                    code="archive_zip_entry_too_large",
+                )
+            if total_uncompressed > max_total_bytes:
+                raise ArchiveBackfillError(
+                    (
+                        "Archive ZIP expanded to "
+                        f"{total_uncompressed} total bytes; limit is "
+                        f"{max_total_bytes} bytes."
+                    ),
+                    code="archive_zip_uncompressed_too_large",
+                )
             text = _decode_archive_text(raw)
             reader = csv.DictReader(StringIO(text), fieldnames=SYNOP_DAILY_COLUMNS)
             for line_number, row in enumerate(reader, start=1):
+                rows_seen += 1
+                if rows_seen > max_rows:
+                    raise ArchiveBackfillError(
+                        (
+                            f"Archive CSV row count exceeds the configured limit "
+                            f"of {max_rows} rows."
+                        ),
+                        code="archive_row_limit_exceeded",
+                    )
                 observed_at = _parse_synop_daily_date(row)
                 if observed_at is None:
                     warnings.append(f"{name}:{line_number}: invalid observation date.")

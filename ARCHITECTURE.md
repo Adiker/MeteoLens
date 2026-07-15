@@ -180,7 +180,10 @@ rate-limited between files, and resumable through upserts on
 `station_id + metric + observed_at + origin`. Including `origin` prevents a
 daily archive point from overwriting a live refresh at the same normalized UTC
 timestamp. Existing SQLite databases are rebuilt in place to use this key while
-preserving rows and indexes.
+preserving rows and indexes. Archive downloads are streamed with a hard byte
+limit; ZIP entry count, per-entry uncompressed size, total uncompressed size, and
+CSV row count are checked before and during extraction so ZIP bombs and oversized
+payloads fail the import run with an explicit error.
 
 The Stage 21 reconciliation follow-up adds
 `app/imgw/station_mapping.py` and the versioned
