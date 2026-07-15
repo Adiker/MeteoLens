@@ -419,6 +419,9 @@ above. For runtime problems (port conflicts, CORS, source errors), see
 
 ## Development Checks
 
+For branch naming, commit messages, pull requests, and the squash/rebase/merge
+policy, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 Backend:
 
 ```bash

@@ -1,5 +1,17 @@
 # TASKS.md - MeteoLens Implementation Queue
 
+## Repository Maintenance and Governance
+
+- [x] Document the ongoing contribution policy for allowed branch prefixes,
+  Conventional Commit-style subjects, topic-branch cleanup, pull requests, and
+  squash/rebase/merge guidance.
+
+Acceptance criteria:
+
+- [x] Mandatory guardrails and recommended workflow are clearly distinguished.
+- [x] Contributors can choose an integration strategy without rewriting the
+  published `main` history.
+
 ## Stage 0 - Research
 
 - [x] Verify IMGW-PIB API info page and current endpoint list.

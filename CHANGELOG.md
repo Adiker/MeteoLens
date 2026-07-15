@@ -4,6 +4,8 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Documented repository governance for branch cleanup, commits, pull requests,
+  and merge strategy while preserving the existing `main` history.
 - Completed Stage 21 current-main validation for the untagged `v0.1.0-alpha`
   candidate: repeatable live development and nginx production smoke tests,
   fresh-volume and pre-Stage-18 upgrade checks, COSMO render/cache checks,

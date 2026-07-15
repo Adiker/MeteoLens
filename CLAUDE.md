@@ -36,6 +36,8 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
 - `TASKS.md` - ordered implementation work.
 - `API_CONTRACT.md` - backend API expected by the frontend.
 - `UI_UX.md` - map-first UI behavior.
+- [CONTRIBUTING.md](CONTRIBUTING.md) - branch, commit, pull request, and merge
+  strategy.
 
 ## Common Commands
 
