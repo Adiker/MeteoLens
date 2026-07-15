@@ -358,6 +358,17 @@ def test_validate_archive_zip_rejects_too_many_entries(tmp_path) -> None:
     assert exc_info.value.code == "archive_zip_too_many_entries"
 
 
+def test_validate_archive_zip_rejects_many_empty_entries_before_opening(tmp_path) -> None:
+    settings = _settings(tmp_path).model_copy(update={"archive_zip_max_entries": 5})
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        for index in range(20):
+            archive.writestr(f"empty_{index}.txt", "")
+    with pytest.raises(ArchiveBackfillError, match="too many entries") as exc_info:
+        validate_archive_zip(zip_buffer.getvalue(), settings)
+    assert exc_info.value.code == "archive_zip_too_many_entries"
+
+
 def test_validate_archive_zip_rejects_oversized_entry(tmp_path) -> None:
     settings = _settings(tmp_path).model_copy(update={"archive_zip_entry_max_mb": 1})
     with pytest.raises(ArchiveBackfillError, match="declares") as exc_info:
