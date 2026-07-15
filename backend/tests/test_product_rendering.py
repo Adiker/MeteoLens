@@ -1,5 +1,6 @@
 import json
 import os
+import socket
 import time
 from types import SimpleNamespace
 
@@ -18,6 +19,21 @@ from app.products.rotated_grid import (
 from tests.grib_fixtures import encode_grib1_message
 
 COSMO_GRID = rendering.EXPECTED_COSMO_GRID
+
+
+def _product_url(filename: str) -> str:
+    return f"https://danepubliczne.imgw.pl/pl/d/{filename}"
+
+
+def _public_imgw_addrinfo(host: str, port: int, *_args, **_kwargs):
+    if host == "danepubliczne.imgw.pl":
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))]
+    raise socket.gaierror("unexpected host")
+
+
+@pytest.fixture(autouse=True)
+def _mock_imgw_dns(monkeypatch) -> None:
+    monkeypatch.setattr(socket, "getaddrinfo", _public_imgw_addrinfo)
 
 
 def _settings(tmp_path, **overrides) -> Settings:
@@ -227,7 +243,7 @@ def test_render_frame_produces_png_with_metadata_and_cache(tmp_path) -> None:
         settings,
         product_id="COSMO_HVD_00_00",
         filename=filename,
-        url="https://example.invalid/unused",
+        url=_product_url(filename),
         variable_key="t2m",
     )
     assert result.from_cache is False
@@ -247,7 +263,7 @@ def test_render_frame_produces_png_with_metadata_and_cache(tmp_path) -> None:
         settings,
         product_id="COSMO_HVD_00_00",
         filename=filename,
-        url="https://example.invalid/unused",
+        url=_product_url(filename),
         variable_key="t2m",
     )
     assert again.from_cache is True
@@ -265,7 +281,7 @@ def test_render_frame_refuses_grid_mismatch(tmp_path) -> None:
             settings,
             product_id="COSMO_HVD_00_00",
             filename=filename,
-            url="https://example.invalid/unused",
+            url=_product_url(filename),
             variable_key="t2m",
         )
     assert excinfo.value.code == "grid_mismatch"
@@ -283,7 +299,7 @@ def test_render_frame_reports_missing_variable(tmp_path) -> None:
             settings,
             product_id="COSMO_HVD_00_00",
             filename=filename,
-            url="https://example.invalid/unused",
+            url=_product_url(filename),
             variable_key="t2m",
         )
     assert excinfo.value.code == "variable_missing"
@@ -296,7 +312,7 @@ def test_render_frame_rejects_non_renderable_product_and_frame(tmp_path) -> None
             settings,
             product_id="COMPO_SRI.comp.sri",
             filename="2026062803300000dBR.sri",
-            url="https://example.invalid/unused",
+            url=_product_url("2026062803300000dBR.sri"),
             variable_key="t2m",
         )
     assert radar.value.code == "not_renderable"
@@ -307,7 +323,7 @@ def test_render_frame_rejects_non_renderable_product_and_frame(tmp_path) -> None
             settings,
             product_id="COSMO_HVD_00_00",
             filename="202607040000_202607061200_lfff02120000",
-            url="https://example.invalid/unused",
+            url=_product_url("202607040000_202607061200_lfff02120000"),
             variable_key="t2m",
         )
     assert off_window.value.code == "frame_not_renderable"
@@ -435,7 +451,7 @@ def test_render_writes_metadata_sidecar(tmp_path) -> None:
         settings,
         product_id="COSMO_HVD_00_00",
         filename=filename,
-        url="https://example.invalid/unused",
+        url=_product_url(filename),
         variable_key="t2m",
     )
     sidecar = result.png_path.with_suffix(".json")

@@ -1,3 +1,4 @@
+import json
 import socket
 from types import SimpleNamespace
 
@@ -164,6 +165,30 @@ def test_download_rejects_foreign_host_without_http_request(tmp_path, monkeypatc
         )
     assert excinfo.value.code == "url_not_allowed"
     assert requested == []
+
+
+def test_render_rejects_disallowed_url_even_when_png_cache_exists(tmp_path, monkeypatch) -> None:
+    settings = _settings(tmp_path)
+    monkeypatch.setattr(socket, "getaddrinfo", _public_addrinfo)
+    filename = "202607040000_202607040300_lfff00030000"
+    png_path = rendering.render_cache_path(settings, "COSMO_HVD_00_00", filename, "t2m")
+    png_path.parent.mkdir(parents=True, exist_ok=True)
+    png_path.write_bytes(b"\x89PNG\r\n\x1a\n")
+    png_path.with_suffix(".json").write_text(
+        json.dumps({"frame_time": "2026-07-04T03:00:00+00:00"}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(rendering.RenderError) as excinfo:
+        rendering.render_frame(
+            settings,
+            product_id="COSMO_HVD_00_00",
+            filename=filename,
+            url="https://evil.example.test/pl/d/frame.grib",
+            variable_key="t2m",
+        )
+
+    assert excinfo.value.code == "url_not_allowed"
 
 
 def test_download_accepts_valid_imgw_url_and_fetches(tmp_path, monkeypatch) -> None:
