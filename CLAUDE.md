@@ -7,17 +7,16 @@ agent rules live in `AGENTS.md`; treat that file as authoritative.
 
 - **What:** Web application for visualising public IMGW-PIB meteorological and
   hydrological data for Poland.
-- **Status:** Stages 0-18 are implemented and documented: FastAPI cache-backed
+- **Status:** Stages 0-21 are implemented and documented: FastAPI cache-backed
   APIs, IMGW client/parser/cache layer, React/Vite/MapLibre frontend,
   production Compose setup, local observation history, reviewed geometry
   pipeline, product timeline metadata plus COSMO 2 m temperature rendering,
   PWA shell, browser-local power-user tools, public-alpha release polish,
   bounded daily SYNOP archive backfill, public API exports, and the repo-local
   TypeScript API client, Stage 18 reviewed WMO OSCAR/Surface synop station
-  coordinates, Stage 19 public-internet security, and Stage 20 production
-  observability/backup/recovery. Stage 21 current-main validation is recorded
-  for the untagged alpha candidate but is blocked by real SYNOP live/archive
-  identifier reconciliation. Hydro basin geometry, hydrological archive backfill,
+  coordinates, Stage 19 public-internet security, Stage 20 production
+  observability/backup/recovery, and Stage 21 validation with tagged
+  `v0.1.0-alpha`. Hydro basin geometry, hydrological archive backfill,
   warning history, performance/scalability hardening, and PDF reports remain
   future work until their own implementation, docs, and tests land.
 - **Frontend plan:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui, MapLibre
@@ -105,8 +104,8 @@ and must stay test-only.
   backfill is opt-in and bounded, and the generated SDK/examples live under
   `packages/` and `examples/`. Stage 18 bundles reviewed WMO OSCAR/Surface
   synop station coordinates. Stage 19 security hardening is implemented;
-  Stage 20 is implemented and Stage 21 validation is recorded, but real SYNOP
-  archive reconciliation, tag, and prerelease steps remain unchecked. Stages
+  Stage 20 is implemented and Stage 21 published `v0.1.0-alpha` after validation,
+  SYNOP archive reconciliation, and the pre-tag suite. Stages
   22-26 remain planning items.
   Do not mark future work such as `hydro_basins`, hydrological archive imports,
   warning history, PDF reports, or radar rendering as implemented until the repo

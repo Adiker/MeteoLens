@@ -1,7 +1,4 @@
-# MeteoLens v0.1.0-alpha — release notes candidate
-
-> This file is prepared for the first prerelease. As of 2026-07-14,
-> `v0.1.0-alpha` has not been tagged or published.
+# MeteoLens v0.1.0-alpha — release notes
 
 MeteoLens is an alpha web map for public IMGW-PIB weather and hydrological
 data. It provides live station and warning views, transparent source metadata,
@@ -20,15 +17,17 @@ COSMO 2 m temperature map overlay.
 - Production hardening: rate and concurrency limits, protected archive import,
   non-root containers, private metrics, JSON logs, backup/restore tooling, and
   runbooks.
+- Reviewed SYNOP live/archive station-ID reconciliation so mapped stations can
+  show honest `mixed` observation series without name-based matching.
 
 ## Validation
 
-The candidate passed backend lint/tests (212 tests), frontend lint/tests (87
-tests), production build, fixture E2E (5 tests), live development and nginx
-production browser smoke tests (13/13 each), fresh-volume setup, persistent
-volume upgrade, COSMO render/cache, outage, bounded archive, abuse-limit, and
-backup/restore checks. Full evidence and rollback steps are in
+Live Compose validation is recorded in
 [`STAGE_21_VALIDATION_2026-07-14.md`](STAGE_21_VALIDATION_2026-07-14.md).
+The final automated pre-tag suite for the release base commit is in
+[`STAGE_21_PRETAG_2026-07-20.md`](STAGE_21_PRETAG_2026-07-20.md): backend
+lint/tests (249 tests), frontend lint/tests (87 tests), production build,
+and fixture E2E (5 tests).
 
 ## Important limitations
 

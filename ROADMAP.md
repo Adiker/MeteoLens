@@ -111,10 +111,10 @@ reviewed WMO OSCAR/Surface coordinate dataset for current IMGW SYNOP stations.
 
 ## Implemented And Planned Stages
 
-Stages 0-20 are implemented and documented. Stage 21 current-main validation
-is documented for the untagged alpha candidate; its real SYNOP identifier
-blocker has a reviewed fix and limited live-data validation. The tag and GitHub
-prerelease remain pending. Stages 22-26 remain planned only.
+Stages 0-21 are implemented and documented. Stage 21 published the first
+public alpha tag `v0.1.0-alpha` after current-main validation, reviewed SYNOP
+identifier reconciliation, and the 2026-07-20 automated pre-tag suite. Stages
+22-26 remain planned only.
 
 ## v7 - Public Alpha Readiness
 
@@ -134,13 +134,12 @@ should wait for the following stages.
   logs, resource limits, verified `/data` backup/restore, and an incident
   runbook.
 - Stage 21 - Current-main production validation and `v0.1.0-alpha` release
-  (validation recorded; release pending): local and production smoke tests, fresh and
-  upgraded volumes, screenshots, release notes, rollback, backup/restore, and
-  abuse checks are recorded in `docs/release/STAGE_21_VALIDATION_2026-07-14.md`.
-  The real SYNOP live/archive identifier blocker now has a reviewed mapping and
-  passing limited live-data follow-up. Move changelog entries, tag
-  `v0.1.0-alpha`, and create a GitHub prerelease only after final current-main
-  validation and an explicit release-cut request.
+  (done): local and production smoke tests, fresh and upgraded volumes,
+  screenshots, release notes, rollback, backup/restore, and abuse checks are
+  recorded in `docs/release/STAGE_21_VALIDATION_2026-07-14.md`. Reviewed SYNOP
+  live/archive identifier reconciliation and the 2026-07-20 automated pre-tag
+  suite cleared the remaining gates; `v0.1.0-alpha` is tagged and published as
+  a GitHub prerelease.
 
 ## v8 - Hydrology And Warning History
 

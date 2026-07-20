@@ -4,15 +4,29 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+## 0.1.0-alpha - 2026-07-20
+
+- Published the first public alpha: tagged `v0.1.0-alpha`, moved these notes out
+  of `Unreleased`, and created the GitHub prerelease with release notes,
+  screenshots, attribution, license, and known limitations.
+- Recorded the final automated pre-tag suite for the release base commit in
+  `docs/release/STAGE_21_PRETAG_2026-07-20.md` (249 backend tests, 87 frontend
+  unit tests, 5 E2E tests, lint, and production build).
 - Documented repository governance for branch cleanup, commits, pull requests,
   and merge strategy while preserving the existing `main` history.
-- Completed Stage 21 current-main validation for the untagged `v0.1.0-alpha`
-  candidate: repeatable live development and nginx production smoke tests,
-  fresh-volume and pre-Stage-18 upgrade checks, COSMO render/cache checks,
-  source-outage, bounded archive, abuse-limit, backup/restore checks, refreshed
-  screenshots, and a detailed validation/rollback record. It surfaced an
-  unresolved real SYNOP `id_stacji` ↔ daily archive `NSP` reconciliation gap,
-  so tagging and GitHub prerelease publication remain intentionally pending.
+- Completed Stage 21 current-main validation
+  (`docs/release/STAGE_21_VALIDATION_2026-07-14.md`): repeatable live
+  development and nginx production smoke tests, fresh-volume and pre-Stage-18
+  upgrade checks, COSMO render/cache checks, source-outage, bounded archive,
+  abuse-limit, backup/restore checks, refreshed screenshots, and rollback
+  guidance.
+- Added reviewed SYNOP live/archive station-ID reconciliation: a versioned map
+  from official IMGW `wykaz_stacji.csv` codes to current `id_stacji`, bounded
+  archive imports that retain unmapped `synop-archive:<NSP>` records, and a
+  live follow-up proving `series_origin=mixed` for a mapped station.
+- Hardened product rendering and archive imports: validate product download URLs
+  before cache lookup and server-side fetch, and cap SYNOP archive ZIP resource
+  usage with clearer invalid-archive handling.
 - Fixed station details so normalized meteo metric names are shown in Polish
   and the measurement list displays only the current snapshot instead of
   flattening historical points into apparent duplicate rows; charts continue

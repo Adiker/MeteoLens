@@ -496,7 +496,9 @@ an unrestricted public deployment: endpoint classification, admin
 authentication, rate and concurrency limits, proxy safeguards, non-root
 containers, and workflow restrictions. Stage 20 adds observability, backups,
 and restore tests; Stage 21 current-main release validation is recorded in
-`docs/release/STAGE_21_VALIDATION_2026-07-14.md`. Tagging remains pending.
+`docs/release/STAGE_21_VALIDATION_2026-07-14.md` with the automated pre-tag
+suite in `docs/release/STAGE_21_PRETAG_2026-07-20.md`. Tag `v0.1.0-alpha` is
+published as a prerelease.
 
 GitHub Actions use a fixed Ubuntu 24.04 runner and commit-pinned actions. Backend
 CI installs the lockfile-resolved Python 3.12 environment with `uv`, while npm

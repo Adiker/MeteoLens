@@ -671,22 +671,22 @@ Implementation tasks:
 - [x] Run a small abuse/load smoke test for expensive routes.
 - [x] Update screenshots to match the current implementation.
 - [x] Prepare release notes.
-- [ ] Move relevant `CHANGELOG.md` entries from `Unreleased` to a dated
+- [x] Move relevant `CHANGELOG.md` entries from `Unreleased` to a dated
   `0.1.0-alpha` section.
 - [x] Align backend and frontend version metadata; keep README as an alpha
   candidate until the release is cut.
 - [x] Define rollback steps.
-- [ ] Tag `v0.1.0-alpha`.
-- [ ] Create a GitHub prerelease.
-- [ ] Verify rendered release notes, screenshots, links, license, attribution,
+- [x] Tag `v0.1.0-alpha`.
+- [x] Create a GitHub prerelease.
+- [x] Verify rendered release notes, screenshots, links, license, attribution,
   and known limitations.
 
 Documentation tasks:
 
 - [x] Update `docs/release/RELEASE_CHECKLIST_v0.1.0-alpha.md` as checks pass.
 - [x] Record the current-main smoke-test run in `docs/release/`.
-- [ ] Update `README.md` screenshots and alpha status if the release is cut.
-- [ ] Update `CHANGELOG.md` only when the release is actually performed.
+- [x] Update `README.md` screenshots and alpha status if the release is cut.
+- [x] Update `CHANGELOG.md` only when the release is actually performed.
 - [x] Keep known limitations prominently visible.
 
 Test tasks:
@@ -713,7 +713,7 @@ Acceptance criteria:
 - [x] Both fresh install and persistent-volume upgrade paths pass.
 - [x] Stage 13-20 behavior is covered, including the follow-up real SYNOP
   live/archive identifier reconciliation check.
-- [ ] The release checklist has no unresolved release-blocking items.
+- [x] The release checklist has no unresolved release-blocking items.
 - [x] The release remains clearly labelled as alpha.
 - [x] Known limitations are prominently visible.
 
