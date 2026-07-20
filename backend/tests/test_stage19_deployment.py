@@ -72,7 +72,7 @@ def test_ai_workflows_require_trusted_comment_authors_and_pin_actions() -> None:
     assert "author_association" in claude
     assert "author_association" in opencode
     assert "@latest" not in opencode
-    assert "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0" in ci
+    assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in ci
     assert "astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990" in ci
     assert "uv sync --frozen --extra dev" in ci
     assert "runs-on: ubuntu-24.04" in ci
