@@ -144,7 +144,7 @@ def geometry(client: Client, evidence: Evidence) -> None:
         "synop_stations": 62,
         "teryt_counties": 380,
         "teryt_voivodeships": 16,
-        "hydro_basins": 103,
+        "hydro_basins": 170,
     }
     for key, count in expected.items():
         item = datasets.get(key, {})
