@@ -254,12 +254,18 @@ function WarningDetails({ id, expert }: { id: string; expert: boolean }) {
 
       {geometry_status === "resolved" ? (
         <StateNotice tone="info" title="Geometria obszaru dostępna">
-          Obszar ostrzeżenia został dopasowany do zatwierdzonych granic administracyjnych.
+          Obszar ostrzeżenia został dopasowany do zatwierdzonych granic administracyjnych
+          lub zlewni.
         </StateNotice>
       ) : geometry_status === "partial" ? (
         <StateNotice tone="warning" title="Częściowa geometria obszaru">
           Część obszarów ostrzeżenia została dopasowana do zatwierdzonej geometrii, a część
           pozostaje nierozwiązana ({geometry_status}).
+        </StateNotice>
+      ) : geometry_status === "geometry_not_found" ? (
+        <StateNotice tone="warning" title="Brak dopasowania geometrii">
+          Zatwierdzony zbiór geometrii jest dostępny, ale kody obszarów tego ostrzeżenia nie
+          zostały dopasowane ({geometry_status}).
         </StateNotice>
       ) : (
         <StateNotice tone="info" title="Brak geometrii obszaru">

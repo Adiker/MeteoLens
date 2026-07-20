@@ -348,21 +348,24 @@ public endpoint; Stage 18 fills them from the reviewed WMO OSCAR/Surface
 `synop_stations` dataset bundled in `data/geometry/` (recorded in
 `coordinate_source`), while any future unresolved ID stays in missing-geometry
 metadata. Warning TERYT codes resolve to polygons via the reviewed PRG
-voivodeship/county datasets bundled in `data/geometry/`; hydro basin codes
-remain marked as missing area geometry until a reviewed basin dataset is added.
+voivodeship/county datasets bundled in `data/geometry/`. Hydro basin codes
+resolve through the Stage 22 reviewed `hydro_basins` dataset (II aPGW JCWP
+catchments mapped to IMGW `kod_zlewni`); unmatched codes stay
+`geometry_not_found` when the dataset is loaded.
 
-Stage 13 geometry components live in `backend/app/geometry/`:
+Stage 13 / 22 geometry components live in `backend/app/geometry/`:
 
 - `loader.py` reads the format_version 2 manifest, refuses datasets without an
   approved review (`dataset_not_reviewed`) or failing structural validation
-  (`invalid_dataset`), and exposes review metadata through
-  `/api/v1/geometry/datasets`.
+  (`invalid_dataset`), resolves hydro aliases via `kod_zlewni_codes`, and
+  exposes review metadata through `/api/v1/geometry/datasets`.
 - `validation.py` checks GeoJSON structure, per-dataset geometry types,
-  required identifier/name properties, TERYT patterns and coverage, duplicate
-  codes, and Poland coordinate bounds.
+  required identifier/name properties, TERYT and `kod_zlewni` patterns,
+  coverage, duplicate codes, and Poland coordinate bounds.
 - `import_cli.py` (`python -m app.geometry.import_cli`) validates and installs
   reviewed datasets with metadata files from `docs/geometry/metadata/`;
-  `scripts/geometry/convert_prg_shapefiles.py` reproduces the PRG conversion.
+  `scripts/geometry/convert_prg_shapefiles.py` reproduces the PRG conversion
+  and `scripts/geometry/convert_apgw_hydro_basins.py` builds hydro basins.
 
 Post-MVP layers:
 

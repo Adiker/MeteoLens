@@ -332,14 +332,15 @@ work around. Each one is either a documented backend constraint or an
 intentional scope deferral; do not paper over them with mock/interpolated
 data (see `AGENTS.md`).
 
-- **Hydro warning areas still have no polygons.** Stage 13 ships reviewed PRG
-  voivodeship and county polygons, so meteo warning TERYT codes resolve to
-  polygons out of the box. Hydro `kod_zlewni` basin geometry
-  (`hydro_basins`) remains `planned` pending MPHP licensing review, so hydro
-  warnings stay list-only with `geometry_not_found` /
-  `missing_area_geometry_dataset` metadata. The bundled administrative
-  polygons are a simplified 2022 PRG snapshot (processed data, not for
-  legal/cadastral use). See `docs/geometry/GEOMETRY_SOURCES.md`.
+- **Hydro warning polygons cover mapped basins only.** Stage 13 ships reviewed
+  PRG voivodeship and county polygons for meteo TERYT codes. Stage 22 adds a
+  reviewed `hydro_basins` dataset derived from II aPGW JCWP catchments
+  (CC BY 4.0, PGW Wody Polskie) mapped to IMGW `kod_zlewni`. The committed
+  import resolves 166 of 297 snapshot codes into 103 dissolved geometries;
+  coarse cores, oversized unions, and coastal/sea codes (`…_0`) stay
+  list-only with `geometry_not_found` metadata. See
+  `docs/geometry/GEOMETRY_SOURCES.md` and
+  `docs/geometry/hydro_basins.coverage.json`.
 - **Synoptic station coordinates come from reviewed WMO metadata.**
   `api/data/synop` does not return `lat/lon`; Stage 18 bundles a reviewed
   `synop_stations` dataset resolved from WMO OSCAR/Surface by WIGOS ID, so
@@ -370,11 +371,10 @@ data (see `AGENTS.md`).
   backend and can take tens of seconds before the cached PNG makes playback
   instant. Only leads up to `METEOLENS_PRODUCT_RENDER_MAX_LEAD_HOURS` every
   `METEOLENS_PRODUCT_RENDER_LEAD_STEP_HOURS` hours are renderable.
-- **Basin filters only work with installed basin geometry.** Province and
-  county filters work against the bundled PRG datasets; the basin filter
-  matches only literal `kod_zlewni` values from warning metadata until a
-  reviewed `hydro_basins` dataset is installed (see the hydro limitation
-  above).
+- **Basin filters match literal `kod_zlewni` values.** Province and county
+  filters work against the bundled PRG datasets; the basin filter matches
+  IMGW basin codes from warning metadata (including codes whose polygons
+  remain unresolved).
 - **No public cache-refresh endpoint.** Docker Compose populates the cache at
   backend startup via `METEOLENS_SYNC_ON_STARTUP=true` and keeps it fresh with
   the periodic scheduler (`METEOLENS_REFRESH_ENABLED=true`); there is still no

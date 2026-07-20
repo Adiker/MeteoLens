@@ -577,3 +577,85 @@ def test_map_geojson_export_includes_geometry_attribution(monkeypatch, tmp_path)
     payload = response.json()
     assert payload["features"][0]["properties"]["dataset_key"] == "teryt_counties"
     assert payload["geometry_attributions"] == ["MeteoLens test fixture"]
+
+
+def test_hydro_warning_detail_and_export_use_basin_polygons(monkeypatch, tmp_path) -> None:
+    _seed_cache(tmp_path, ("warningshydro",))
+    settings = _geometry_fixture_settings(tmp_path)
+    monkeypatch.setattr(v1, "get_settings", lambda: settings)
+    apply_test_settings(monkeypatch, settings)
+    client = TestClient(app)
+
+    warnings = client.get("/api/v1/warnings?type=hydro").json()["warnings"]
+    assert warnings
+    warning_id = warnings[0]["id"]
+    detail = client.get(f"/api/v1/warnings/{warning_id}")
+    assert detail.status_code == 200
+    payload = detail.json()
+    assert payload["geometry_status"] == "resolved"
+    assert payload["warning"]["resolved_areas"][0]["dataset_key"] == "hydro_basins"
+
+    layers = client.get("/api/v1/map/layers?layers=warnings_hydro")
+    assert layers.status_code == 200
+    layer = layers.json()["layers"][0]
+    assert layer["geojson"]["features"][0]["geometry"]["type"] == "Polygon"
+    assert layer["missing_geometry"] == []
+
+    export = client.get("/api/v1/export/warnings.geojson?type=hydro")
+    assert export.status_code == 200
+    payload = export.json()
+    assert payload["features"]
+    assert payload["geometry_attributions"] == ["MeteoLens test fixture"]
+    assert payload["attribution"] == "Źródło danych: IMGW-PIB."
+    assert payload["processed_notice"] == "Dane IMGW-PIB zostały przetworzone przez MeteoLens."
+
+
+def test_unresolved_coastal_hydro_code_stays_geometry_not_found(monkeypatch, tmp_path) -> None:
+    settings = _geometry_fixture_settings(tmp_path)
+    monkeypatch.setattr(v1, "get_settings", lambda: settings)
+    apply_test_settings(monkeypatch, settings)
+    cache = SourceCache(tmp_path)
+    metadata = _source_metadata("warningshydro")
+    coastal_payload = [
+        {
+            "numer": "coastal-1",
+            "zdarzenie": "Wezbranie sztormowe",
+            "stopień": "1",
+            "prawdopodobienstwo": "50",
+            "data_od": "2026-06-30 00:00:00",
+            "data_do": "2099-12-31 23:59:59",
+            "opublikowano": "2026-06-30 00:00:00",
+            "biuro": "Biuro Prognoz Hydrologicznych",
+            "komentarz": "Brak.",
+            "obszary": [
+                {
+                    "wojewodztwo": "pomorskie",
+                    "opis": "morze, pas przybrzeżny",
+                    "kod_zlewni": ["W_G_PM_0_A"],
+                }
+            ],
+        }
+    ]
+    parse_result = parse_source("warningshydro", coastal_payload, metadata)
+    cache.write_success(
+        source_key="warningshydro",
+        url=metadata.url,
+        retrieved_at=metadata.retrieved_at,
+        raw_payload=coastal_payload,
+        normalized_payload=[record.model_dump(mode="json") for record in parse_result.records],
+        parser_warnings=parse_result.warnings,
+    )
+
+    warning_id = parse_result.records[0].id
+    detail = TestClient(app).get(f"/api/v1/warnings/{warning_id}")
+    assert detail.status_code == 200
+    payload = detail.json()
+    assert payload["geometry_status"] == "geometry_not_found"
+    assert payload["warning"]["unresolved_areas"][0]["code"] == "W_G_PM_0_A"
+    assert payload["warning"]["unresolved_areas"][0]["reason"] == "geometry_not_found"
+
+    layers = TestClient(app).get("/api/v1/map/layers?layers=warnings_hydro")
+    assert layers.status_code == 200
+    layer = layers.json()["layers"][0]
+    assert layer["geojson"]["features"] == []
+    assert layer["missing_geometry"][0]["reason"] == "geometry_not_found"

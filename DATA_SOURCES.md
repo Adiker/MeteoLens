@@ -285,8 +285,15 @@ Stage 13 status (full review in `docs/geometry/GEOMETRY_SOURCES.md`):
   as a reviewed, validated derivative into `data/geometry/`. Attribution:
   "Granice administracyjne: PRG, © GUGiK; kopia SHP: gis-support.pl;
   uproszczenie geometrii: MeteoLens."
-- `hydro_basins`: planned. Candidate MPHP (PGW Wody Polskie); licensing and
-  IMGW `kod_zlewni` mapping unverified — hydro warnings stay list-only.
+- `hydro_basins`: **implemented** in Stage 22. Source: II aPGW JCWP river
+  catchments (`Zlewnie_JCWP_rzecznych`) from PGW Wody Polskie on dane.gov.pl
+  dataset 599 under CC BY 4.0 — not a direct MPHP redistribution. IMGW
+  `kod_zlewni` values are mapped through the MPHP hydro id embedded in JCWP
+  codes, dissolved, and simplified by
+  `scripts/geometry/convert_apgw_hydro_basins.py`. Attribution: "Zlewnie JCWP:
+  II aPGW, © PGW Wody Polskie (CC BY 4.0); mapowanie IMGW kod_zlewni i
+  uproszczenie geometrii: MeteoLens." Unresolved coarse, oversized, and
+  coastal codes stay explicit as `geometry_not_found`.
 - `synop_stations`: **implemented** in Stage 18. IMGW `wykaz_stacji.csv` has no
   coordinates, so MeteoLens resolves current IMGW SYNOP `id_stacji` values
   through WMO OSCAR/Surface WIGOS IDs (`0-20000-0-<id_stacji>`) and imports the

@@ -2,6 +2,30 @@
   "format_version": 2,
   "datasets": [
     {
+      "key": "hydro_basins",
+      "file": "hydro_basins.geojson",
+      "imported_at": "2026-07-20T15:40:09.298826+00:00",
+      "feature_count": 103,
+      "title": "Zlewnie ostrzeżeń hydrologicznych IMGW (II aPGW JCWP)",
+      "provider": "Państwowe Gospodarstwo Wodne Wody Polskie (PGW WP) — II aktualizacja planów gospodarowania wodami (II aPGW / IIaPGW); mapowanie kod_zlewni: MeteoLens",
+      "canonical_url": "https://dane.gov.pl/pl/dataset/599,ii-aktualizacja-planow-gospodarowania-wodami",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/deed.pl",
+      "license_note": "II aPGW spatial layers on dane.gov.pl dataset 599 are published under Creative Commons Attribution 4.0 International (CC BY 4.0). Redistribution of derived catchment polygons is allowed with attribution to PGW Wody Polskie / II aPGW.",
+      "attribution": "Zlewnie JCWP: II aktualizacja planów gospodarowania wodami (aPGW), © PGW Wody Polskie (CC BY 4.0); mapowanie IMGW kod_zlewni i uproszczenie geometrii: MeteoLens.",
+      "public_use": true,
+      "commercial_use": true,
+      "redistribution_note": "Redistribution of this simplified derivative is allowed under CC BY 4.0 with attribution to PGW Wody Polskie / II aPGW and a processed-data notice. Do not present the polygons as official cadastral or legal catchment boundaries.",
+      "update_cadence": "II aPGW catchment layers are published as a versioned national planning dataset (Geobaza II aPGW). Refresh by re-exporting Zlewnie_JCWP_rzecznych from the current GDB, re-running scripts/geometry/convert_apgw_hydro_basins.py against a fresh warningshydro snapshot, and re-importing.",
+      "known_limitations": "One Feature per dissolved JCWP set mapped from IMGW kod_zlewni via the MPHP hydro id embedded in RW*/LW*/CW*/TW* JCWP codes; short MPHP cores (<3 digits) and unions exceeding 80 JCWP catchments stay explicitly unresolved; coastal/sea codes with core 0 have no MPHP match; geometry is further simplified (~0.012 deg) for map delivery; not suitable for legal or flood-defence engineering use.",
+      "dataset_version": "II aPGW Geobaza ver_20230915 Zlewnie_JCWP_rzecznych; MeteoLens dissolve+simplify 2026-07-20; warning snapshot mapped against live warningshydro codes",
+      "review": {
+        "status": "approved",
+        "reviewed_at": "2026-07-20",
+        "reviewed_by": "MeteoLens Stage 22 source/legal review",
+        "notes": "Uses CC BY 4.0 II aPGW JCWP catchments from dane.gov.pl dataset 599 instead of unverified MPHP redistribution; IMGW kod_zlewni mapping via embedded MPHP hydro IDs documented in docs/geometry/GEOMETRY_SOURCES.md; unresolved codes remain explicit."
+      }
+    },
+    {
       "key": "synop_stations",
       "file": "synop_stations.geojson",
       "imported_at": "2026-07-07T20:54:49.421410+00:00",

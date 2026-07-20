@@ -194,6 +194,28 @@ WMO/OSCAR terms. The full review and refresh pipeline live in
 `docs/geometry/GEOMETRY_SOURCES.md` and
 `docs/geometry/metadata/synop_stations.json`.
 
+### Reviewed Hydro Basin Geometry (Stage 22)
+
+Stage 22 ships `hydro_basins`, a reviewed Polygon/MultiPolygon dataset that
+maps IMGW hydrological warning `kod_zlewni` values onto dissolved II aPGW JCWP
+river catchments from PGW Wody Polskie (dane.gov.pl dataset 599,
+**CC BY 4.0**). This path avoids unverified direct MPHP redistribution while
+still using the MPHP hydro id embedded in JCWP codes for the mapping.
+
+Use this attribution wherever hydro warning basin polygons are shown or
+exported alongside the IMGW-PIB attribution:
+
+```text
+Zlewnie JCWP: II aktualizacja planów gospodarowania wodami (aPGW), © PGW Wody Polskie (CC BY 4.0); mapowanie IMGW kod_zlewni i uproszczenie geometrii: MeteoLens.
+```
+
+The bundled GeoJSON is a simplified derivative (processed data). Unresolved
+IMGW codes (coarse cores, oversized unions, coastal/sea cores) must remain
+visible as `geometry_not_found`. Full review and coverage live in
+`docs/geometry/GEOMETRY_SOURCES.md`,
+`docs/geometry/metadata/hydro_basins.json`, and
+`docs/geometry/hydro_basins.coverage.json`.
+
 ### Reviewed Product Dataset (Stage 14)
 
 The Stage 14 product-rendering MVP uses public IMGW-PIB COSMO
@@ -220,9 +242,6 @@ IMGW-PIB attribution and the processed-data notice.
 
 ## Open Legal Questions
 
-- TERYT polygons are resolved (PRG, see above). Which dataset will be used for
-  hydrological basin polygons (candidate: MPHP, PGW Wody Polskie), and do its
-  terms allow redistribution?
 - WMO OSCAR/Surface synop coordinates are resolved for public use, but
   commercial deployments must re-review current WMO/OSCAR terms before
   downstream redistribution.

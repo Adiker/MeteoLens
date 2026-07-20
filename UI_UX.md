@@ -234,9 +234,11 @@ The map-first dashboard is implemented. Notable, intentional deviations from the
 target spec above, driven by current backend data:
 
 - Meteorological warnings render reviewed PRG county/voivodeship polygons where
-  TERYT codes resolve; unresolved areas stay visible in counts, list records,
-  and the details panel. Hydro basin warnings remain list-only until a reviewed
-  basin dataset is imported.
+  TERYT codes resolve; hydrological warnings render reviewed II aPGW-derived
+  basin polygons where `kod_zlewni` resolves. Unresolved areas stay visible in
+  counts, list records, and the details panel (`geometry_not_found` when the
+  dataset is loaded but the code is unmatched; `missing_area_geometry_dataset`
+  only when the required dataset is absent).
 - The IMGW cache exposes a single observation timestamp per station, so the
   station chart shows current metric values (missing values excluded) when no
   history exists. Stage 8 live refresh history and Stage 15 SYNOP archive
@@ -258,8 +260,12 @@ target spec above, driven by current backend data:
 
 ## Future UX Candidates
 
-- Reviewed hydro basin geometry may add hydro warning polygons and richer basin
-  filters; unresolved geometry must remain visible as partial data.
+- Richer product timelines and multi-variable COSMO rendering once additional
+  GRIB paths are reviewed.
+- Hydrological archive charts and rankings after Stage 23 bounded imports.
+- Warning history after Stage 24 retention and correction handling.
+- Reviewed hydro basin geometry may still leave coarse or coastal codes
+  unresolved; those gaps must remain visible as partial data.
 - Hydrological archive backfill may add date-range import progress controls,
   but archive fetching must stay backend-only and bounded.
 - PDF reports may add report download actions for selected stations, source

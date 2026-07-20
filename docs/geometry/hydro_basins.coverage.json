@@ -1,0 +1,62 @@
+{
+  "dataset_key": "hydro_basins",
+  "source": "II aPGW JCWP catchments (dane.gov.pl dataset 599, CC BY 4.0) mapped to IMGW kod_zlewni",
+  "generated_at": "2026-07-20",
+  "warning_code_count": 297,
+  "resolved_count": 166,
+  "unresolved_count": 131,
+  "feature_count": 103,
+  "unique_geometries": 103,
+  "min_core_length": 3,
+  "max_jcwp_count": 80,
+  "methods": {
+    "children": 166
+  },
+  "unresolved_reasons": {
+    "core_too_coarse": 103,
+    "jcwp_union_too_large": 22,
+    "no_mphp_core": 6
+  },
+  "unresolved_coastal_or_sea_codes": [
+    "W_G_PM_0_A",
+    "W_G_PM_0_B",
+    "W_G_WM_0",
+    "W_G_ZP_0_A",
+    "W_G_ZP_0_B",
+    "Z_G_PM_0"
+  ],
+  "unresolved_core_too_coarse_examples": [
+    "R_G_KP_2_B",
+    "R_G_KP_2_C",
+    "R_G_PM_2_A",
+    "R_G_ZP_1",
+    "R_K_LU_24_A",
+    "R_K_LU_24_B",
+    "R_K_LU_24_C",
+    "R_K_LU_2_B",
+    "R_K_MA_2",
+    "R_K_PK_22_B",
+    "R_K_PK_22_C",
+    "R_K_PK_22_D"
+  ],
+  "unresolved_jcwp_union_too_large_examples": [
+    "R_K_LU_2664",
+    "R_K_LU_266_A",
+    "R_K_LU_266_B",
+    "R_O_MA_266",
+    "R_O_PD_266",
+    "R_P_LB_188",
+    "R_P_WP_188",
+    "Z_K_LU_26636",
+    "Z_K_LU_2664",
+    "Z_K_LU_266_A",
+    "Z_K_LU_266_B",
+    "Z_K_LU_266_C"
+  ],
+  "notes": [
+    "Short MPHP cores (<3 digits) are rejected to avoid whole-basin trees.",
+    "Unions exceeding 80 JCWP catchments stay unresolved.",
+    "Coastal/sea codes with MPHP core 0 have no JCWP river-catchment match.",
+    "One GeoJSON Feature per unique dissolved geometry; aliases in kod_zlewni_codes."
+  ]
+}

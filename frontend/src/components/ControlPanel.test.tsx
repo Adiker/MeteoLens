@@ -141,6 +141,69 @@ describe("ControlPanel warnings geometry states", () => {
     expect(await screen.findByText(/1 poligonów · 0 bez geometrii/)).toBeInTheDocument();
   });
 
+  it("shows hydro basin polygon counts on the hydro warning layer", async () => {
+    useAppStore.getState().setActiveLayers(["warnings_hydro"]);
+    const hydroFeature = {
+      ...polygonFeature,
+      id: "warningshydro:h1:Z_P_WP_1856",
+      properties: {
+        ...polygonFeature.properties,
+        warning_id: "warningshydro:h1",
+        warning_type: "hydro",
+        event: "Susza hydrologiczna",
+        area_type: "basin",
+        code: "Z_P_WP_1856",
+        label: "Kanał Mosiński",
+        dataset_key: "hydro_basins",
+      },
+    };
+    stubFetch({
+      "/api/v1/map/layers": {
+        generated_at: "2026-07-04T00:00:00Z",
+        cache: [],
+        empty_state: null,
+        layers: [
+          {
+            key: "warnings_hydro",
+            title: "Ostrzeżenia hydrologiczne",
+            source_keys: ["warningshydro"],
+            sources: [],
+            geojson: { type: "FeatureCollection", features: [hydroFeature] },
+            records: [
+              warningRecord({
+                id: "warningshydro:h1",
+                source_key: "warningshydro",
+                warning_type: "hydro",
+                event: "Susza hydrologiczna",
+                areas: [{ area_type: "basin", code: "Z_P_WP_1856", label: null, region: null }],
+                area_codes: ["Z_P_WP_1856"],
+              }),
+            ],
+            missing_geometry: [],
+          },
+        ],
+      },
+      "/api/v1/warnings": {
+        warnings: [
+          warningRecord({
+            id: "warningshydro:h1",
+            source_key: "warningshydro",
+            warning_type: "hydro",
+            event: "Susza hydrologiczna",
+            area_codes: ["Z_P_WP_1856"],
+          }),
+        ],
+        empty_state: null,
+      },
+      "/api/v1/sources": { sources: [] },
+    });
+
+    renderPanel();
+
+    expect(await screen.findByText(/1 poligonów · 0 bez geometrii/)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Susza hydrologiczna/ })).toBeInTheDocument();
+  });
+
   it("falls back to the list-only state when geometry is missing", async () => {
     stubFetch({
       "/api/v1/map/layers": mapLayersResponse(

@@ -249,6 +249,35 @@ describe("DetailsPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows geometry_not_found when the dataset is loaded but codes are unmatched", async () => {
+    mockFetchByPath({
+      "/warnings/warningshydro%3Aw1": {
+        status: 200,
+        body: {
+          ...warningResponse,
+          geometry_status: "geometry_not_found",
+          warning: {
+            ...warningResponse.warning,
+            id: "warningshydro:w1",
+            source_key: "warningshydro",
+            warning_type: "hydro",
+            event: "Susza hydrologiczna",
+            areas: [{ area_type: "basin", code: "W_G_PM_0_A", label: "morze" }],
+            area_codes: ["W_G_PM_0_A"],
+            geometry_status: "geometry_not_found",
+          },
+        },
+      },
+    });
+    useAppStore.setState({ selection: { kind: "warning", id: "warningshydro:w1" }, mode: "simple" });
+
+    renderWithClient();
+
+    expect(await screen.findByText("Susza hydrologiczna")).toBeInTheDocument();
+    expect(screen.getByText("Brak dopasowania geometrii")).toBeInTheDocument();
+    expect(screen.queryByText("Brak geometrii obszaru")).not.toBeInTheDocument();
+  });
+
   it("shows resolved warning geometry without the missing-geometry notice", async () => {
     mockFetchByPath({
       "/warnings/warningsmeteo%3ASk1": {

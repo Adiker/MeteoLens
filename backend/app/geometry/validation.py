@@ -50,7 +50,8 @@ DATASET_RULES: dict[str, DatasetRules] = {
     ),
     "hydro_basins": DatasetRules(
         allowed_geometry_types=POLYGONAL_TYPES,
-        code_pattern=r"^\S+$",
+        # IMGW kod_zlewni: {Z|R|W}_{office}_{voivodeship}_{mphp_core}[_{suffix}]
+        code_pattern=r"^[ZRW]_[A-Z]_[A-Z]{2}_.+$",
         description="Hydrological basin polygons",
     ),
     "synop_stations": DatasetRules(

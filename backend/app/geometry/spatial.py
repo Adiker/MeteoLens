@@ -106,8 +106,9 @@ def resolve_warning_geometries(
 
     if resolved:
         status = "partial" if unresolved else "resolved"
-    elif store.datasets:
-        status = "missing_area_geometry_dataset"
+    elif _area_datasets_loaded(store, warning.areas):
+        # Dataset is present but none of this warning's codes matched.
+        status = "geometry_not_found"
     else:
         status = "missing_area_geometry_dataset"
 
@@ -117,6 +118,20 @@ def resolve_warning_geometries(
         "unresolved_areas": unresolved,
         "geojson": _areas_to_feature_collection(warning, resolved),
     }
+
+
+def _area_datasets_loaded(store: GeometryStore, areas: list[WarningArea]) -> bool:
+    """True when at least one reviewed dataset for these area types is loaded."""
+    keys: set[str] = set()
+    for area in areas:
+        keys.update(_dataset_keys_for_area(area))
+    if not keys:
+        return False
+    for key in keys:
+        dataset = store.get_dataset(key)
+        if dataset is not None and dataset.loaded:
+            return True
+    return False
 
 
 def warnings_matching_point(

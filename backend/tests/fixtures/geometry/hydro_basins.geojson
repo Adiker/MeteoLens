@@ -6,7 +6,11 @@
       "properties": {
         "code": "Z_P_WP_1856",
         "basin_code": "Z_P_WP_1856",
-        "name": "Test basin Z_P_WP_1856"
+        "name": "Test basin Z_P_WP_1856",
+        "mphp_core": "1856",
+        "mapping_method": "children",
+        "jcwp_count": 1,
+        "kod_zlewni_codes": ["R_P_WP_1856", "Z_P_WP_1856"]
       },
       "geometry": {
         "type": "Polygon",
