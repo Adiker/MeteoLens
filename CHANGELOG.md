@@ -8,10 +8,12 @@ All notable changes to MeteoLens will be documented in this file.
   polygons (CC BY 4.0, PGW Wody Polskie) mapped to IMGW `kod_zlewni`, dissolved
   and simplified via `scripts/geometry/convert_apgw_hydro_basins.py`, imported
   through the geometry CLI with coverage report
-  `docs/geometry/hydro_basins.coverage.json` (166/297 codes resolved into 103
-  features; coarse, oversized, and coastal codes stay explicit
-  `geometry_not_found`). Loader resolves `kod_zlewni_codes` aliases; spatial
-  status distinguishes loaded-but-unmatched codes from a missing dataset.
+  `docs/geometry/hydro_basins.coverage.json` (**297/297** snapshot codes
+  resolved into 170 features via MPHP-core matching, name/voivodeship
+  refinement, and curated coastal CW/TW rules; `mapping_precision`
+  standard/refined/coarse/coastal). Loader resolves `kod_zlewni_codes` aliases;
+  spatial status distinguishes loaded-but-unmatched codes from a missing
+  dataset.
 
 ## 0.1.0-alpha - 2026-07-20
 
