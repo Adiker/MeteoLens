@@ -13,7 +13,9 @@ All notable changes to MeteoLens will be documented in this file.
   refinement, and curated coastal CW/TW rules; `mapping_precision`
   standard/refined/coarse/coastal). Loader resolves `kod_zlewni_codes` aliases;
   spatial status distinguishes loaded-but-unmatched codes from a missing
-  dataset.
+  dataset. Warning detail, map layers, and GeoJSON exports now thread
+  `mapping_precision` / `mapping_method` onto resolved basin areas; the details
+  panel flags non-`standard` precision as an IMGW forecasting-area approximation.
 
 ## 0.1.0-alpha - 2026-07-20
 

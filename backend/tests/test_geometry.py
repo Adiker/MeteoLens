@@ -235,6 +235,11 @@ def test_hydro_warning_geometry_status_distinguishes_unmatched_from_missing_data
     resolved = resolve_warning_geometries(hydro, store)
     assert resolved["geometry_status"] == "resolved"
     assert resolved["resolved_areas"][0]["code"] == "Z_P_WP_1856"
+    assert resolved["resolved_areas"][0]["mapping_precision"] == "standard"
+    assert resolved["resolved_areas"][0]["mapping_method"] == "children"
+    feature_props = resolved["geojson"]["features"][0]["properties"]
+    assert feature_props["mapping_precision"] == "standard"
+    assert feature_props["mapping_method"] == "children"
 
     coastal = Warning(
         kind="warning",

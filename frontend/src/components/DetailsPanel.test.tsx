@@ -308,6 +308,50 @@ describe("DetailsPanel", () => {
     expect(await screen.findByText("Burze")).toBeInTheDocument();
     expect(screen.queryByText("Brak geometrii obszaru")).not.toBeInTheDocument();
     expect(screen.getByText("Geometria obszaru dostępna")).toBeInTheDocument();
+    expect(screen.queryByText(/przybliżenie obszaru prognostycznego/)).not.toBeInTheDocument();
+  });
+
+  it("flags non-standard hydro basin mapping_precision as an approximation", async () => {
+    mockFetchByPath({
+      "/warnings/warningshydro%3Aw1": {
+        status: 200,
+        body: {
+          ...warningResponse,
+          geometry_status: "resolved",
+          warning: {
+            ...warningResponse.warning,
+            id: "warningshydro:w1",
+            source_key: "warningshydro",
+            warning_type: "hydro",
+            event: "Wezbranie z przekroczeniem stanów ostrzegawczych",
+            areas: [{ area_type: "basin", code: "Z_P_WP_1856", label: "Test basin" }],
+            area_codes: ["Z_P_WP_1856"],
+            geometry_status: "resolved",
+            resolved_areas: [
+              {
+                area_type: "basin",
+                code: "Z_P_WP_1856",
+                label: "Test basin",
+                dataset_key: "hydro_basins",
+                mapping_precision: "refined",
+                mapping_method: "children+name_refine",
+              },
+            ],
+            unresolved_areas: [],
+          },
+        },
+      },
+    });
+    useAppStore.setState({ selection: { kind: "warning", id: "warningshydro:w1" }, mode: "simple" });
+
+    renderWithClient();
+
+    expect(
+      await screen.findByText("Wezbranie z przekroczeniem stanów ostrzegawczych"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Geometria obszaru dostępna")).toBeInTheDocument();
+    expect(screen.getByText(/precyzję mapowania refined/)).toBeInTheDocument();
+    expect(screen.getByText(/przybliżenie obszaru prognostycznego IMGW/)).toBeInTheDocument();
   });
 
   it("shows a cache-empty notice instead of masking the error as no-data", async () => {

@@ -594,11 +594,15 @@ def test_hydro_warning_detail_and_export_use_basin_polygons(monkeypatch, tmp_pat
     payload = detail.json()
     assert payload["geometry_status"] == "resolved"
     assert payload["warning"]["resolved_areas"][0]["dataset_key"] == "hydro_basins"
+    assert payload["warning"]["resolved_areas"][0]["mapping_precision"] == "standard"
+    assert payload["warning"]["resolved_areas"][0]["mapping_method"] == "children"
 
     layers = client.get("/api/v1/map/layers?layers=warnings_hydro")
     assert layers.status_code == 200
     layer = layers.json()["layers"][0]
     assert layer["geojson"]["features"][0]["geometry"]["type"] == "Polygon"
+    assert layer["geojson"]["features"][0]["properties"]["mapping_precision"] == "standard"
+    assert layer["geojson"]["features"][0]["properties"]["mapping_method"] == "children"
     assert layer["missing_geometry"] == []
 
     export = client.get("/api/v1/export/warnings.geojson?type=hydro")

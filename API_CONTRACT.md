@@ -387,6 +387,13 @@ reviewed geometry datasets are cached under `METEOLENS_GEOMETRY_DIR`, map layers
 and warning detail responses include resolved polygon GeoJSON plus
 `unresolved_areas` for codes that cannot be mapped.
 
+Resolved basin areas may include `mapping_precision`
+(`standard` / `refined` / `coarse` / `coastal`) and optional `mapping_method`
+from the reviewed `hydro_basins` feature properties. The same fields are copied
+onto warning map-layer and export GeoJSON feature properties when present.
+Non-`standard` precision values mark approximate IMGW forecasting-area
+mappings, not official IMGW warning polygons.
+
 Stage 9 added reviewed geometry references or GeoJSON features for warning
 areas where code mapping is reliable. Responses continue to expose
 unresolved codes and missing geometry reasons instead of hiding partial data.

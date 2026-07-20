@@ -209,6 +209,71 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
   );
 }
 
+const APPROXIMATE_MAPPING_PRECISIONS = new Set(["refined", "coarse", "coastal"]);
+
+function approximateMappingPrecisions(
+  resolvedAreas: Array<Record<string, unknown>> | undefined,
+): string[] {
+  if (!resolvedAreas?.length) {
+    return [];
+  }
+  const labels = new Set<string>();
+  for (const area of resolvedAreas) {
+    const precision = area.mapping_precision;
+    if (typeof precision === "string" && APPROXIMATE_MAPPING_PRECISIONS.has(precision)) {
+      labels.add(precision);
+    }
+  }
+  return [...labels].sort();
+}
+
+function WarningGeometryNotice({
+  geometryStatus,
+  resolvedAreas,
+}: {
+  geometryStatus: string;
+  resolvedAreas?: Array<Record<string, unknown>>;
+}) {
+  const approximations = approximateMappingPrecisions(resolvedAreas);
+  const approximationNote =
+    approximations.length > 0
+      ? ` Część zlewni hydro ma precyzję mapowania ${approximations.join("/")} — to przybliżenie obszaru prognostycznego IMGW, nie oficjalny poligon ostrzeżenia.`
+      : "";
+
+  if (geometryStatus === "resolved") {
+    return (
+      <StateNotice tone={approximations.length ? "warning" : "info"} title="Geometria obszaru dostępna">
+        Obszar ostrzeżenia został dopasowany do zatwierdzonych granic administracyjnych
+        lub zlewni.
+        {approximationNote}
+      </StateNotice>
+    );
+  }
+  if (geometryStatus === "partial") {
+    return (
+      <StateNotice tone="warning" title="Częściowa geometria obszaru">
+        Część obszarów ostrzeżenia została dopasowana do zatwierdzonej geometrii, a część
+        pozostaje nierozwiązana ({geometryStatus}).
+        {approximationNote}
+      </StateNotice>
+    );
+  }
+  if (geometryStatus === "geometry_not_found") {
+    return (
+      <StateNotice tone="warning" title="Brak dopasowania geometrii">
+        Zatwierdzony zbiór geometrii jest dostępny, ale kody obszarów tego ostrzeżenia nie
+        zostały dopasowane ({geometryStatus}).
+      </StateNotice>
+    );
+  }
+  return (
+    <StateNotice tone="info" title="Brak geometrii obszaru">
+      Dokładne dopasowanie przestrzenne ostrzeżeń będzie możliwe po dodaniu zbiorów
+      TERYT/zlewni ({geometryStatus}).
+    </StateNotice>
+  );
+}
+
 function WarningDetails({ id, expert }: { id: string; expert: boolean }) {
   const warningQuery = useWarningQuery(id);
 
@@ -252,27 +317,10 @@ function WarningDetails({ id, expert }: { id: string; expert: boolean }) {
       {warning.content && <p className="text-sm">{warning.content}</p>}
       {warning.comment && <p className="text-xs text-muted-foreground">{warning.comment}</p>}
 
-      {geometry_status === "resolved" ? (
-        <StateNotice tone="info" title="Geometria obszaru dostępna">
-          Obszar ostrzeżenia został dopasowany do zatwierdzonych granic administracyjnych
-          lub zlewni.
-        </StateNotice>
-      ) : geometry_status === "partial" ? (
-        <StateNotice tone="warning" title="Częściowa geometria obszaru">
-          Część obszarów ostrzeżenia została dopasowana do zatwierdzonej geometrii, a część
-          pozostaje nierozwiązana ({geometry_status}).
-        </StateNotice>
-      ) : geometry_status === "geometry_not_found" ? (
-        <StateNotice tone="warning" title="Brak dopasowania geometrii">
-          Zatwierdzony zbiór geometrii jest dostępny, ale kody obszarów tego ostrzeżenia nie
-          zostały dopasowane ({geometry_status}).
-        </StateNotice>
-      ) : (
-        <StateNotice tone="info" title="Brak geometrii obszaru">
-          Dokładne dopasowanie przestrzenne ostrzeżeń będzie możliwe po dodaniu zbiorów
-          TERYT/zlewni ({geometry_status}).
-        </StateNotice>
-      )}
+      <WarningGeometryNotice
+        geometryStatus={geometry_status}
+        resolvedAreas={warning.resolved_areas}
+      />
 
       <MissingFields fields={warning.missing_fields} />
       {expert && <RawSection raw={warning.raw} />}
