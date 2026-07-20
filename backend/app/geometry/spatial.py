@@ -90,24 +90,30 @@ def resolve_warning_geometries(
             )
             continue
 
-        resolved.append(
-            {
-                "area_type": area.area_type,
-                "code": area.code,
-                "label": feature.label or area.label,
-                "geometry": {
-                    "type": feature.geometry_type,
-                    "coordinates": feature.coordinates,
-                },
-                "dataset_key": feature.dataset_key,
-                "source_file": feature.source_file,
-            }
-        )
+        entry: dict[str, Any] = {
+            "area_type": area.area_type,
+            "code": area.code,
+            "label": feature.label or area.label,
+            "geometry": {
+                "type": feature.geometry_type,
+                "coordinates": feature.coordinates,
+            },
+            "dataset_key": feature.dataset_key,
+            "source_file": feature.source_file,
+        }
+        precision = feature.properties.get("mapping_precision")
+        if isinstance(precision, str) and precision:
+            entry["mapping_precision"] = precision
+        method = feature.properties.get("mapping_method")
+        if isinstance(method, str) and method:
+            entry["mapping_method"] = method
+        resolved.append(entry)
 
     if resolved:
         status = "partial" if unresolved else "resolved"
-    elif store.datasets:
-        status = "missing_area_geometry_dataset"
+    elif _area_datasets_loaded(store, warning.areas):
+        # Dataset is present but none of this warning's codes matched.
+        status = "geometry_not_found"
     else:
         status = "missing_area_geometry_dataset"
 
@@ -117,6 +123,20 @@ def resolve_warning_geometries(
         "unresolved_areas": unresolved,
         "geojson": _areas_to_feature_collection(warning, resolved),
     }
+
+
+def _area_datasets_loaded(store: GeometryStore, areas: list[WarningArea]) -> bool:
+    """True when at least one reviewed dataset for these area types is loaded."""
+    keys: set[str] = set()
+    for area in areas:
+        keys.update(_dataset_keys_for_area(area))
+    if not keys:
+        return False
+    for key in keys:
+        dataset = store.get_dataset(key)
+        if dataset is not None and dataset.loaded:
+            return True
+    return False
 
 
 def warnings_matching_point(
@@ -218,23 +238,29 @@ def _areas_to_feature_collection(
     warning: Warning,
     resolved_areas: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    features = [
-        {
-            "type": "Feature",
-            "id": f"{warning.id}:{area['code']}",
-            "properties": {
-                "warning_id": warning.id,
-                "warning_type": warning.warning_type,
-                "event": warning.event,
-                "level": warning.level,
-                "area_type": area["area_type"],
-                "code": area["code"],
-                "label": area.get("label"),
-                "dataset_key": area["dataset_key"],
-                "geometry_status": "resolved" if resolved_areas else "missing",
-            },
-            "geometry": area["geometry"],
+    features = []
+    for area in resolved_areas:
+        properties: dict[str, Any] = {
+            "warning_id": warning.id,
+            "warning_type": warning.warning_type,
+            "event": warning.event,
+            "level": warning.level,
+            "area_type": area["area_type"],
+            "code": area["code"],
+            "label": area.get("label"),
+            "dataset_key": area["dataset_key"],
+            "geometry_status": "resolved" if resolved_areas else "missing",
         }
-        for area in resolved_areas
-    ]
+        if "mapping_precision" in area:
+            properties["mapping_precision"] = area["mapping_precision"]
+        if "mapping_method" in area:
+            properties["mapping_method"] = area["mapping_method"]
+        features.append(
+            {
+                "type": "Feature",
+                "id": f"{warning.id}:{area['code']}",
+                "properties": properties,
+                "geometry": area["geometry"],
+            }
+        )
     return {"type": "FeatureCollection", "features": features}

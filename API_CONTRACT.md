@@ -143,9 +143,10 @@ features from the reviewed Stage 18 `synop_stations` WMO OSCAR/Surface dataset;
 future station IDs not present in that dataset are listed in `missing_geometry`
 with `missing_lat_lon`. Warning areas are emitted as polygon features when
 their TERYT/basin codes resolve against reviewed geometry datasets (Stage 13
-ships PRG voivodeship and county polygons); unresolved codes stay visible in
-`records` and `missing_geometry` with `geometry_not_found` or
-`missing_area_geometry_dataset` reasons.
+ships PRG voivodeship and county polygons; Stage 22 ships II aPGW-derived
+`hydro_basins`). Unresolved codes stay visible in `records` and
+`missing_geometry` with `geometry_not_found` (dataset loaded, code unmatched)
+or `missing_area_geometry_dataset` (required dataset not installed).
 
 ```json
 {
@@ -385,6 +386,13 @@ Warnings expose `area_codes` from IMGW TERYT/basin/province metadata. When
 reviewed geometry datasets are cached under `METEOLENS_GEOMETRY_DIR`, map layers
 and warning detail responses include resolved polygon GeoJSON plus
 `unresolved_areas` for codes that cannot be mapped.
+
+Resolved basin areas may include `mapping_precision`
+(`standard` / `refined` / `coarse` / `coastal`) and optional `mapping_method`
+from the reviewed `hydro_basins` feature properties. The same fields are copied
+onto warning map-layer and export GeoJSON feature properties when present.
+Non-`standard` precision values mark approximate IMGW forecasting-area
+mappings, not official IMGW warning polygons.
 
 Stage 9 added reviewed geometry references or GeoJSON features for warning
 areas where code mapping is reliable. Responses continue to expose

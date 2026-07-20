@@ -322,6 +322,93 @@ def test_bundled_synop_station_dataset_loads() -> None:
     assert bialystok.coordinates == [23.1722222222, 53.1083333333]
 
 
+def test_bundled_hydro_basins_dataset_loads_and_resolves_aliases() -> None:
+    store = GeometryStore(PROJECT_ROOT / "data" / "geometry")
+    store.load_all()
+
+    dataset = store.get_dataset("hydro_basins")
+
+    assert dataset is not None
+    assert dataset.loaded
+    assert dataset.review_status == "approved"
+    assert dataset.public_use is True
+    assert dataset.commercial_use is True
+    assert len(dataset.features) == 170
+    primary = store.find_by_code(dataset_key="hydro_basins", code="Z_P_WP_1856")
+    assert primary is not None
+    assert primary.geometry_type in {"Polygon", "MultiPolygon"}
+    aliases = primary.properties.get("kod_zlewni_codes") or []
+    assert "Z_P_WP_1856" in aliases
+    # Alias lookup must hit the same dissolved geometry even when the
+    # Feature primary code is a different IMGW kod_zlewni.
+    for alias in aliases:
+        matched = store.find_by_code(dataset_key="hydro_basins", code=alias)
+        assert matched is not None
+        assert matched.code == primary.code
+
+    coastal = store.find_by_code(dataset_key="hydro_basins", code="W_G_WM_0")
+    assert coastal is not None
+    assert coastal.properties.get("mapping_precision") == "coastal"
+
+
+def test_hydro_basins_validation_rejects_non_kod_zlewni_codes() -> None:
+    payload = _collection(_feature("not-a-basin-code", name="Bad"))
+    report = validate_dataset("hydro_basins", payload)
+    assert not report.ok
+    assert any("identifier does not match pattern" in issue for issue in report.issues)
+
+
+def test_cli_import_hydro_basins_with_aliases(tmp_path) -> None:
+    geojson = _write(
+        tmp_path / "hydro.geojson",
+        _collection(
+            {
+                "type": "Feature",
+                "properties": {
+                    "code": "Z_P_WP_1856",
+                    "basin_code": "Z_P_WP_1856",
+                    "name": "Kanał Mosiński",
+                    "kod_zlewni_codes": ["R_P_WP_1856", "Z_P_WP_1856"],
+                },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[16.0, 52.0], [18.0, 52.0], [18.0, 53.5], [16.0, 53.5], [16.0, 52.0]]
+                    ],
+                },
+            }
+        ),
+    )
+    metadata = _write(
+        tmp_path / "meta.json",
+        _metadata(
+            title="Test hydro basins",
+            attribution="Test hydro attribution.",
+            license_note="CC BY 4.0 test.",
+        ),
+    )
+    geometry_dir = tmp_path / "geometry"
+
+    exit_code = import_cli_main(
+        [
+            "import",
+            "hydro_basins",
+            str(geojson),
+            "--metadata",
+            str(metadata),
+            "--geometry-dir",
+            str(geometry_dir),
+        ]
+    )
+
+    assert exit_code == 0
+    store = GeometryStore(geometry_dir)
+    store.load_all()
+    assert store.get_dataset("hydro_basins").loaded
+    assert store.find_by_code(dataset_key="hydro_basins", code="R_P_WP_1856") is not None
+    assert store.find_by_code(dataset_key="hydro_basins", code="Z_P_WP_1856") is not None
+
+
 # --- API review metadata and synop coordinates ---------------------------------
 
 

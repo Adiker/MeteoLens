@@ -5,13 +5,14 @@ from fastapi.testclient import TestClient
 
 from app.core.config import Settings
 from app.geometry.loader import GeometryFeature, get_geometry_store, reset_geometry_store
-from app.geometry.spatial import find_area_geometry, point_in_geometry
+from app.geometry.spatial import find_area_geometry, point_in_geometry, resolve_warning_geometries
 from app.imgw.cache import SourceCache
 from app.imgw.parsers import parse_source
 from app.main import app
-from app.normalization.models import SourceMetadata, WarningArea
+from app.normalization.models import SourceMetadata, Warning, WarningArea
 from tests.settings_helpers import apply_test_settings
 from tests.test_frontend_api import _seed_cache
+from tests.test_parsers import load_fixture, source_metadata
 
 
 def _geometry_settings(tmp_path: Path) -> Settings:
@@ -203,6 +204,96 @@ def test_location_summary_keeps_unresolved_fallback_alongside_polygon_match(
     hydro_id = "warningshydro:hydro-warning-1:2026-06-30 00:00:00"
     assert hydro_id in match_types
     assert match_types[hydro_id] != "polygon"
+
+
+def test_hydro_basin_alias_and_primary_codes_resolve(monkeypatch, tmp_path) -> None:
+    _prepare(tmp_path, monkeypatch)
+    store = get_geometry_store()
+
+    primary = find_area_geometry(store, WarningArea(area_type="basin", code="Z_P_WP_1856"))
+    alias = find_area_geometry(store, WarningArea(area_type="basin", code="R_P_WP_1856"))
+    coastal = find_area_geometry(store, WarningArea(area_type="basin", code="W_G_PM_0_A"))
+
+    assert primary is not None
+    assert alias is not None
+    assert primary.code == alias.code
+    assert coastal is None
+
+
+def test_hydro_warning_geometry_status_distinguishes_unmatched_from_missing_dataset(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(tmp_path, monkeypatch)
+    store = get_geometry_store()
+    hydro = parse_source(
+        "warningshydro",
+        load_fixture("warningshydro"),
+        source_metadata("warningshydro"),
+    ).records[0]
+    assert isinstance(hydro, Warning)
+
+    resolved = resolve_warning_geometries(hydro, store)
+    assert resolved["geometry_status"] == "resolved"
+    assert resolved["resolved_areas"][0]["code"] == "Z_P_WP_1856"
+    assert resolved["resolved_areas"][0]["mapping_precision"] == "standard"
+    assert resolved["resolved_areas"][0]["mapping_method"] == "children"
+    feature_props = resolved["geojson"]["features"][0]["properties"]
+    assert feature_props["mapping_precision"] == "standard"
+    assert feature_props["mapping_method"] == "children"
+
+    coastal = Warning(
+        kind="warning",
+        id="warningshydro:coastal",
+        source_id="coastal",
+        source_key="warningshydro",
+        warning_type="hydro",
+        event="Wezbranie sztormowe",
+        level=1,
+        probability=None,
+        valid_from=None,
+        valid_to=None,
+        published_at=None,
+        office=None,
+        content=None,
+        comment=None,
+        areas=[WarningArea(area_type="basin", code="W_G_PM_0_A", label="morze")],
+        missing_fields=[],
+        source=hydro.source,
+        raw={},
+    )
+    unmatched = resolve_warning_geometries(coastal, store)
+    assert unmatched["geometry_status"] == "geometry_not_found"
+    assert unmatched["unresolved_areas"][0]["reason"] == "geometry_not_found"
+    assert "hydro_basins" in unmatched["unresolved_areas"][0]["dataset_keys"]
+
+
+def test_map_layers_include_hydro_warning_polygons(monkeypatch, tmp_path) -> None:
+    _prepare(tmp_path, monkeypatch)
+    _seed_cache(tmp_path, ("warningshydro",))
+
+    response = TestClient(app).get("/api/v1/map/layers?layers=warnings_hydro")
+
+    assert response.status_code == 200
+    layer = response.json()["layers"][0]
+    assert layer["geojson"]["features"]
+    assert layer["geojson"]["features"][0]["geometry"]["type"] == "Polygon"
+    assert layer["records"][0]["geometry_status"] == "resolved"
+
+
+def test_location_summary_polygon_matches_hydro_basin(monkeypatch, tmp_path) -> None:
+    _prepare(tmp_path, monkeypatch)
+    _seed_cache(tmp_path, ("warningshydro",))
+
+    # Fixture basin polygon covers lon 16-18, lat 52-53.5.
+    response = TestClient(app).get(
+        "/api/v1/location/summary?lat=52.5&lon=17.0&radius_km=50"
+    )
+
+    assert response.status_code == 200
+    warnings = response.json()["warnings"]
+    assert warnings
+    assert warnings[0]["match_type"] == "polygon"
+    assert warnings[0]["source_key"] == "warningshydro"
 
 
 def test_point_in_geometry_excludes_polygon_holes() -> None:

@@ -149,6 +149,13 @@ class GeometryStore:
         for feature in self.features_for_dataset(dataset_key):
             if feature.code == normalized:
                 return feature
+            # Hydro basins may dissolve multiple IMGW kod_zlewni onto one
+            # geometry; aliases live in kod_zlewni_codes.
+            aliases = feature.properties.get("kod_zlewni_codes")
+            if isinstance(aliases, list) and normalized in {
+                str(item).strip() for item in aliases if item not in (None, "")
+            }:
+                return feature
         return None
 
     def status(self) -> list[dict[str, Any]]:

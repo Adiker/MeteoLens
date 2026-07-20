@@ -266,8 +266,8 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 Captured on 2026-07-14 from a populated live IMGW-PIB cache (not fixtures);
 every view keeps the IMGW-PIB attribution and processed-data notice visible.
 The map now shows 62 reviewed-coordinate SYNOP markers and resolved PRG meteo
-warning polygons. Hydro warnings deliberately remain list-only when their
-`kod_zlewni` has no reviewed basin geometry (see
+warning polygons. Hydro warnings render reviewed basin polygons when
+`kod_zlewni` resolves against `hydro_basins` (see
 [Known Limitations](#known-limitations)).
 
 Map view with live station layers and the active warning list:
@@ -332,14 +332,16 @@ work around. Each one is either a documented backend constraint or an
 intentional scope deferral; do not paper over them with mock/interpolated
 data (see `AGENTS.md`).
 
-- **Hydro warning areas still have no polygons.** Stage 13 ships reviewed PRG
-  voivodeship and county polygons, so meteo warning TERYT codes resolve to
-  polygons out of the box. Hydro `kod_zlewni` basin geometry
-  (`hydro_basins`) remains `planned` pending MPHP licensing review, so hydro
-  warnings stay list-only with `geometry_not_found` /
-  `missing_area_geometry_dataset` metadata. The bundled administrative
-  polygons are a simplified 2022 PRG snapshot (processed data, not for
-  legal/cadastral use). See `docs/geometry/GEOMETRY_SOURCES.md`.
+- **Hydro warning polygons cover mapped basins only.** Stage 13 ships reviewed
+  PRG voivodeship and county polygons for meteo TERYT codes. Stage 22 adds a
+  reviewed `hydro_basins` dataset derived from II aPGW JCWP catchments
+  (CC BY 4.0, PGW Wody Polskie) mapped to IMGW `kod_zlewni`. The committed
+  import resolves **297 of 297** snapshot codes into 170 dissolved geometries
+  (~992 KiB) via MPHP-core matching, name/voivodeship refinement, and curated
+  coastal CW/TW rules (`mapping_precision`: standard/refined/coarse/coastal).
+  Refined/coarse polygons approximate IMGW forecasting areas — see
+  `docs/geometry/GEOMETRY_SOURCES.md` and
+  `docs/geometry/hydro_basins.coverage.json`.
 - **Synoptic station coordinates come from reviewed WMO metadata.**
   `api/data/synop` does not return `lat/lon`; Stage 18 bundles a reviewed
   `synop_stations` dataset resolved from WMO OSCAR/Surface by WIGOS ID, so
@@ -370,11 +372,10 @@ data (see `AGENTS.md`).
   backend and can take tens of seconds before the cached PNG makes playback
   instant. Only leads up to `METEOLENS_PRODUCT_RENDER_MAX_LEAD_HOURS` every
   `METEOLENS_PRODUCT_RENDER_LEAD_STEP_HOURS` hours are renderable.
-- **Basin filters only work with installed basin geometry.** Province and
-  county filters work against the bundled PRG datasets; the basin filter
-  matches only literal `kod_zlewni` values from warning metadata until a
-  reviewed `hydro_basins` dataset is installed (see the hydro limitation
-  above).
+- **Basin filters match literal `kod_zlewni` values.** Province and county
+  filters work against the bundled PRG datasets; the basin filter matches
+  IMGW basin codes from warning metadata (including codes whose polygons
+  remain unresolved).
 - **No public cache-refresh endpoint.** Docker Compose populates the cache at
   backend startup via `METEOLENS_SYNC_ON_STARTUP=true` and keeps it fresh with
   the periodic scheduler (`METEOLENS_REFRESH_ENABLED=true`); there is still no

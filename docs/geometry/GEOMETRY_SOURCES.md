@@ -28,7 +28,7 @@ Do not ship unofficial or legally unclear geometry as an implemented source.
 | --- | --- | --- | --- |
 | `teryt_voivodeships` | Voivodeship polygons, meteo warning fallback, province filter | PRG (GUGiK) via GIS Support SHP mirror | **implemented** |
 | `teryt_counties` | County polygons for meteo warning TERYT codes, county filter | PRG (GUGiK) via GIS Support SHP mirror | **implemented** |
-| `hydro_basins` | Hydro warning basin polygons, basin filters | MPHP (PGW Wody Polskie) — candidate | planned (licensing and `kod_zlewni` mapping unverified) |
+| `hydro_basins` | Hydro warning basin polygons, basin filters | II aPGW JCWP catchments (PGW Wody Polskie) via dane.gov.pl dataset 599 | **implemented** |
 | `synop_stations` | Synoptic station coordinates (IMGW synop API has none) | WMO OSCAR/Surface, resolved by WIGOS ID from IMGW `id_stacji` | **implemented** |
 
 ## Implemented: `teryt_voivodeships` and `teryt_counties`
@@ -90,16 +90,92 @@ Kraków, Gdańsk, Wrocław, Białystok, Suwałki, and powiat tatrzański. All TE
 codes from live `warningsmeteo` responses resolved against the county dataset
 at import time.
 
-## Candidate: `hydro_basins` (planned)
+## Implemented: `hydro_basins`
 
-- **Candidate provider:** PGW Wody Polskie — Mapa Podziału Hydrograficznego
-  Polski (MPHP), e.g. via <https://dane.gov.pl>.
-- **Open questions before implementation:** exact license/terms for
-  redistribution of MPHP geometry; mapping between IMGW `kod_zlewni` values
-  (e.g. `Z_P_WP_1856`) and MPHP basin identifiers; dataset size and
-  simplification strategy.
-- Until reviewed, hydro warnings stay list-only with
-  `missing_area_geometry_dataset` / `geometry_not_found` metadata.
+- **Provider:** Państwowe Gospodarstwo Wodne Wody Polskie (PGW WP) — II
+  aktualizacja planów gospodarowania wodami (II aPGW / IIaPGW). Catchment
+  polygons come from `Zlewnie_JCWP_rzecznych` plus coastal/transitional JCWP
+  water-body layers in the public Geobaza II aPGW package on dane.gov.pl
+  dataset 599 (resource 53330), not from a direct MPHP redistribution.
+- **Canonical URL:**
+  <https://dane.gov.pl/pl/dataset/599,ii-aktualizacja-planow-gospodarowania-wodami>
+- **License/terms:** Creative Commons Attribution 4.0 International (CC BY 4.0)
+  on the published II aPGW spatial layers:
+  <https://creativecommons.org/licenses/by/4.0/deed.pl>.
+- **Public use:** allowed. **Commercial use:** allowed (with attribution).
+- **Attribution text:** `Zlewnie JCWP: II aktualizacja planów gospodarowania
+  wodami (aPGW), © PGW Wody Polskie (CC BY 4.0); mapowanie IMGW kod_zlewni i
+  uproszczenie geometrii: MeteoLens.`
+- **Mapping key:** IMGW `kod_zlewni` values follow
+  `{Z|R|W}_{office}_{voivodeship}_{mphp_core}` (e.g. `Z_P_WP_1856`). The
+  trailing numeric core matches the hierarchical MPHP hydrographic identifier
+  embedded in II aPGW JCWP codes (`RW{dorzecze}{typ}{hydro_id}`). Matching
+  JCWP catchments are dissolved per unique geometry; every IMGW code that
+  shares that dissolve is listed in `kod_zlewni_codes` so the loader can
+  resolve aliases. Short cores and oversized unions are refined by warning-name
+  token overlap and optional voivodeship clip (`mapping_precision`:
+  `standard` / `refined` / `coarse`). Coastal/lagoon warnings map to reviewed
+  CW/TW water-body polygons by curated name rules (`mapping_precision`:
+  `coastal`).
+- **Caching/redistribution/screenshot/export implications:** local caching and
+  redistribution of this simplified derivative are allowed under CC BY 4.0 with
+  PGW WP / II aPGW attribution plus the MeteoLens processed-data notice.
+  Screenshots and exports that show hydro warning polygons must keep IMGW-PIB
+  warning attribution as well. Expert mode exposes geometry attribution via
+  `/api/v1/geometry/datasets`.
+- **Update cadence:** re-export river + coastal JCWP layers from a newer II
+  aPGW Geobaza, refresh a `warningshydro` snapshot, re-run
+  `scripts/geometry/convert_apgw_hydro_basins.py`, and re-import.
+- **Known limitations:** refined/coarse mappings are approximations of IMGW
+  forecasting areas (not official IMGW warning polygons); name refinement and
+  voivodeship clips can under- or over-cover a reach; geometry is further
+  simplified (~0.012°) for map delivery; not for legal or flood-defence
+  engineering use. Coverage summary:
+  `docs/geometry/hydro_basins.coverage.json`.
+
+Reproducible pipeline:
+
+```bash
+# 1. download II aPGW GDB from dane.gov.pl resource 53330 and simplify:
+docker run --rm -v "$PWD/apgw:/data" -v "$PWD/out:/out" \
+  ghcr.io/osgeo/gdal:ubuntu-small-latest \
+  ogr2ogr -f GeoJSON /out/zlewnie_jcwp_rzecznych.geojson \
+  /data/Geobaza_2aPGW_ver_20230915.gdb Zlewnie_JCWP_rzecznych \
+  -t_srs EPSG:4326 -simplify 400 -lco COORDINATE_PRECISION=5 \
+  -select MS_KOD,AREA
+docker run --rm -v "$PWD/apgw:/data" -v "$PWD/out:/out" \
+  ghcr.io/osgeo/gdal:ubuntu-small-latest \
+  ogr2ogr -f GeoJSON /out/jcwp_przybrzeznych.geojson \
+  /data/Geobaza_2aPGW_ver_20230915.gdb \
+  Jednolite_Części_Wód_Powierzchniowych_Przybrzeżnych \
+  -t_srs EPSG:4326 -simplify 400 -lco COORDINATE_PRECISION=5
+docker run --rm -v "$PWD/apgw:/data" -v "$PWD/out:/out" \
+  ghcr.io/osgeo/gdal:ubuntu-small-latest \
+  ogr2ogr -f GeoJSON /out/jcwp_przejsciowych.geojson \
+  /data/Geobaza_2aPGW_ver_20230915.gdb \
+  Jednolite_Części_Wód_Powierzchniowych_Przejściowych \
+  -t_srs EPSG:4326 -simplify 400 -lco COORDINATE_PRECISION=5
+
+# 2. map + dissolve (requires: pip install shapely)
+python scripts/geometry/convert_apgw_hydro_basins.py \
+  --jcwp-geojson out/zlewnie_jcwp_rzecznych.geojson \
+    out/jcwp_przybrzeznych.geojson out/jcwp_przejsciowych.geojson \
+  --warnings-json out/warningshydro_snapshot.json \
+  --char-csv out/jcwp_char.csv \
+  --voivodeships-geojson data/geometry/teryt_voivodeships.geojson \
+  --out out/hydro_basins.geojson
+
+# 3. import
+cd backend
+python -m app.geometry.import_cli import hydro_basins \
+  ../out/hydro_basins.geojson \
+  --metadata ../docs/geometry/metadata/hydro_basins.json
+```
+
+Conversion sanity checks for the committed import (2026-07-20 snapshot): **297
+of 297** live `kod_zlewni` values resolved into **170** unique dissolved
+geometries (~992 KiB); precision mix standard/refined/coarse/coastal; Poland
+coordinate bounds; loader alias resolution via `kod_zlewni_codes`.
 
 ## Implemented: `synop_stations`
 
@@ -207,7 +283,8 @@ Validation (strict at import time, structural re-check at load time):
   stations), closed rings with at least 4 positions,
 - required properties: an identifier (`teryt`/`code`/`basin_code`) and a name,
 - identifier patterns (2-digit voivodeship TERYT, 4-digit county TERYT with a
-  valid voivodeship prefix, numeric station IDs) and duplicate detection,
+  valid voivodeship prefix, IMGW `kod_zlewni` for hydro basins, numeric station
+  IDs) and duplicate detection,
 - coordinate bounds for Poland (lon 13.5–24.5, lat 48.5–55.5, WGS84),
 - coverage at import time: all 16 voivodeship codes present; counties cover
   every voivodeship prefix.
@@ -216,7 +293,10 @@ Validation (strict at import time, structural re-check at load time):
 
 - Meteo warnings: IMGW `teryt` codes map to `teryt_counties` first, then
   `teryt_voivodeships` when the code itself is a two-digit voivodeship code.
-- Hydro warnings: IMGW `kod_zlewni` values map to `hydro_basins`.
+- Hydro warnings: IMGW `kod_zlewni` values map to `hydro_basins` (primary
+  `code`/`basin_code` or `kod_zlewni_codes` aliases). When the dataset is
+  loaded but a code is unmatched, `geometry_status` is `geometry_not_found`
+  rather than `missing_area_geometry_dataset`.
 - Synop stations: IMGW `id_stacji` maps to `synop_stations` Point features
   resolved from WMO OSCAR/Surface by WIGOS ID.
 - Unresolved codes remain visible in API/UI as `geometry_not_found` or

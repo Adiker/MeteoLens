@@ -321,8 +321,8 @@ Acceptance criteria:
   (hydro basins and unresolved codes keep `geometry_not_found` /
   `missing_area_geometry_dataset`).
 - [x] No unofficial or legally unclear geometry source is marked as implemented
-  (MPHP stays `planned`; WMO OSCAR/Surface was promoted to implemented only
-  after Stage 18 source/legal review).
+  (MPHP stays planned until Stage 22; WMO OSCAR/Surface was promoted to
+  implemented only after Stage 18 source/legal review).
 - [x] Synoptic stations only appear as map markers after coordinates come from a
   reviewed source (`coordinate_source` metadata; Stage 18 now bundles the
   reviewed WMO OSCAR/Surface dataset).
@@ -724,56 +724,56 @@ basin-geometry source is available.
 
 Implementation tasks:
 
-- [ ] Perform legal and source review of MPHP or an alternative official
+- [x] Perform legal and source review of MPHP or an alternative official
   hydrological basin dataset.
-- [ ] Analyze public-use, commercial-use, redistribution, caching, screenshot,
+- [x] Analyze public-use, commercial-use, redistribution, caching, screenshot,
   and export implications.
-- [ ] Build a reproducible import pipeline for the selected basin dataset.
-- [ ] Validate geometry type, coordinate bounds, simplification, and required
+- [x] Build a reproducible import pipeline for the selected basin dataset.
+- [x] Validate geometry type, coordinate bounds, simplification, and required
   properties.
-- [ ] Map IMGW `kod_zlewni` values to geometry identifiers.
-- [ ] Analyze coverage using real warning payloads.
-- [ ] Render hydrological warning polygons when codes resolve.
-- [ ] Add location matching against hydrological warning polygons.
-- [ ] Add basin filters backed by reviewed geometry.
-- [ ] Add dataset versioning and an update procedure.
-- [ ] Preserve attribution and processed-data notices.
-- [ ] Expose unresolved-code metadata for unmapped or ambiguous basin codes.
+- [x] Map IMGW `kod_zlewni` values to geometry identifiers.
+- [x] Analyze coverage using real warning payloads.
+- [x] Render hydrological warning polygons when codes resolve.
+- [x] Add location matching against hydrological warning polygons.
+- [x] Add basin filters backed by reviewed geometry.
+- [x] Add dataset versioning and an update procedure.
+- [x] Preserve attribution and processed-data notices.
+- [x] Expose unresolved-code metadata for unmapped or ambiguous basin codes.
 
 Documentation tasks:
 
-- [ ] Update `docs/geometry/GEOMETRY_SOURCES.md`.
-- [ ] Update `DATA_SOURCES.md`.
-- [ ] Update `LEGAL_ATTRIBUTION.md`.
-- [ ] Update `API_CONTRACT.md`.
-- [ ] Update `UI_UX.md`.
-- [ ] Update `README.md` known limitations after implementation.
-- [ ] Update `TASKS.md` only as work is completed.
+- [x] Update `docs/geometry/GEOMETRY_SOURCES.md`.
+- [x] Update `DATA_SOURCES.md`.
+- [x] Update `LEGAL_ATTRIBUTION.md`.
+- [x] Update `API_CONTRACT.md`.
+- [x] Update `UI_UX.md`.
+- [x] Update `README.md` known limitations after implementation.
+- [x] Update `TASKS.md` only as work is completed.
 
 Test tasks:
 
-- [ ] Add backend import and validation tests.
-- [ ] Add backend warning-code coverage tests with realistic fixtures.
-- [ ] Add API tests for hydro polygons and unresolved metadata.
-- [ ] Add frontend tests for hydro polygon rendering, basin filters, and
+- [x] Add backend import and validation tests.
+- [x] Add backend warning-code coverage tests with realistic fixtures.
+- [x] Add API tests for hydro polygons and unresolved metadata.
+- [x] Add frontend tests for hydro polygon rendering, basin filters, and
   list-only fallback.
-- [ ] Add export tests for basin geometry attribution and missing geometry.
-- [ ] Add upgrade tests for bundled or imported basin datasets.
+- [x] Add export tests for basin geometry attribution and missing geometry.
+- [x] Add upgrade tests for bundled or imported basin datasets.
 
 Non-goals and blocked items:
 
-- [ ] Do not describe hydro basin polygons as implemented until the dataset
+- [x] Do not describe hydro basin polygons as implemented until the dataset
   review, import, API, UI, docs, and tests land.
-- [ ] Do not add legally unclear basin geometry.
-- [ ] Do not hide warnings whose basin codes remain unresolved.
+- [x] Do not add legally unclear basin geometry.
+- [x] Do not hide warnings whose basin codes remain unresolved.
 
 Acceptance criteria:
 
-- [ ] Hydrological warning polygons render only from reviewed geometry.
-- [ ] `kod_zlewni` coverage and unresolved codes are documented and exposed.
-- [ ] Location matching includes hydro polygons where available.
-- [ ] Exports include correct basin attribution and processed-data notices.
-- [ ] Hydro warning gaps remain visible.
+- [x] Hydrological warning polygons render only from reviewed geometry.
+- [x] `kod_zlewni` coverage and unresolved codes are documented and exposed.
+- [x] Location matching includes hydro polygons where available.
+- [x] Exports include correct basin attribution and processed-data notices.
+- [x] Hydro warning gaps remain visible.
 
 ## Stage 23 - Hydrological Archive Backfill
 

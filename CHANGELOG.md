@@ -4,6 +4,19 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 22 reviewed hydro basin geometry: bundled II aPGW JCWP catchment
+  polygons (CC BY 4.0, PGW Wody Polskie) mapped to IMGW `kod_zlewni`, dissolved
+  and simplified via `scripts/geometry/convert_apgw_hydro_basins.py`, imported
+  through the geometry CLI with coverage report
+  `docs/geometry/hydro_basins.coverage.json` (**297/297** snapshot codes
+  resolved into 170 features via MPHP-core matching, name/voivodeship
+  refinement, and curated coastal CW/TW rules; `mapping_precision`
+  standard/refined/coarse/coastal). Loader resolves `kod_zlewni_codes` aliases;
+  spatial status distinguishes loaded-but-unmatched codes from a missing
+  dataset. Warning detail, map layers, and GeoJSON exports now thread
+  `mapping_precision` / `mapping_method` onto resolved basin areas; the details
+  panel flags non-`standard` precision as an IMGW forecasting-area approximation.
+
 ## 0.1.0-alpha - 2026-07-20
 
 - Published the first public alpha: tagged `v0.1.0-alpha`, moved these notes out

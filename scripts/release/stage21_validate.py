@@ -140,7 +140,12 @@ def geometry(client: Client, evidence: Evidence) -> None:
     require_status(status, 200, "/api/v1/geometry/datasets")
     evidence.payload("geometry_datasets", payload)
     datasets = {item.get("key"): item for item in payload.get("datasets", [])}
-    expected = {"synop_stations": 62, "teryt_counties": 380, "teryt_voivodeships": 16}
+    expected = {
+        "synop_stations": 62,
+        "teryt_counties": 380,
+        "teryt_voivodeships": 16,
+        "hydro_basins": 170,
+    }
     for key, count in expected.items():
         item = datasets.get(key, {})
         evidence.check(
@@ -148,7 +153,12 @@ def geometry(client: Client, evidence: Evidence) -> None:
             item.get("loaded") is True and item.get("feature_count") == count,
             f"loaded={item.get('loaded')} features={item.get('feature_count')}",
         )
-    evidence.check("hydro basin geometry remains explicit", "hydro_basins" not in datasets, "dataset not bundled")
+    hydro = datasets.get("hydro_basins", {})
+    evidence.check(
+        "hydro basin geometry bundled and reviewed",
+        hydro.get("loaded") is True and hydro.get("review_status") == "approved",
+        f"loaded={hydro.get('loaded')} review={hydro.get('review_status')}",
+    )
 
     status, _, stations = client.json("/api/v1/stations?type=synop&limit=200")
     require_status(status, 200, "/api/v1/stations?type=synop&limit=200")
