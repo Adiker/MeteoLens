@@ -21,7 +21,11 @@ The production nginx entrypoint applies a 64 KB request-body maximum, finite
 timeouts, per-IP public and product-render request limits, and HTTP security
 headers. The backend coalesces duplicate in-flight renders, limits render
 concurrency, permits only one archive import, and applies an archive duplicate
-range cooldown. Product download size remains bounded.
+range cooldown. Product download size remains bounded. Product render downloads
+validate manifest URLs immediately before every HTTP request: HTTPS, the configured
+IMGW host, approved IMGW download paths, and a DNS resolution that rejects
+loopback, link-local, private, and other disallowed addresses. Cached manifests
+or binaries do not bypass those checks.
 
 The documented Caddy TLS proxy sends all traffic through nginx rather than
 bypassing these controls. Nginx accepts forwarded client addresses only from

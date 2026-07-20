@@ -1,5 +1,6 @@
 import json
 import logging
+import socket
 import threading
 import time
 from datetime import UTC, date, datetime
@@ -147,6 +148,13 @@ def test_duplicate_render_requests_share_one_uncached_render(monkeypatch, tmp_pa
         return rendering.RenderResult(png_path=png_path, metadata=metadata, from_cache=False)
 
     monkeypatch.setattr(rendering, "_render_uncached", fake_uncached)
+    monkeypatch.setattr(
+        socket,
+        "getaddrinfo",
+        lambda host, port, *_args, **_kwargs: [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))
+        ],
+    )
     barrier = threading.Barrier(2)
     results: list[rendering.RenderResult] = []
 
@@ -157,7 +165,7 @@ def test_duplicate_render_requests_share_one_uncached_render(monkeypatch, tmp_pa
                 settings,
                 product_id="COSMO_HVD_00_00",
                 filename=filename,
-                url="https://example.test/frame",
+                url=f"https://danepubliczne.imgw.pl/pl/d/{filename}",
                 variable_key="t2m",
             )
         )
