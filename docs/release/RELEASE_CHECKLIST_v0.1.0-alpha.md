@@ -9,8 +9,9 @@ predates bundled PRG geometry, COSMO rendering, daily SYNOP archive backfill,
 public API/client/export work, and bundled WMO OSCAR/Surface SYNOP coordinates.
 The current validation record is
 [`STAGE_21_VALIDATION_2026-07-14.md`](STAGE_21_VALIDATION_2026-07-14.md).
-Do not tag `v0.1.0-alpha` until its pre-tag checks have been repeated for the
-exact release commit.
+`v0.1.0-alpha` was cut on 2026-07-20. Live Compose evidence remains in that
+record; the final automated pre-tag suite is in
+[`STAGE_21_PRETAG_2026-07-20.md`](STAGE_21_PRETAG_2026-07-20.md).
 
 ## Before tagging
 
@@ -41,8 +42,8 @@ exact release commit.
 - [x] Live/archive/mixed observation series verified with real IMGW station
   identifiers. The reviewed mapping resolved `NSP=349190600` to
   `id_stacji=12600`; the 2026-07-14 limited live follow-up returned `mixed` with
-  `origin_counts={"archive_import":1,"live_refresh":1}`. Final pre-tag
-  current-main validation remains required.
+  `origin_counts={"archive_import":1,"live_refresh":1}`. Final automated
+  pre-tag suite recorded in `STAGE_21_PRETAG_2026-07-20.md`.
 - [x] Exports, attribution, processed-data notices, and known limitations
   verified.
 - [x] Backup and restore procedure verified and recorded.
@@ -67,19 +68,19 @@ exact release commit.
 
 ## Tagging
 
-- [ ] Update `CHANGELOG.md`: move the relevant `Unreleased` entries under a
+- [x] Update `CHANGELOG.md`: move the relevant `Unreleased` entries under a
   `## 0.1.0-alpha - <date>` heading.
 - [x] Align backend and frontend version metadata with the alpha candidate;
   README remains deliberately labelled as a candidate until tagging.
-- [ ] Tag the release commit: `git tag v0.1.0-alpha && git push origin v0.1.0-alpha`.
-- [ ] Create the GitHub release, marked as a pre-release, linking the
+- [x] Tag the release commit: `git tag v0.1.0-alpha && git push origin v0.1.0-alpha`.
+- [x] Create the GitHub release, marked as a pre-release, linking the
   smoke-test record and the Known Limitations section.
 
 ## After tagging
 
-- [ ] Verify the release notes render the screenshots and attribution
+- [x] Verify the release notes render the screenshots and attribution
   correctly on GitHub.
 - [ ] If a public demo instance is deployed, walk through
   `deploy/PRODUCTION_CHECKLIST.md` on the target host (legal review of current
   IMGW-PIB terms stays with the deployer).
-- [ ] Verify rollback steps from the release record.
+- [x] Verify rollback steps from the release record.

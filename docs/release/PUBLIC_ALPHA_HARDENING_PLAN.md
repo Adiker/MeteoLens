@@ -1,10 +1,11 @@
 # Public Alpha Hardening Plan
 
 This document now combines historical planning with the release gates that
-remain applicable. Stages 19-20 are implemented, and Stage 21 validation is
-recorded in `STAGE_21_VALIDATION_2026-07-14.md`; its real SYNOP archive
-identifier-reconciliation blocker must be resolved before tagging. This does
-not by itself approve an unrestricted public deployment or create a release tag.
+remain applicable. Stages 19-21 are complete: Stage 21 validation is recorded
+in `STAGE_21_VALIDATION_2026-07-14.md`, SYNOP identifier reconciliation is
+reviewed, the automated pre-tag suite is in `STAGE_21_PRETAG_2026-07-20.md`,
+and `v0.1.0-alpha` is tagged as a prerelease. This does not by itself approve
+an unrestricted public deployment.
 
 ## Why This Exists
 
@@ -105,13 +106,13 @@ Stage 20 - Production Observability, Backup And Recovery (implemented):
 - document upgrade, rollback, incident-response, and troubleshooting steps.
 
 Stage 21 - Current-Main Production Validation And `v0.1.0-alpha` Release
-(validation recorded; publication blocked):
+(done; `v0.1.0-alpha` tagged):
 
 - rerun local and production smoke tests against the release commit,
 - verify fresh-volume and persistent-volume upgrade paths,
 - cover Stage 13-20 behavior,
 - update screenshots and release notes,
-- move `CHANGELOG.md` entries only when the release is actually cut,
+- move `CHANGELOG.md` entries when the release is cut,
 - tag `v0.1.0-alpha` and create a GitHub prerelease.
 
 ## Release Gates
@@ -139,8 +140,8 @@ Stage 21 - Current-Main Production Validation And `v0.1.0-alpha` Release
 2. Stage 20 landed monitoring, logging, resource limits, backup, restore, and
    runbook updates.
 3. Stage 21 validation ran from current `main`; see
-   `STAGE_21_VALIDATION_2026-07-14.md`. Resolve its SYNOP identifier
-   reconciliation blocker before publication.
+   `STAGE_21_VALIDATION_2026-07-14.md`. SYNOP identifier reconciliation and the
+   2026-07-20 pre-tag suite cleared publication gates.
 4. Publish only a prerelease, with alpha limitations and deployer legal-review
    responsibilities visible.
 5. Treat public demo exposure as an operator decision gated by

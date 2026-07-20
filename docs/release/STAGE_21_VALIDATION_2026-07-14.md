@@ -166,8 +166,7 @@ visible attribution check. The pre-Stage-21 baseline used here was main commit
 
 ## Remaining release actions
 
-No tag, GitHub release, or public-demo approval was created during this work.
-Before publishing, rerun the affected checks plus the small pre-tag suite
-against the exact final merged commit, move `CHANGELOG.md` entries to a dated
-`0.1.0-alpha` section, tag that commit, create a GitHub prerelease, and verify
-the rendered release notes.
+`v0.1.0-alpha` publication is covered by the 2026-07-20 release cut: see
+`STAGE_21_PRETAG_2026-07-20.md`, the dated `CHANGELOG.md` section, the Git tag,
+and the GitHub prerelease. Public-demo exposure remains an operator decision
+gated by `deploy/PRODUCTION_CHECKLIST.md`.

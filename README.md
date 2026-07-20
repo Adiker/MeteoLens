@@ -1,32 +1,30 @@
 # MeteoLens
 
-**Status: public alpha (`v0.1.0-alpha` candidate; not tagged yet).** MeteoLens
-works end to end against live IMGW-PIB data, but it is an alpha: expect the
-gaps listed in [Known Limitations](#known-limitations) (hydro warning basins
-still lack reviewed polygons, radar downloads are blocked at the source,
-history starts empty unless backfilled). The current-main validation record is
-[docs/release/STAGE_21_VALIDATION_2026-07-14.md](docs/release/STAGE_21_VALIDATION_2026-07-14.md).
-The SYNOP live/archive station-ID blocker found by that validation now has a
-reviewed source-based fix and a passing limited live-data follow-up. Tagging and
-GitHub prerelease publication still remain pending until the final pre-tag
-validation is run against the merged commit.
+**Status: public alpha (`v0.1.0-alpha`).** MeteoLens works end to end against
+live IMGW-PIB data, but it is an alpha: expect the gaps listed in
+[Known Limitations](#known-limitations) (hydro warning basins still lack
+reviewed polygons, radar downloads are blocked at the source, history starts
+empty unless backfilled). Validation evidence:
+[docs/release/STAGE_21_VALIDATION_2026-07-14.md](docs/release/STAGE_21_VALIDATION_2026-07-14.md)
+and
+[docs/release/STAGE_21_PRETAG_2026-07-20.md](docs/release/STAGE_21_PRETAG_2026-07-20.md).
+Release notes:
+[docs/release/RELEASE_NOTES_v0.1.0-alpha.md](docs/release/RELEASE_NOTES_v0.1.0-alpha.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
-hydrological data for Poland. Stages 0-18 (research, documentation, backend
+hydrological data for Poland. Stages 0-21 (research, documentation, backend
 API, IMGW integration, the frontend map UI, quality/test hardening, production
 deployment, observation history, geometry datasets, product timeline,
 PWA/power-user features, public-alpha release polish, the reviewed geometry
-dataset MVP with bundled PRG voivodeship/county polygons, and the product
+dataset MVP with bundled PRG voivodeship/county polygons, the product
 rendering MVP with the COSMO 2 m temperature map overlay, bounded SYNOP daily
 archive backfill, the public API/SDK/export stabilization pass, documentation
 status stabilization, reviewed WMO OSCAR/Surface synop station coordinates,
-and Stage 19 public-internet security hardening, plus Stage 20 production
-observability, backup, and recovery) are implemented. Stage 21 current-main
-validation is recorded for the alpha candidate. Its SYNOP identifier blocker is
-fixed on a reviewed mapping path; tagging and prerelease publication are still
-pending. Stages 22-26 remain planned and cover hydrology, warning history,
-performance, and PDF reports. See [TASKS.md](TASKS.md) for the full staged
-backlog.
+Stage 19 public-internet security hardening, Stage 20 production
+observability/backup/recovery, and Stage 21 validation plus this alpha tag)
+are implemented. Stages 22-26 remain planned and cover hydrology, warning
+history, performance, and PDF reports. See [TASKS.md](TASKS.md) for the full
+staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -405,11 +403,11 @@ data (see `AGENTS.md`).
   verify current IMGW-PIB terms before public or commercial use (see
   `LEGAL_ATTRIBUTION.md` → "Commercial And Public Use" and
   [deploy/PRODUCTION_CHECKLIST.md](deploy/PRODUCTION_CHECKLIST.md)).
-- **This is an untagged alpha candidate, not a public-demo approval.** Current-
-  main validation, abuse protection, observability, and backup/restore checks
-  are recorded, but a deployer must still review source terms and complete the
-  per-host [production checklist](deploy/PRODUCTION_CHECKLIST.md). The tag and
-  GitHub prerelease have not yet been created.
+- **This is a tagged public alpha, not a public-demo approval.** Validation,
+  abuse protection, observability, and backup/restore checks are recorded, but
+  a deployer must still review source terms and complete the per-host
+  [production checklist](deploy/PRODUCTION_CHECKLIST.md) before exposing an
+  instance.
 
 ## Troubleshooting
 
