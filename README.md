@@ -266,8 +266,8 @@ Then open `http://localhost:8080`. See [DEPLOYMENT.md](DEPLOYMENT.md) and
 Captured on 2026-07-14 from a populated live IMGW-PIB cache (not fixtures);
 every view keeps the IMGW-PIB attribution and processed-data notice visible.
 The map now shows 62 reviewed-coordinate SYNOP markers and resolved PRG meteo
-warning polygons. Hydro warnings deliberately remain list-only when their
-`kod_zlewni` has no reviewed basin geometry (see
+warning polygons. Hydro warnings render reviewed basin polygons when
+`kod_zlewni` resolves against `hydro_basins` (see
 [Known Limitations](#known-limitations)).
 
 Map view with live station layers and the active warning list:
@@ -336,9 +336,10 @@ data (see `AGENTS.md`).
   PRG voivodeship and county polygons for meteo TERYT codes. Stage 22 adds a
   reviewed `hydro_basins` dataset derived from II aPGW JCWP catchments
   (CC BY 4.0, PGW Wody Polskie) mapped to IMGW `kod_zlewni`. The committed
-  import resolves 166 of 297 snapshot codes into 103 dissolved geometries;
-  coarse cores, oversized unions, and coastal/sea codes (`…_0`) stay
-  list-only with `geometry_not_found` metadata. See
+  import resolves **297 of 297** snapshot codes into 170 dissolved geometries
+  (~992 KiB) via MPHP-core matching, name/voivodeship refinement, and curated
+  coastal CW/TW rules (`mapping_precision`: standard/refined/coarse/coastal).
+  Refined/coarse polygons approximate IMGW forecasting areas — see
   `docs/geometry/GEOMETRY_SOURCES.md` and
   `docs/geometry/hydro_basins.coverage.json`.
 - **Synoptic station coordinates come from reviewed WMO metadata.**

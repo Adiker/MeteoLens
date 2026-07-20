@@ -9,12 +9,12 @@
   "commercial_use": true,
   "redistribution_note": "Redistribution of this simplified derivative is allowed under CC BY 4.0 with attribution to PGW Wody Polskie / II aPGW and a processed-data notice. Do not present the polygons as official cadastral or legal catchment boundaries.",
   "update_cadence": "II aPGW catchment layers are published as a versioned national planning dataset (Geobaza II aPGW). Refresh by re-exporting Zlewnie_JCWP_rzecznych from the current GDB, re-running scripts/geometry/convert_apgw_hydro_basins.py against a fresh warningshydro snapshot, and re-importing.",
-  "known_limitations": "One Feature per dissolved JCWP set mapped from IMGW kod_zlewni via the MPHP hydro id embedded in RW*/LW*/CW*/TW* JCWP codes; short MPHP cores (<3 digits) and unions exceeding 80 JCWP catchments stay explicitly unresolved; coastal/sea codes with core 0 have no MPHP match; geometry is further simplified (~0.012 deg) for map delivery; not suitable for legal or flood-defence engineering use.",
-  "dataset_version": "II aPGW Geobaza ver_20230915 Zlewnie_JCWP_rzecznych; MeteoLens dissolve+simplify 2026-07-20; warning snapshot mapped against live warningshydro codes",
+  "known_limitations": "One Feature per dissolved JCWP set mapped from IMGW kod_zlewni via the MPHP hydro id embedded in RW*/LW* JCWP codes, plus curated CW/TW coastal/lagoon polygons. Short cores and oversized unions are refined by warning-name token overlap and optional voivodeship clip (mapping_precision: standard/refined/coarse/coastal). Refined/coarse polygons approximate IMGW forecasting areas and are not official IMGW warning polygons. Geometry is further simplified (~0.012 deg) for map delivery; not suitable for legal or flood-defence engineering use.",
+  "dataset_version": "II aPGW Geobaza ver_20230915 river+coastal JCWP; MeteoLens dissolve+name-refine+voiv-clip+simplify 2026-07-20; warning snapshot 297/297 kod_zlewni resolved",
   "review": {
     "status": "approved",
     "reviewed_at": "2026-07-20",
     "reviewed_by": "MeteoLens Stage 22 source/legal review",
-    "notes": "Uses CC BY 4.0 II aPGW JCWP catchments from dane.gov.pl dataset 599 instead of unverified MPHP redistribution; IMGW kod_zlewni mapping via embedded MPHP hydro IDs documented in docs/geometry/GEOMETRY_SOURCES.md; unresolved codes remain explicit."
+    "notes": "Uses CC BY 4.0 II aPGW JCWP catchments from dane.gov.pl dataset 599 instead of unverified MPHP redistribution; IMGW kod_zlewni mapping via embedded MPHP hydro IDs plus name/voivodeship refinement and coastal CW/TW rules; refined/coarse mappings stay labelled as approximations."
   }
 }

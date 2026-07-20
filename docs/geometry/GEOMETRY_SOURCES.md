@@ -94,9 +94,9 @@ at import time.
 
 - **Provider:** Państwowe Gospodarstwo Wodne Wody Polskie (PGW WP) — II
   aktualizacja planów gospodarowania wodami (II aPGW / IIaPGW). Catchment
-  polygons come from the `Zlewnie_JCWP_rzecznych` layer in the public
-  Geobaza II aPGW package on dane.gov.pl dataset 599 (resource 53330), not
-  from a direct MPHP redistribution.
+  polygons come from `Zlewnie_JCWP_rzecznych` plus coastal/transitional JCWP
+  water-body layers in the public Geobaza II aPGW package on dane.gov.pl
+  dataset 599 (resource 53330), not from a direct MPHP redistribution.
 - **Canonical URL:**
   <https://dane.gov.pl/pl/dataset/599,ii-aktualizacja-planow-gospodarowania-wodami>
 - **License/terms:** Creative Commons Attribution 4.0 International (CC BY 4.0)
@@ -112,20 +112,24 @@ at import time.
   embedded in II aPGW JCWP codes (`RW{dorzecze}{typ}{hydro_id}`). Matching
   JCWP catchments are dissolved per unique geometry; every IMGW code that
   shares that dissolve is listed in `kod_zlewni_codes` so the loader can
-  resolve aliases.
+  resolve aliases. Short cores and oversized unions are refined by warning-name
+  token overlap and optional voivodeship clip (`mapping_precision`:
+  `standard` / `refined` / `coarse`). Coastal/lagoon warnings map to reviewed
+  CW/TW water-body polygons by curated name rules (`mapping_precision`:
+  `coastal`).
 - **Caching/redistribution/screenshot/export implications:** local caching and
   redistribution of this simplified derivative are allowed under CC BY 4.0 with
   PGW WP / II aPGW attribution plus the MeteoLens processed-data notice.
   Screenshots and exports that show hydro warning polygons must keep IMGW-PIB
   warning attribution as well. Expert mode exposes geometry attribution via
   `/api/v1/geometry/datasets`.
-- **Update cadence:** re-export `Zlewnie_JCWP_rzecznych` from a newer II aPGW
-  Geobaza, refresh a `warningshydro` snapshot, re-run
+- **Update cadence:** re-export river + coastal JCWP layers from a newer II
+  aPGW Geobaza, refresh a `warningshydro` snapshot, re-run
   `scripts/geometry/convert_apgw_hydro_basins.py`, and re-import.
-- **Known limitations:** short MPHP cores (`len < 3`) and JCWP unions larger
-  than 80 catchments stay explicitly unresolved to avoid whole-river-basin
-  trees; coastal/sea codes with core `0` have no river JCWP match; geometry is
-  further simplified (~0.012°) for map delivery; not for legal or flood-defence
+- **Known limitations:** refined/coarse mappings are approximations of IMGW
+  forecasting areas (not official IMGW warning polygons); name refinement and
+  voivodeship clips can under- or over-cover a reach; geometry is further
+  simplified (~0.012°) for map delivery; not for legal or flood-defence
   engineering use. Coverage summary:
   `docs/geometry/hydro_basins.coverage.json`.
 
@@ -139,11 +143,26 @@ docker run --rm -v "$PWD/apgw:/data" -v "$PWD/out:/out" \
   /data/Geobaza_2aPGW_ver_20230915.gdb Zlewnie_JCWP_rzecznych \
   -t_srs EPSG:4326 -simplify 400 -lco COORDINATE_PRECISION=5 \
   -select MS_KOD,AREA
+docker run --rm -v "$PWD/apgw:/data" -v "$PWD/out:/out" \
+  ghcr.io/osgeo/gdal:ubuntu-small-latest \
+  ogr2ogr -f GeoJSON /out/jcwp_przybrzeznych.geojson \
+  /data/Geobaza_2aPGW_ver_20230915.gdb \
+  Jednolite_Części_Wód_Powierzchniowych_Przybrzeżnych \
+  -t_srs EPSG:4326 -simplify 400 -lco COORDINATE_PRECISION=5
+docker run --rm -v "$PWD/apgw:/data" -v "$PWD/out:/out" \
+  ghcr.io/osgeo/gdal:ubuntu-small-latest \
+  ogr2ogr -f GeoJSON /out/jcwp_przejsciowych.geojson \
+  /data/Geobaza_2aPGW_ver_20230915.gdb \
+  Jednolite_Części_Wód_Powierzchniowych_Przejściowych \
+  -t_srs EPSG:4326 -simplify 400 -lco COORDINATE_PRECISION=5
 
 # 2. map + dissolve (requires: pip install shapely)
 python scripts/geometry/convert_apgw_hydro_basins.py \
   --jcwp-geojson out/zlewnie_jcwp_rzecznych.geojson \
+    out/jcwp_przybrzeznych.geojson out/jcwp_przejsciowych.geojson \
   --warnings-json out/warningshydro_snapshot.json \
+  --char-csv out/jcwp_char.csv \
+  --voivodeships-geojson data/geometry/teryt_voivodeships.geojson \
   --out out/hydro_basins.geojson
 
 # 3. import
@@ -153,10 +172,10 @@ python -m app.geometry.import_cli import hydro_basins \
   --metadata ../docs/geometry/metadata/hydro_basins.json
 ```
 
-Conversion sanity checks for the committed import (2026-07-20 snapshot): 103
-unique dissolved geometries covering 166 of 297 live `kod_zlewni` values;
-131 unresolved (103 coarse cores, 22 oversized unions, 6 coastal/sea cores);
-Poland coordinate bounds; loader alias resolution via `kod_zlewni_codes`.
+Conversion sanity checks for the committed import (2026-07-20 snapshot): **297
+of 297** live `kod_zlewni` values resolved into **170** unique dissolved
+geometries (~992 KiB); precision mix standard/refined/coarse/coastal; Poland
+coordinate bounds; loader alias resolution via `kod_zlewni_codes`.
 
 ## Implemented: `synop_stations`
 

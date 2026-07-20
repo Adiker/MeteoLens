@@ -333,7 +333,7 @@ def test_bundled_hydro_basins_dataset_loads_and_resolves_aliases() -> None:
     assert dataset.review_status == "approved"
     assert dataset.public_use is True
     assert dataset.commercial_use is True
-    assert len(dataset.features) == 103
+    assert len(dataset.features) == 170
     primary = store.find_by_code(dataset_key="hydro_basins", code="Z_P_WP_1856")
     assert primary is not None
     assert primary.geometry_type in {"Polygon", "MultiPolygon"}
@@ -345,6 +345,10 @@ def test_bundled_hydro_basins_dataset_loads_and_resolves_aliases() -> None:
         matched = store.find_by_code(dataset_key="hydro_basins", code=alias)
         assert matched is not None
         assert matched.code == primary.code
+
+    coastal = store.find_by_code(dataset_key="hydro_basins", code="W_G_WM_0")
+    assert coastal is not None
+    assert coastal.properties.get("mapping_precision") == "coastal"
 
 
 def test_hydro_basins_validation_rejects_non_kod_zlewni_codes() -> None:

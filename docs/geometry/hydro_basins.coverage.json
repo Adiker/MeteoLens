@@ -1,62 +1,2400 @@
 {
-  "dataset_key": "hydro_basins",
-  "source": "II aPGW JCWP catchments (dane.gov.pl dataset 599, CC BY 4.0) mapped to IMGW kod_zlewni",
-  "generated_at": "2026-07-20",
   "warning_code_count": 297,
-  "resolved_count": 166,
-  "unresolved_count": 131,
-  "feature_count": 103,
-  "unique_geometries": 103,
+  "resolved_codes": [
+    {
+      "code": "R_G_KP_2_B",
+      "core": "2",
+      "name": "Wisła od Zb. Włocławek do Torunia (rz)",
+      "method": "children+name_refine",
+      "jcwp_count": 1,
+      "precision": "refined"
+    },
+    {
+      "code": "R_G_KP_2_C",
+      "core": "2",
+      "name": "Wisła od Torunia do Tczewa (rz)",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 30,
+      "precision": "refined"
+    },
+    {
+      "code": "R_G_PM_2_A",
+      "core": "2",
+      "name": "Wisła od Torunia do Tczewa (rz)",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 30,
+      "precision": "refined"
+    },
+    {
+      "code": "R_G_ZP_1",
+      "core": "1",
+      "name": "Odra od Gryfina do ujścia (rz)",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 15,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_LU_24_A",
+      "core": "24",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_LU_24_B",
+      "core": "24",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 80,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_LU_24_C",
+      "core": "24",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 80,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_LU_2664",
+      "core": "2664",
+      "name": "zlewnia Bugu od ujścia Uherki do Krzyczewa",
+      "method": "alias_children:26714+coarse+voiv_clip",
+      "jcwp_count": 177,
+      "precision": "coarse"
+    },
+    {
+      "code": "R_K_LU_266_A",
+      "core": "266",
+      "name": "Zlewnia Bugu do ujścia Uherki (wraz ze zlewnią Uherki)",
+      "method": "alias_children:267+coarse+voiv_clip",
+      "jcwp_count": 195,
+      "precision": "coarse"
+    },
+    {
+      "code": "R_K_LU_266_B",
+      "core": "266",
+      "name": "Zlewnia Bugu do ujścia Uherki (wraz ze zlewnią Uherki)",
+      "method": "alias_children:267+coarse",
+      "jcwp_count": 195,
+      "precision": "coarse"
+    },
+    {
+      "code": "R_K_LU_2_B",
+      "core": "2",
+      "name": "Wisła od ujścia Kamiennej do Dęblina",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 30,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_MA_2",
+      "core": "2",
+      "name": "Wisła od ujścia Kamiennej do Dęblina",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 30,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_MP_2138_B",
+      "core": "2138",
+      "name": "zlewnia Raby od zb. Dobczyce",
+      "method": "children",
+      "jcwp_count": 17,
+      "precision": "standard"
+    },
+    {
+      "code": "R_K_PK_218_A",
+      "core": "218",
+      "name": "zlewnia Wisłoki od ujścia Jasiołki",
+      "method": "children",
+      "jcwp_count": 33,
+      "precision": "standard"
+    },
+    {
+      "code": "R_K_PK_218_B",
+      "core": "218",
+      "name": "zlewnia Wisłoki od ujścia Jasiołki",
+      "method": "children",
+      "jcwp_count": 33,
+      "precision": "standard"
+    },
+    {
+      "code": "R_K_PK_226_B",
+      "core": "226",
+      "name": "zlewnia Wisłoka od ujścia Lubatówki",
+      "method": "children",
+      "jcwp_count": 32,
+      "precision": "standard"
+    },
+    {
+      "code": "R_K_PK_226_C",
+      "core": "226",
+      "name": "zlewnia Wisłoka od ujścia Lubatówki",
+      "method": "children",
+      "jcwp_count": 32,
+      "precision": "standard"
+    },
+    {
+      "code": "R_K_PK_226_D",
+      "core": "226",
+      "name": "zlewnia Wisłoka od ujścia Lubatówki",
+      "method": "children",
+      "jcwp_count": 32,
+      "precision": "standard"
+    },
+    {
+      "code": "R_K_PK_22_B",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Osławy do ujścia Wiaru (wraz ze zlewnią Wiaru)",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_PK_22_C",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_PK_22_D",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_PK_22_E",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_K_SW_216",
+      "core": "216",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "R_K_SW_2178",
+      "core": "2178",
+      "name": "zlewnia Czarnej",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "R_O_KP_2_A",
+      "core": "2",
+      "name": "Wisła od ujścia Narwi do ujścia Zgłowiączki",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_O_LD_272",
+      "core": "272",
+      "name": "Bzura",
+      "method": "children",
+      "jcwp_count": 46,
+      "precision": "standard"
+    },
+    {
+      "code": "R_O_MA_26",
+      "core": "26",
+      "name": "Dolna Narew",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "R_O_MA_266",
+      "core": "266",
+      "name": "Bug",
+      "method": "alias_children:267+name_refine+voiv_clip",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "R_O_MA_272",
+      "core": "272",
+      "name": "Bzura",
+      "method": "children",
+      "jcwp_count": 46,
+      "precision": "standard"
+    },
+    {
+      "code": "R_O_MA_2_A",
+      "core": "2",
+      "name": "Wisła od Dęblina do ujścia Narwi",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 1,
+      "precision": "refined"
+    },
+    {
+      "code": "R_O_MA_2_B",
+      "core": "2",
+      "name": "Wisła od ujścia Narwi do ujścia Zgłowiączki",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_O_PD_262",
+      "core": "262",
+      "name": "Biebrza",
+      "method": "children",
+      "jcwp_count": 76,
+      "precision": "standard"
+    },
+    {
+      "code": "R_O_PD_266",
+      "core": "266",
+      "name": "Bug",
+      "method": "alias_children:267+name_refine+voiv_clip",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "R_O_PD_26_A",
+      "core": "26",
+      "name": "Górna Narew",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "R_O_PD_26_B",
+      "core": "26",
+      "name": "Górna Narew",
+      "method": "children+name_refine",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LB_188",
+      "core": "188",
+      "name": "Noteć dolna",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 14,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LB_18_A",
+      "core": "18",
+      "name": "Warta środkowa od Wełny do Noteci",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LB_18_B",
+      "core": "18",
+      "name": "Warta środkowa od Wełny do Noteci",
+      "method": "children+name_refine",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LB_18_C",
+      "core": "18",
+      "name": "Warta środkowa od Wełny do Noteci",
+      "method": "children+name_refine",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LB_1_A",
+      "core": "1",
+      "name": "Odra środkowa od Słubic do Warty",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LB_1_B",
+      "core": "1",
+      "name": "Odra środkowa od Słubic do Warty",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LD_18_A",
+      "core": "18",
+      "name": "Warta górna z Liswartą",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 24,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LD_18_B",
+      "core": "18",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LD_18_C",
+      "core": "18",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children+name_refine",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_LD_18_D",
+      "core": "18",
+      "name": "Warta środkowa od Zb. Jeziorsko do Wełny",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 1,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_SL_18",
+      "core": "18",
+      "name": "Warta górna z Liswartą",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 24,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_WP_188",
+      "core": "188",
+      "name": "Noteć środkowa",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 14,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_WP_18_A",
+      "core": "18",
+      "name": "Warta środkowa od Zb. Jeziorsko do Wełny",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 1,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_WP_18_B",
+      "core": "18",
+      "name": "Warta środkowa od Zb. Jeziorsko do Wełny",
+      "method": "children+name_refine",
+      "jcwp_count": 1,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_WP_18_C",
+      "core": "18",
+      "name": "Warta środkowa od Wełny do Noteci",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_ZP_1_A",
+      "core": "1",
+      "name": "Odra dolna od Warty do Gryfina",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_P_ZP_1_B",
+      "core": "1",
+      "name": "Odra dolna od Warty do Gryfina",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_W_DS_1334",
+      "core": "1334",
+      "name": "Zlewnia Ślęzy i Oławy",
+      "method": "children",
+      "jcwp_count": 21,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_DS_1336",
+      "core": "1336",
+      "name": "Ślęza od Borowa do ujścia do Odry",
+      "method": "children",
+      "jcwp_count": 14,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_DS_1348",
+      "core": "1348",
+      "name": "Zlewnia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_DS_134_A",
+      "core": "134",
+      "name": "Zlewnia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 33,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_DS_136",
+      "core": "136",
+      "name": "Zlewnia Widawy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_DS_138",
+      "core": "138",
+      "name": "Odra od ujścia Widawy do Ścinawy",
+      "method": "children",
+      "jcwp_count": 29,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_DS_1384",
+      "core": "1384",
+      "name": "Odra od ujścia Widawy do Ścinawy",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_DS_1_C",
+      "core": "1",
+      "name": "Odra środkowa poniżej Malczyc do ujścia Bobru",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_W_DS_1_D",
+      "core": "1",
+      "name": "Odra środkowa poniżej Malczyc do ujścia Bobru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_W_LB_1_A",
+      "core": "1",
+      "name": "Odra środkowa poniżej Malczyc do ujścia Bobru",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_W_LB_1_B",
+      "core": "1",
+      "name": "Odra środkowa poniżej Malczyc do ujścia Bobru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "R_W_OP_118_A",
+      "core": "118",
+      "name": "Zlewnia Małej Panwi (bez odcinka rzeki od zapory Zb. Turawa do ujścia do Odry)",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_OP_12",
+      "core": "12",
+      "name": "Nysa Kłodzka od Zb. Nysa do ujścia do Odry",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 4,
+      "precision": "refined"
+    },
+    {
+      "code": "R_W_OP_136",
+      "core": "136",
+      "name": "Zlewnia Widawy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "R_W_SL_118",
+      "core": "118",
+      "name": "Zlewnia Małej Panwi (bez odcinka rzeki od zapory Zb. Turawa do ujścia do Odry)",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "W_G_PM_0_A",
+      "core": "0",
+      "name": "Wybrzeże Wschodnie i morskie wody wewnętrzne RP - Bałtyk Południowo-Wschodni",
+      "method": "coastal_name",
+      "jcwp_count": 6,
+      "precision": "coastal"
+    },
+    {
+      "code": "W_G_PM_0_B",
+      "core": "0",
+      "name": "Zalew Wiślany",
+      "method": "coastal_name",
+      "jcwp_count": 1,
+      "precision": "coastal"
+    },
+    {
+      "code": "W_G_WM_0",
+      "core": "0",
+      "name": "Zalew Wiślany",
+      "method": "coastal_name",
+      "jcwp_count": 1,
+      "precision": "coastal"
+    },
+    {
+      "code": "W_G_ZP_0_A",
+      "core": "0",
+      "name": "Wybrzeże Zachodnie i morskie wody wewnętrzne RP - Bałtyk Południowy",
+      "method": "coastal_name",
+      "jcwp_count": 4,
+      "precision": "coastal"
+    },
+    {
+      "code": "W_G_ZP_0_B",
+      "core": "0",
+      "name": "Odra od Gryfina do ujścia (rz)",
+      "method": "name_search+voiv_clip",
+      "jcwp_count": 30,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_G_KP_28_B",
+      "core": "28",
+      "name": "Drwęca od Rypienicy do ujścia",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_G_PM_0",
+      "core": "0",
+      "name": "Wybrzeże Wschodnie i morskie wody wewnętrzne RP - Bałtyk Południowo-Wschodni",
+      "method": "coastal_name",
+      "jcwp_count": 6,
+      "precision": "coastal"
+    },
+    {
+      "code": "Z_G_PM_48",
+      "core": "48",
+      "name": "Wybrzeże Wschodnie i morskie wody wewnętrzne RP - Bałtyk Południowo-Wschodni",
+      "method": "coastal_name",
+      "jcwp_count": 6,
+      "precision": "coastal"
+    },
+    {
+      "code": "Z_G_PM_52_B",
+      "core": "52",
+      "name": "Zalew Wiślany",
+      "method": "coastal_name",
+      "jcwp_count": 1,
+      "precision": "coastal"
+    },
+    {
+      "code": "Z_G_WM_286",
+      "core": "286",
+      "name": "Wel",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_G_WM_28_A",
+      "core": "28",
+      "name": "Drwęca od źródła do Welu",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_G_WM_28_B",
+      "core": "28",
+      "name": "Drwęca od źródła do Welu",
+      "method": "children+name_refine",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_G_WM_54",
+      "core": "54",
+      "name": "Zalew Wiślany",
+      "method": "coastal_name",
+      "jcwp_count": 1,
+      "precision": "coastal"
+    },
+    {
+      "code": "Z_G_WM_5456",
+      "core": "5456",
+      "name": "Bauda",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_G_WM_558",
+      "core": "558",
+      "name": "Bauda",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_G_WM_566",
+      "core": "566",
+      "name": "Bauda",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_G_WM_568",
+      "core": "568",
+      "name": "Bauda",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_G_WM_56_A",
+      "core": "56",
+      "name": "Bauda",
+      "method": "children",
+      "jcwp_count": 27,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_G_WM_56_B",
+      "core": "56",
+      "name": "Bauda",
+      "method": "children",
+      "jcwp_count": 27,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_G_WM_572",
+      "core": "572",
+      "name": "Bauda",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_G_ZP_33",
+      "core": "33",
+      "name": "Wybrzeże Zachodnie i morskie wody wewnętrzne RP - Bałtyk Południowy",
+      "method": "coastal_name",
+      "jcwp_count": 4,
+      "precision": "coastal"
+    },
+    {
+      "code": "Z_K_LU_228",
+      "core": "228",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 22,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2286",
+      "core": "2286",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2294",
+      "core": "2294",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2336",
+      "core": "2336",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2392",
+      "core": "2392",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_24174",
+      "core": "24174",
+      "name": "zlewnia Wieprza wraz ze zb. Nielisz",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_242",
+      "core": "242",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2432",
+      "core": "2432",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2434",
+      "core": "2434",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2436",
+      "core": "2436",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_244",
+      "core": "244",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2456",
+      "core": "2456",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_246",
+      "core": "246",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 7,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_248_A",
+      "core": "248",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 18,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_248_B",
+      "core": "248",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 18,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2492",
+      "core": "2492",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 7,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_24_A",
+      "core": "24",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_LU_24_B",
+      "core": "24",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_LU_24_C",
+      "core": "24",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_LU_24_D",
+      "core": "24",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 80,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_LU_24_E",
+      "core": "24",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children",
+      "jcwp_count": 80,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_LU_26636",
+      "core": "26636",
+      "name": "zlewnia Bugu od ujścia Uherki do Krzyczewa",
+      "method": "alias_children:26714+coarse",
+      "jcwp_count": 177,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_K_LU_2664",
+      "core": "2664",
+      "name": "zlewnia Bugu od ujścia Uherki do Krzyczewa",
+      "method": "alias_children:26714+coarse",
+      "jcwp_count": 177,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_K_LU_266_A",
+      "core": "266",
+      "name": "Zlewnia Bugu do ujścia Uherki (wraz ze zlewnią Uherki)",
+      "method": "alias_children:267+coarse",
+      "jcwp_count": 195,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_K_LU_266_B",
+      "core": "266",
+      "name": "Zlewnia Bugu do ujścia Uherki (wraz ze zlewnią Uherki)",
+      "method": "alias_children:267+coarse",
+      "jcwp_count": 195,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_K_LU_266_C",
+      "core": "266",
+      "name": "Zlewnia Bugu do ujścia Uherki (wraz ze zlewnią Uherki)",
+      "method": "alias_children:267+coarse",
+      "jcwp_count": 195,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_K_LU_267142",
+      "core": "267142",
+      "name": "Zlewnia Bugu do ujścia Uherki (wraz ze zlewnią Uherki)",
+      "method": "children",
+      "jcwp_count": 17,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2671434",
+      "core": "2671434",
+      "name": "Zlewnia Bugu do ujścia Uherki (wraz ze zlewnią Uherki)",
+      "method": "children",
+      "jcwp_count": 7,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2671448",
+      "core": "2671448",
+      "name": "zlewnia Bugu od ujścia Uherki do Krzyczewa",
+      "method": "children",
+      "jcwp_count": 9,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_LU_2_A",
+      "core": "2",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 4,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_LU_2_B",
+      "core": "2",
+      "name": "zlewnie Wieprza od ujścia Bystrzycy do ujścia",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_MP_21356",
+      "core": "21356",
+      "name": "zlewnie Skawinki",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_2136",
+      "core": "2136",
+      "name": "zlewnie Rudawy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_21372",
+      "core": "21372",
+      "name": "zlewnie Skawinki",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_21374",
+      "core": "21374",
+      "name": "zlewnie Rudawy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_21388",
+      "core": "21388",
+      "name": "zlewnia Raby od zb. Dobczyce",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_213892",
+      "core": "213892",
+      "name": "zlewnia Raby od zb. Dobczyce",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_2138_C",
+      "core": "2138",
+      "name": "zlewnia Raby od zb. Dobczyce",
+      "method": "children",
+      "jcwp_count": 17,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_21876",
+      "core": "21876",
+      "name": "zlewnia Wisłoki od ujścia Jasiołki",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_MP_2_D",
+      "core": "2",
+      "name": "zlewnie Skawinki",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_MP_2_E",
+      "core": "2",
+      "name": "zlewnie Rudawy",
+      "method": "children+coarse+voiv_clip",
+      "jcwp_count": 1553,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_K_MP_2_F",
+      "core": "2",
+      "name": "zlewnie Skawinki",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_MP_2_G",
+      "core": "2",
+      "name": "zlewnie Rudawy",
+      "method": "children+coarse",
+      "jcwp_count": 1553,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_K_PK_21876",
+      "core": "21876",
+      "name": "zlewnia Wisłoki od ujścia Jasiołki",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2188",
+      "core": "2188",
+      "name": "zlewnia Wisłoki od ujścia Jasiołki",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_218_B",
+      "core": "218",
+      "name": "zlewnia Wisłoki od ujścia Jasiołki",
+      "method": "children",
+      "jcwp_count": 33,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_218_C",
+      "core": "218",
+      "name": "zlewnia Wisłoki od ujścia Jasiołki",
+      "method": "children",
+      "jcwp_count": 33,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2198",
+      "core": "2198",
+      "name": "zlewnia Łęgu i przyrzecze Wisły",
+      "method": "children",
+      "jcwp_count": 17,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_224",
+      "core": "224",
+      "name": "zlewnia Sanu od ujścia Osławy do ujścia Wiaru (wraz ze zlewnią Wiaru)",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2252",
+      "core": "2252",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2254",
+      "core": "2254",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2256",
+      "core": "2256",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 10,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2264",
+      "core": "2264",
+      "name": "zlewnia Wisłoka od ujścia Lubatówki",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2268",
+      "core": "2268",
+      "name": "zlewnia Wisłoka od ujścia Lubatówki",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_226_C",
+      "core": "226",
+      "name": "zlewnia Wisłoka od ujścia Lubatówki",
+      "method": "children",
+      "jcwp_count": 32,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_226_D",
+      "core": "226",
+      "name": "zlewnia Wisłoka od ujścia Lubatówki",
+      "method": "children",
+      "jcwp_count": 32,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2274",
+      "core": "2274",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_228_A",
+      "core": "228",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 22,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_228_B",
+      "core": "228",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 22,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_2294",
+      "core": "2294",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_PK_22_C",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Osławy do ujścia Wiaru (wraz ze zlewnią Wiaru)",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_22_D",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Osławy do ujścia Wiaru (wraz ze zlewnią Wiaru)",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_22_E",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_22_F",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_22_G",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_22_H",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_22_I",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_22_J",
+      "core": "22",
+      "name": "zlewnia Sanu od ujścia Wiaru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_2_A",
+      "core": "2",
+      "name": "zlewnia Łęgu i przyrzecze Wisły",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 30,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_PK_2_B",
+      "core": "2",
+      "name": "zlewnie Wieprza od zb. Nielisz o ujścia Bystrzycy",
+      "method": "children+name_refine",
+      "jcwp_count": 4,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_SW_2162",
+      "core": "2162",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_2164",
+      "core": "2164",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 13,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_21644",
+      "core": "21644",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_21648",
+      "core": "21648",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_2166",
+      "core": "2166",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_216_A",
+      "core": "216",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_216_B",
+      "core": "216",
+      "name": "Zlewnia Nidy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_217832",
+      "core": "217832",
+      "name": "zlewnia Czarnej",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_21788",
+      "core": "21788",
+      "name": "zlewnia Czarnej",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_2178_A",
+      "core": "2178",
+      "name": "zlewnia Czarnej",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_2178_B",
+      "core": "2178",
+      "name": "zlewnia Czarnej",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_2194",
+      "core": "2194",
+      "name": "zlewnia Czarnej",
+      "method": "children",
+      "jcwp_count": 9,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_K_SW_2_B",
+      "core": "2",
+      "name": "zlewnia Czarnej",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_K_SW_2_C",
+      "core": "2",
+      "name": "zlewnia Czarnej",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_KP_2",
+      "core": "2",
+      "name": "Wisła od ujścia Narwi do ujścia Zgłowiączki",
+      "method": "children+name_refine",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_KP_278",
+      "core": "278",
+      "name": "Wisła od ujścia Narwi do ujścia Zgłowiączki",
+      "method": "children",
+      "jcwp_count": 17,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_LD_254_A",
+      "core": "254",
+      "name": "Pilica do Zb. Sulejów",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_LD_254_B",
+      "core": "254",
+      "name": "Pilica do Zb. Sulejów",
+      "method": "children+name_refine",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_LD_272",
+      "core": "272",
+      "name": "Bzura",
+      "method": "children",
+      "jcwp_count": 46,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_LD_2726",
+      "core": "2726",
+      "name": "Rawka",
+      "method": "children",
+      "jcwp_count": 6,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_236",
+      "core": "236",
+      "name": "Iłżanka",
+      "method": "children",
+      "jcwp_count": 10,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_252",
+      "core": "252",
+      "name": "Radomka",
+      "method": "children",
+      "jcwp_count": 21,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_254",
+      "core": "254",
+      "name": "Pilica od Zb. Sulejów",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_MA_256",
+      "core": "256",
+      "name": "Świder",
+      "method": "children",
+      "jcwp_count": 12,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_26",
+      "core": "26",
+      "name": "Dolna Narew",
+      "method": "children+name_refine",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_MA_2658",
+      "core": "2658",
+      "name": "Orzyc",
+      "method": "children",
+      "jcwp_count": 25,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_266",
+      "core": "266",
+      "name": "Bug",
+      "method": "alias_children:267+name_refine",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_MA_267148_A",
+      "core": "267148",
+      "name": "Liwiec",
+      "method": "children",
+      "jcwp_count": 31,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_267148_B",
+      "core": "267148",
+      "name": "Liwiec",
+      "method": "children",
+      "jcwp_count": 31,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_272",
+      "core": "272",
+      "name": "Bzura",
+      "method": "children",
+      "jcwp_count": 46,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_2726",
+      "core": "2726",
+      "name": "Rawka",
+      "method": "children",
+      "jcwp_count": 6,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_2728",
+      "core": "2728",
+      "name": "Pisia i Utrata",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_MA_2_A",
+      "core": "2",
+      "name": "Iłżanka",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_MA_2_B",
+      "core": "2",
+      "name": "Wisła od Dęblina do ujścia Narwi",
+      "method": "children+name_refine",
+      "jcwp_count": 1,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_MA_2_C",
+      "core": "2",
+      "name": "Wisła od ujścia Narwi do ujścia Zgłowiączki",
+      "method": "children+name_refine",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_PD_262_A",
+      "core": "262",
+      "name": "Biebrza",
+      "method": "children",
+      "jcwp_count": 76,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_PD_262_B",
+      "core": "262",
+      "name": "Biebrza",
+      "method": "children",
+      "jcwp_count": 76,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_PD_264",
+      "core": "264",
+      "name": "Pisa",
+      "method": "children",
+      "jcwp_count": 23,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_PD_266",
+      "core": "266",
+      "name": "Bug",
+      "method": "alias_children:267+name_refine",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_PD_26_A",
+      "core": "26",
+      "name": "Górna Narew",
+      "method": "children+name_refine",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_PD_26_B",
+      "core": "26",
+      "name": "Górna Narew",
+      "method": "children+name_refine",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_PD_6",
+      "core": "6",
+      "name": "Niemen",
+      "method": "children+voiv_clip",
+      "jcwp_count": 24,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_SL_254",
+      "core": "254",
+      "name": "Pilica do Zb. Sulejów",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_SW_254_A",
+      "core": "254",
+      "name": "Pilica do Zb. Sulejów",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_SW_254_B",
+      "core": "254",
+      "name": "Pilica do Zb. Sulejów",
+      "method": "children+name_refine",
+      "jcwp_count": 5,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_O_WM_264",
+      "core": "264",
+      "name": "Pisa",
+      "method": "children",
+      "jcwp_count": 23,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_WM_2658",
+      "core": "2658",
+      "name": "Orzyc",
+      "method": "children",
+      "jcwp_count": 25,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_WM_582",
+      "core": "582",
+      "name": "Pisa",
+      "method": "children",
+      "jcwp_count": 17,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_WM_5824",
+      "core": "5824",
+      "name": "Gołdapa",
+      "method": "children",
+      "jcwp_count": 9,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_WM_5848",
+      "core": "5848",
+      "name": "Gołdapa",
+      "method": "children",
+      "jcwp_count": 22,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_WM_584_A",
+      "core": "584",
+      "name": "Gołdapa",
+      "method": "children",
+      "jcwp_count": 65,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_O_WM_584_B",
+      "core": "584",
+      "name": "Gołdapa",
+      "method": "children",
+      "jcwp_count": 65,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_KP_186",
+      "core": "186",
+      "name": "Wełna",
+      "method": "children",
+      "jcwp_count": 15,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_KP_188_A",
+      "core": "188",
+      "name": "Noteć górna",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 14,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_LB_1888",
+      "core": "1888",
+      "name": "Drawa",
+      "method": "children",
+      "jcwp_count": 31,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_1816",
+      "core": "1816",
+      "name": "Warta górna z Liswartą",
+      "method": "children",
+      "jcwp_count": 13,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_1818",
+      "core": "1818",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_182",
+      "core": "182",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children",
+      "jcwp_count": 19,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_1828",
+      "core": "1828",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children",
+      "jcwp_count": 7,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_18292",
+      "core": "18292",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_1842",
+      "core": "1842",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_18438",
+      "core": "18438",
+      "name": "Prosna środkowa i dolna",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_18482",
+      "core": "18482",
+      "name": "Prosna środkowa i dolna",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_184_A",
+      "core": "184",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 44,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_184_B",
+      "core": "184",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 44,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_184_C",
+      "core": "184",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 44,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_LD_18_A",
+      "core": "18",
+      "name": "Warta górna z Liswartą",
+      "method": "children+name_refine",
+      "jcwp_count": 24,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_LD_18_B",
+      "core": "18",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children+name_refine",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_LD_18_C",
+      "core": "18",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children+name_refine",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_LD_18_D",
+      "core": "18",
+      "name": "przyrzecze Warty środkowej wraz ze zlewniami Kiełbaski",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_OP_18",
+      "core": "18",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_OP_1816",
+      "core": "1816",
+      "name": "Warta górna z Liswartą",
+      "method": "children",
+      "jcwp_count": 13,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_OP_184",
+      "core": "184",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 44,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_SL_1816",
+      "core": "1816",
+      "name": "Warta górna z Liswartą",
+      "method": "children",
+      "jcwp_count": 13,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_SL_18_A",
+      "core": "18",
+      "name": "Warta górna z Liswartą",
+      "method": "children+name_refine",
+      "jcwp_count": 24,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_SL_18_B",
+      "core": "18",
+      "name": "Warta górna z Liswartą",
+      "method": "children+name_refine",
+      "jcwp_count": 24,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_SL_18_C",
+      "core": "18",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_WP_18334",
+      "core": "18334",
+      "name": "przyrzecze Warty środkowej wraz ze zlewniami Kiełbaski",
+      "method": "children",
+      "jcwp_count": 3,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_18352",
+      "core": "18352",
+      "name": "przyrzecze Warty środkowej wraz ze zlewniami Kiełbaski",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_18356",
+      "core": "18356",
+      "name": "przyrzecze Warty środkowej wraz ze zlewniami Kiełbaski",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_1842",
+      "core": "1842",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_18438",
+      "core": "18438",
+      "name": "Prosna środkowa i dolna",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_1844",
+      "core": "1844",
+      "name": "Prosna środkowa i dolna",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_18482",
+      "core": "18482",
+      "name": "Prosna środkowa i dolna",
+      "method": "children",
+      "jcwp_count": 1,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_184_A",
+      "core": "184",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 44,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_184_B",
+      "core": "184",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 44,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_184_C",
+      "core": "184",
+      "name": "Prosna górna",
+      "method": "children",
+      "jcwp_count": 44,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_1856",
+      "core": "1856",
+      "name": "Kanał Mosiński",
+      "method": "children",
+      "jcwp_count": 16,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_186",
+      "core": "186",
+      "name": "Wełna",
+      "method": "children",
+      "jcwp_count": 15,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_1888",
+      "core": "1888",
+      "name": "Drawa",
+      "method": "children",
+      "jcwp_count": 31,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_WP_188_A",
+      "core": "188",
+      "name": "Noteć środkowa",
+      "method": "children+name_refine",
+      "jcwp_count": 14,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_WP_18_A",
+      "core": "18",
+      "name": "Warta górna od Liswarty do Zb. Jeziorsko",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_WP_18_B",
+      "core": "18",
+      "name": "przyrzecze Warty środkowej wraz ze zlewniami Kiełbaski",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_WP_18_C",
+      "core": "18",
+      "name": "przyrzecze Warty środkowej wraz ze zlewniami Kiełbaski",
+      "method": "children+name_refine",
+      "jcwp_count": 6,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_P_ZP_1888",
+      "core": "1888",
+      "name": "Drawa",
+      "method": "children",
+      "jcwp_count": 31,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_P_ZP_198",
+      "core": "198",
+      "name": "Ina i Płonia",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_1334_A",
+      "core": "1334",
+      "name": "Zlewnia Ślęzy i Oławy",
+      "method": "children",
+      "jcwp_count": 21,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_1334_B",
+      "core": "1334",
+      "name": "Zlewnia Ślęzy i Oławy",
+      "method": "children",
+      "jcwp_count": 21,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_1336_A",
+      "core": "1336",
+      "name": "Ślęza od Borowa do ujścia do Odry",
+      "method": "children",
+      "jcwp_count": 14,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_1336_B",
+      "core": "1336",
+      "name": "Ślęza od Borowa do ujścia do Odry",
+      "method": "children",
+      "jcwp_count": 14,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_1348",
+      "core": "1348",
+      "name": "Zlewnia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_134_A",
+      "core": "134",
+      "name": "Zlewnia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 33,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_134_B",
+      "core": "134",
+      "name": "Zlewnia Bystrzycy",
+      "method": "children",
+      "jcwp_count": 33,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_136",
+      "core": "136",
+      "name": "Zlewnia Widawy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_13866",
+      "core": "13866",
+      "name": "Odra od ujścia Widawy do Ścinawy",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_138_A",
+      "core": "138",
+      "name": "Odra od ujścia Widawy do Ścinawy",
+      "method": "children",
+      "jcwp_count": 29,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_138_B",
+      "core": "138",
+      "name": "Odra od ujścia Widawy do Ścinawy",
+      "method": "children",
+      "jcwp_count": 29,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_148",
+      "core": "148",
+      "name": "Odra od Głogowa do ujścia Bobru",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_168",
+      "core": "168",
+      "name": "Czerna Wielka",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_DS_1_A",
+      "core": "1",
+      "name": "Zlewnia Widawy",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 4,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_DS_1_B",
+      "core": "1",
+      "name": "Odra od ujścia Widawy do Ścinawy",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 19,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_DS_1_D",
+      "core": "1",
+      "name": "Odra środkowa poniżej Malczyc do ujścia Bobru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_LB_14",
+      "core": "14",
+      "name": "Odra od Głogowa do ujścia Bobru",
+      "method": "children+voiv_clip",
+      "jcwp_count": 48,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_LB_148",
+      "core": "148",
+      "name": "Odra od Głogowa do ujścia Bobru",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_LB_168",
+      "core": "168",
+      "name": "Czerna Wielka",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_LB_174",
+      "core": "174",
+      "name": "Nysa Łużycka od Zgorzelca do ujścia",
+      "method": "children",
+      "jcwp_count": 35,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_LB_1_A",
+      "core": "1",
+      "name": "Odra środkowa poniżej Malczyc do ujścia Bobru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_LB_1_B",
+      "core": "1",
+      "name": "Nysa Łużycka od Zgorzelca do ujścia",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 9,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_LB_1_C",
+      "core": "1",
+      "name": "Nysa Łużycka od Zgorzelca do ujścia",
+      "method": "children+name_refine",
+      "jcwp_count": 9,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_OP_112",
+      "core": "112",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children",
+      "jcwp_count": 4,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_1122",
+      "core": "1122",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children",
+      "jcwp_count": 2,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_1152",
+      "core": "1152",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_1174",
+      "core": "1174",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children",
+      "jcwp_count": 6,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_1176",
+      "core": "1176",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children",
+      "jcwp_count": 12,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_118",
+      "core": "118",
+      "name": "Zlewnia Małej Panwi (bez odcinka rzeki od zapory Zb. Turawa do ujścia do Odry)",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_12_C",
+      "core": "12",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 3,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_OP_132",
+      "core": "132",
+      "name": "Zlewnia Widawy",
+      "method": "children",
+      "jcwp_count": 25,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_1334_A",
+      "core": "1334",
+      "name": "Zlewnia Ślęzy i Oławy",
+      "method": "children",
+      "jcwp_count": 21,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_1334_B",
+      "core": "1334",
+      "name": "Zlewnia Ślęzy i Oławy",
+      "method": "children",
+      "jcwp_count": 21,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_136",
+      "core": "136",
+      "name": "Zlewnia Widawy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_OP_1_A",
+      "core": "1",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children+name_refine+coarse+voiv_clip",
+      "jcwp_count": 117,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_W_OP_1_B",
+      "core": "1",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children+name_refine+coarse",
+      "jcwp_count": 117,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_W_OP_1_C",
+      "core": "1",
+      "name": "Zlewnia Widawy",
+      "method": "children+name_refine+voiv_clip",
+      "jcwp_count": 4,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_SL_1",
+      "core": "1",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children+name_refine+coarse+voiv_clip",
+      "jcwp_count": 117,
+      "precision": "coarse"
+    },
+    {
+      "code": "Z_W_SL_1152",
+      "core": "1152",
+      "name": "Zlewnie dopływów (głównie lewostronnych) Odry od Chałupek do ujścia Stobrawy",
+      "method": "children",
+      "jcwp_count": 8,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_SL_118",
+      "core": "118",
+      "name": "Zlewnia Małej Panwi (bez odcinka rzeki od zapory Zb. Turawa do ujścia do Odry)",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_WP_1",
+      "core": "1",
+      "name": "Odra od Głogowa do ujścia Bobru",
+      "method": "children+name_refine",
+      "jcwp_count": 2,
+      "precision": "refined"
+    },
+    {
+      "code": "Z_W_WP_136",
+      "core": "136",
+      "name": "Zlewnia Widawy",
+      "method": "children",
+      "jcwp_count": 26,
+      "precision": "standard"
+    },
+    {
+      "code": "Z_W_WP_148",
+      "core": "148",
+      "name": "Odra od Głogowa do ujścia Bobru",
+      "method": "children",
+      "jcwp_count": 5,
+      "precision": "standard"
+    }
+  ],
+  "unresolved_codes": [],
+  "methods": {
+    "children": 275,
+    "alias_children": 12,
+    "coastal_name": 9,
+    "name_search": 1
+  },
   "min_core_length": 3,
   "max_jcwp_count": 80,
-  "methods": {
-    "children": 166
-  },
-  "unresolved_reasons": {
-    "core_too_coarse": 103,
-    "jcwp_union_too_large": 22,
-    "no_mphp_core": 6
-  },
-  "unresolved_coastal_or_sea_codes": [
-    "W_G_PM_0_A",
-    "W_G_PM_0_B",
-    "W_G_WM_0",
-    "W_G_ZP_0_A",
-    "W_G_ZP_0_B",
-    "Z_G_PM_0"
-  ],
-  "unresolved_core_too_coarse_examples": [
-    "R_G_KP_2_B",
-    "R_G_KP_2_C",
-    "R_G_PM_2_A",
-    "R_G_ZP_1",
-    "R_K_LU_24_A",
-    "R_K_LU_24_B",
-    "R_K_LU_24_C",
-    "R_K_LU_2_B",
-    "R_K_MA_2",
-    "R_K_PK_22_B",
-    "R_K_PK_22_C",
-    "R_K_PK_22_D"
-  ],
-  "unresolved_jcwp_union_too_large_examples": [
-    "R_K_LU_2664",
-    "R_K_LU_266_A",
-    "R_K_LU_266_B",
-    "R_O_MA_266",
-    "R_O_PD_266",
-    "R_P_LB_188",
-    "R_P_WP_188",
-    "Z_K_LU_26636",
-    "Z_K_LU_2664",
-    "Z_K_LU_266_A",
-    "Z_K_LU_266_B",
-    "Z_K_LU_266_C"
-  ],
-  "notes": [
-    "Short MPHP cores (<3 digits) are rejected to avoid whole-basin trees.",
-    "Unions exceeding 80 JCWP catchments stay unresolved.",
-    "Coastal/sea codes with MPHP core 0 have no JCWP river-catchment match.",
-    "One GeoJSON Feature per unique dissolved geometry; aliases in kod_zlewni_codes."
-  ]
+  "resolved_count": 297,
+  "unresolved_count": 0,
+  "unique_geometries": 170,
+  "feature_count": 170,
+  "precision_counts": {
+    "refined": 109,
+    "coarse": 13,
+    "standard": 166,
+    "coastal": 9
+  }
 }
