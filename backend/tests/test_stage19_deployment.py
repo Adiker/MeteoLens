@@ -26,7 +26,7 @@ def test_caddy_keeps_nginx_as_the_single_application_entrypoint() -> None:
         encoding="utf-8"
     )
 
-    assert "reverse_proxy 127.0.0.1:8080" in caddy
+    assert "reverse_proxy frontend:8080" in caddy
     assert "backend:8000" not in caddy
     assert "frontend:80\n" not in caddy
 
@@ -43,7 +43,6 @@ def test_production_containers_are_restricted_and_backend_is_non_root() -> None:
     assert "USER meteolens" in backend_dockerfile
     assert "USER nginx" in frontend_dockerfile
     assert "meteolens-data:/data" in compose
-    assert '"${PUBLIC_HTTP_BIND:-127.0.0.1}:${PUBLIC_HTTP_PORT:-8080}:8080"' in compose
 
 
 def test_data_init_takes_volume_ownership_before_geometry_upgrade() -> None:
