@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     archive_zip_max_entries: int = Field(default=10, ge=1, le=1000)
     archive_zip_entry_max_mb: int = Field(default=100, ge=1, le=1000)
     archive_zip_total_uncompressed_max_mb: int = Field(default=150, ge=1, le=2000)
-    archive_max_rows_per_file: int = Field(default=50_000, ge=100, le=1_000_000)
+    archive_max_rows_per_file: int = Field(default=500_000, ge=100, le=1_000_000)
     imgw_timeout_seconds: float = Field(default=20.0, gt=0)
     imgw_max_retries: int = Field(default=2, ge=0)
     imgw_retry_delay_seconds: float = Field(default=0.25, ge=0)

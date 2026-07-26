@@ -1,8 +1,11 @@
+import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
+import app.db.engine as db_engine
 import app.services.observation_history as history_service
 from app.core.config import Settings
 from app.db.engine import get_engine, init_db, reset_engine_cache
@@ -73,8 +76,31 @@ def test_init_db_migrates_legacy_history_before_origin_index(monkeypatch, tmp_pa
         "station_mapping_version",
         "station_mapping_source_url",
         "station_mapping_retrieved_at",
+        "archive_kind",
+        "quality_status",
+        "missing_reason",
+        "temporal_resolution",
+        "source_file_sha256",
+        "source_file_last_modified",
     } <= columns
-    assert "idx_obs_origin" in indexes
+    assert {"idx_obs_origin", "idx_obs_archive_kind_time"} <= indexes
+    run_columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(archive_import_runs)")
+    }
+    assert {"observations_deleted", "duplicate_rows"} <= run_columns
+    file_columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(archive_import_run_files)")
+    }
+    assert {
+        "run_id",
+        "source_url",
+        "hydrological_year",
+        "status",
+        "source_file_sha256",
+        "observations_deleted",
+        "duplicate_rows",
+    } <= file_columns
     connection.execute(
         """
         INSERT INTO observation_history (
@@ -122,6 +148,62 @@ def test_init_db_migrates_legacy_history_before_origin_index(monkeypatch, tmp_pa
             AND observed_at = '2026-05-01T00:00:00+00:00'
         """
     ).fetchone()["count"] == 2
+
+
+def test_init_db_rolls_back_all_schema_changes_when_migration_fails(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    reset_engine_cache()
+    settings = _settings(tmp_path)
+    apply_test_settings(monkeypatch, settings)
+    connection = get_engine()
+    connection.executescript(
+        """
+        CREATE TABLE observation_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            station_id TEXT NOT NULL,
+            station_name TEXT NOT NULL,
+            source_key TEXT NOT NULL,
+            station_type TEXT NOT NULL,
+            metric TEXT NOT NULL,
+            value REAL,
+            unit TEXT,
+            observed_at TEXT NOT NULL,
+            retrieved_at TEXT NOT NULL,
+            missing INTEGER NOT NULL DEFAULT 0,
+            raw_field TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(station_id, metric, observed_at)
+        );
+        """
+    )
+    connection.commit()
+    monkeypatch.setattr(
+        db_engine,
+        "MIGRATIONS",
+        (
+            *db_engine.MIGRATIONS,
+            (
+                "observation_history",
+                "ALTER TABLE observation_history ADD COLUMN broken TEXT DEFAULT (",
+            ),
+        ),
+    )
+
+    with pytest.raises(sqlite3.OperationalError):
+        init_db()
+
+    columns = {
+        row["name"] for row in connection.execute("PRAGMA table_info(observation_history)")
+    }
+    assert "origin" not in columns
+    assert (
+        connection.execute(
+            "SELECT name FROM sqlite_master WHERE name = 'archive_import_runs'"
+        ).fetchone()
+        is None
+    )
 
 
 def _seed_station_cache(cache: SourceCache, source_key: str = "hydro") -> Station:
@@ -381,6 +463,13 @@ def test_observation_history_export_csv_includes_series_metadata(monkeypatch, tm
 
     assert response.status_code == 200
     body = response.text
-    assert "series_kind" in body.splitlines()[0]
+    header = body.splitlines()[0]
+    assert "series_kind" in header
+    assert "archive_kind" in header
+    assert "quality_status" in header
+    assert "missing_reason" in header
+    assert "temporal_resolution" in header
+    assert "source_file_sha256" in header
+    assert "source_file_last_modified" in header
     assert "water_level" in body
     assert "IMGW-PIB" in body

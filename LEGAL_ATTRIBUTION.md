@@ -6,7 +6,8 @@ the current IMGW-PIB terms before public, production, or commercial use.
 Research dates: 2026-06-29 (base IMGW terms), 2026-07-05 (COSMO product
 download verification and daily SYNOP archive format verification), 2026-07-07
 (WMO OSCAR/Surface synop station-coordinate review), 2026-07-14 (official IMGW
-SYNOP archive/current identifier mapping review).
+SYNOP archive/current identifier mapping review), 2026-07-24 (daily
+hydrological CODZ catalogue/format and current IMGW regulations re-review).
 
 Source terms reviewed:
 [https://danepubliczne.imgw.pl/pl/regulations](https://danepubliczne.imgw.pl/pl/regulations).
@@ -132,6 +133,29 @@ CSV/ZIP files under
 No new non-IMGW provider is introduced. Imported rows must keep IMGW-PIB
 attribution, the MeteoLens processed-data notice, observed timestamp,
 import/retrieval timestamp, archive source URL, and missing/null status.
+
+### Reviewed Daily Hydrological Archive Dataset (Stage 23)
+
+Stage 23 introduces no new provider: it uses IMGW-PIB daily `CODZ` ZIP/CSV
+files under
+`/data/dane_pomiarowo_obserwacyjne/dane_hydrologiczne/dobowe/` and the
+official `CODZ_publiczne_format.txt` contract. The catalogue, format notice,
+`UWAGA.txt`, and current IMGW regulations were rechecked on 2026-07-24.
+`ZJAW`, monthly, semi-annual, and annual hydrological summary families are not
+covered by this implementation or review.
+
+Every imported observation and CSV/JSON export must retain the IMGW-PIB
+attribution, MeteoLens processed-data notice, source file URL, import/retrieval
+time, SHA-256, available `Last-Modified`, source station code, missing reason,
+and source quality status. The daily `00:00:00Z` value is a processed calendar
+day marker and must not be presented as an IMGW measurement time.
+
+The reviewed regulations still require source identification and a processed
+data notice and warn that some data may be unverified. Public or commercial
+operators must re-check the current terms for their use case; this technical
+review does not make a broader commercial-use determination. Before accepting
+a new publication year or format, repeat the source/format/terms review and
+record the result in `DATA_SOURCES.md`.
 
 ### Reviewed SYNOP Identifier Mapping (Stage 21 Follow-up)
 

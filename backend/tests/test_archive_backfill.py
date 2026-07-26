@@ -14,12 +14,16 @@ from app.db.repository import ObservationRepository
 from app.imgw.archive import (
     SYNOP_DAILY_COLUMNS,
     ArchiveBackfillError,
+    HydroDailyArchiveBackfiller,
     SynopDailyArchiveBackfiller,
     fetch_bounded_archive,
+    get_archive_run,
+    parse_hydro_daily_zip,
     parse_synop_daily_zip,
     validate_archive_zip,
 )
 from app.main import app
+from app.operations.archive_history import cleanup_archive_history
 from tests.settings_helpers import apply_test_settings
 
 
@@ -96,6 +100,486 @@ def _failing_directory_transport() -> httpx.MockTransport:
         return httpx.Response(404, text="missing")
 
     return httpx.MockTransport(handler)
+
+
+def _hydro_zip(
+    lines: list[str],
+    *,
+    encoding: str = "cp1250",
+    entry_name: str = "codz_2024.csv",
+) -> bytes:
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr(entry_name, ("\r\n".join(lines) + "\r\n").encode(encoding))
+    return zip_buffer.getvalue()
+
+
+def _hydro_line(
+    *,
+    station: str = "149180020",
+    station_name: str = "CHAŁUPKI",
+    hydrological_year: str = "2024",
+    hydrological_month: str = "01",
+    day: str = "01",
+    water_level: str = "113",
+    flow: str = "25.400",
+    water_temperature: str = "8.1",
+    calendar_month: str = "11",
+) -> str:
+    return ",".join(
+        [
+            station,
+            station_name,
+            "Odra (1)",
+            hydrological_year,
+            hydrological_month,
+            day,
+            water_level,
+            flow,
+            water_temperature,
+            calendar_month,
+        ]
+    )
+
+
+def _hydro_transport(zip_bytes: bytes) -> httpx.MockTransport:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/2024/"):
+            return httpx.Response(
+                200,
+                text='<a href="codz_2024.zip">codz_2024.zip</a>',
+            )
+        if request.url.path.endswith("/codz_2024.zip"):
+            return httpx.Response(
+                200,
+                content=zip_bytes,
+                headers={"Last-Modified": "Thu, 28 Aug 2025 12:27:00 GMT"},
+            )
+        return httpx.Response(404)
+
+    return httpx.MockTransport(handler)
+
+
+@pytest.mark.parametrize(
+    ("line", "encoding", "expected_day"),
+    [
+        (
+            '" 149180020","CHAŁUPKI","Odra (1)","2024","01","01",113,25.400,8.1,"11"',
+            "cp1250",
+            date(2023, 11, 1),
+        ),
+        (
+            "\ufeff149180020;CHAŁUPKI;Odra (1);2024;03;01;113;25.400;8.1;01",
+            "utf-8",
+            date(2024, 1, 1),
+        ),
+        (
+            '"149180020,CHAŁUPKI,Odra (1),""2024"",""03"",""02"",113,25.400,8.1,""01"""',
+            "cp1250",
+            date(2024, 1, 2),
+        ),
+    ],
+)
+def test_hydro_daily_parser_supports_reviewed_source_variants(
+    line: str,
+    encoding: str,
+    expected_day: date,
+) -> None:
+    rows, warnings, duplicates = parse_hydro_daily_zip(
+        _hydro_zip([line], encoding=encoding),
+        source_url="https://example.test/codz_2024.zip",
+        import_run_id="hydro-run",
+        imported_at=datetime(2026, 7, 24, tzinfo=UTC),
+        observed_from=expected_day,
+        observed_to=expected_day,
+        source_file_sha256="a" * 64,
+        source_file_last_modified="Thu, 28 Aug 2025 12:27:00 GMT",
+    )
+
+    assert warnings == []
+    assert duplicates == 0
+    assert len(rows) == 3
+    assert {row["station_id"] for row in rows} == {"hydro:149180020"}
+    assert {row["observed_at"].date() for row in rows} == {expected_day}
+    assert {row["metric"] for row in rows} == {
+        "water_level",
+        "flow",
+        "water_temperature",
+    }
+    assert {row["temporal_resolution"] for row in rows} == {"1d"}
+    assert {row["quality_status"] for row in rows} == {
+        "not_provided_by_source"
+    }
+
+
+def test_hydro_daily_parser_preserves_null_and_sentinel_reasons() -> None:
+    line = _hydro_line(
+        water_level="9999",
+        flow="NULL",
+        water_temperature="99.9",
+    )
+    rows, _warnings, _duplicates = parse_hydro_daily_zip(
+        _hydro_zip([line]),
+        source_url="https://example.test/codz_2024.zip",
+        import_run_id="hydro-missing",
+        imported_at=datetime(2026, 7, 24, tzinfo=UTC),
+        observed_from=date(2023, 11, 1),
+        observed_to=date(2023, 11, 1),
+        source_file_sha256="b" * 64,
+        source_file_last_modified=None,
+    )
+
+    by_metric = {row["metric"]: row for row in rows}
+    assert by_metric["water_level"]["missing_reason"] == "source_sentinel"
+    assert by_metric["flow"]["missing_reason"] == "source_null"
+    assert by_metric["water_temperature"]["missing_reason"] == "source_sentinel"
+    assert {row["value"] for row in rows} == {None}
+    assert {row["quality_status"] for row in rows} == {None}
+
+
+def test_hydro_daily_parser_collapses_identical_and_rejects_conflicting_duplicates() -> None:
+    line = _hydro_line()
+    rows, warnings, duplicates = parse_hydro_daily_zip(
+        _hydro_zip([line, line]),
+        source_url="https://example.test/codz_2024.zip",
+        import_run_id="hydro-duplicates",
+        imported_at=datetime(2026, 7, 24, tzinfo=UTC),
+        observed_from=date(2023, 11, 1),
+        observed_to=date(2023, 11, 1),
+        source_file_sha256="c" * 64,
+        source_file_last_modified=None,
+    )
+    assert len(rows) == 3
+    assert duplicates == 1
+    assert "collapsed 1" in warnings[0]
+
+    with pytest.raises(ArchiveBackfillError) as exc_info:
+        parse_hydro_daily_zip(
+            _hydro_zip([line, _hydro_line(flow="26.100")]),
+            source_url="https://example.test/codz_2024.zip",
+            import_run_id="hydro-conflict",
+            imported_at=datetime(2026, 7, 24, tzinfo=UTC),
+            observed_from=date(2023, 11, 1),
+            observed_to=date(2023, 11, 1),
+            source_file_sha256="d" * 64,
+            source_file_last_modified=None,
+        )
+    assert exc_info.value.code == "archive_conflicting_duplicate"
+
+
+def test_hydro_daily_parser_rejects_archive_year_mismatch() -> None:
+    with pytest.raises(ArchiveBackfillError) as exc_info:
+        parse_hydro_daily_zip(
+            _hydro_zip([_hydro_line()]),
+            source_url="https://example.test/codz_2024.zip",
+            import_run_id="run-1",
+            imported_at=datetime(2026, 7, 24, tzinfo=UTC),
+            observed_from=date(2023, 11, 1),
+            observed_to=date(2023, 11, 1),
+            source_file_sha256="abc",
+            source_file_last_modified=None,
+            expected_hydrological_year=2025,
+        )
+
+    assert exc_info.value.code == "archive_row_invalid"
+
+
+def test_hydro_daily_parser_rejects_bad_columns_dates_and_encoding() -> None:
+    common = {
+        "source_url": "https://example.test/codz_2024.zip",
+        "import_run_id": "run-invalid",
+        "imported_at": datetime(2026, 7, 24, tzinfo=UTC),
+        "observed_from": date(2023, 11, 1),
+        "observed_to": date(2023, 11, 1),
+        "source_file_sha256": "abc",
+        "source_file_last_modified": None,
+    }
+    with pytest.raises(ArchiveBackfillError) as columns:
+        parse_hydro_daily_zip(_hydro_zip(["only,two"]), **common)
+    with pytest.raises(ArchiveBackfillError) as calendar:
+        parse_hydro_daily_zip(
+            _hydro_zip([_hydro_line(calendar_month="12")]),
+            **common,
+        )
+
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w") as archive:
+        archive.writestr("codz_2024.csv", b"\x81")
+    with pytest.raises(ArchiveBackfillError) as encoding:
+        parse_hydro_daily_zip(zip_buffer.getvalue(), **common)
+
+    assert columns.value.code == "archive_row_invalid"
+    assert calendar.value.code == "archive_row_invalid"
+    assert encoding.value.code == "archive_encoding_invalid"
+
+
+def test_hydro_daily_parser_never_merges_codes_by_station_name() -> None:
+    rows, _warnings, _duplicates = parse_hydro_daily_zip(
+        _hydro_zip(
+            [
+                _hydro_line(station="149180020", station_name="TA SAMA"),
+                _hydro_line(station="149180010", station_name="TA SAMA"),
+            ]
+        ),
+        source_url="https://example.test/codz_2024.zip",
+        import_run_id="run-identities",
+        imported_at=datetime(2026, 7, 24, tzinfo=UTC),
+        observed_from=date(2023, 11, 1),
+        observed_to=date(2023, 11, 1),
+        source_file_sha256="abc",
+        source_file_last_modified=None,
+    )
+
+    assert {row["station_id"] for row in rows} == {
+        "hydro:149180010",
+        "hydro:149180020",
+    }
+    assert {row["station_name"] for row in rows} == {"TA SAMA"}
+
+
+def test_hydro_daily_backfill_discovers_monthly_hydrological_file(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    zip_bytes = _hydro_zip([_hydro_line()])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/2024/"):
+            return httpx.Response(
+                200,
+                text='<a href="codz_2024_01.zip">codz_2024_01.zip</a>',
+            )
+        if request.url.path.endswith("/codz_2024_01.zip"):
+            return httpx.Response(200, content=zip_bytes)
+        return httpx.Response(404)
+
+    result = HydroDailyArchiveBackfiller(
+        settings,
+        transport=httpx.MockTransport(handler),
+    ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+
+    detail = get_archive_run(result.id)
+    assert result.files_total == 1
+    assert detail is not None
+    assert detail["files"][0]["file_name"] == "codz_2024_01.zip"
+    assert detail["files"][0]["hydrological_year"] == 2024
+
+
+def test_hydro_daily_backfill_updates_and_withdraws_authoritative_rows(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    first = HydroDailyArchiveBackfiller(
+        settings,
+        transport=_hydro_transport(
+            _hydro_zip(
+                [
+                    _hydro_line(),
+                    _hydro_line(station="149180010", station_name="KRZYŻANOWICE"),
+                ]
+            )
+        ),
+    ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+    second = HydroDailyArchiveBackfiller(
+        settings,
+        transport=_hydro_transport(_hydro_zip([_hydro_line(flow="30.500")])),
+    ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+
+    assert first.observations_inserted == 6
+    assert second.observations_updated == 3
+    assert second.observations_deleted == 3
+    remaining = ObservationRepository().query_observations(
+        station_id="hydro:149180020"
+    )
+    assert len(remaining) == 3
+    assert next(row for row in remaining if row["metric"] == "flow")["value"] == 30.5
+    assert ObservationRepository().query_observations(
+        station_id="hydro:149180010"
+    ) == []
+    run = get_archive_run(second.id)
+    assert run is not None
+    assert run["observations_deleted"] == 3
+    assert run["files"][0]["source_file_sha256"]
+
+
+def test_hydro_daily_failed_reparse_keeps_previous_atomic_file_slice(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    HydroDailyArchiveBackfiller(
+        settings,
+        transport=_hydro_transport(_hydro_zip([_hydro_line()])),
+    ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+
+    with pytest.raises(ArchiveBackfillError):
+        HydroDailyArchiveBackfiller(
+            settings,
+            transport=_hydro_transport(
+                _hydro_zip([_hydro_line(), _hydro_line(flow="99.000")])
+            ),
+        ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+
+    rows = ObservationRepository().query_observations(
+        station_id="hydro:149180020"
+    )
+    assert len(rows) == 3
+    assert next(row for row in rows if row["metric"] == "flow")["value"] == 25.4
+
+
+def test_hydro_daily_same_range_rerun_does_not_duplicate_rows(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    backfiller = HydroDailyArchiveBackfiller(
+        settings,
+        transport=_hydro_transport(_hydro_zip([_hydro_line()])),
+    )
+    first = backfiller.run(
+        observed_from=date(2023, 11, 1),
+        observed_to=date(2023, 11, 1),
+    )
+    second = backfiller.run(
+        observed_from=date(2023, 11, 1),
+        observed_to=date(2023, 11, 1),
+    )
+
+    assert first.observations_inserted == 3
+    assert second.observations_inserted == 0
+    assert len(
+        ObservationRepository().query_observations(
+            station_id="hydro:149180020"
+        )
+    ) == 3
+
+
+def test_hydro_archive_cleanup_is_dry_run_by_default(monkeypatch, tmp_path) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    HydroDailyArchiveBackfiller(
+        settings,
+        transport=_hydro_transport(_hydro_zip([_hydro_line()])),
+    ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+
+    dry_run = cleanup_archive_history(
+        archive_kind="hydro_daily",
+        observed_from=date(2023, 11, 1),
+        observed_to=date(2023, 11, 1),
+    )
+    assert dry_run["matching_observations"] == 3
+    assert len(
+        ObservationRepository().query_observations(station_id="hydro:149180020")
+    ) == 3
+
+    confirmed = cleanup_archive_history(
+        archive_kind="hydro_daily",
+        observed_from=date(2023, 11, 1),
+        observed_to=date(2023, 11, 1),
+        confirm=True,
+    )
+    assert confirmed["deleted"] == 3
+    assert ObservationRepository().query_observations(
+        station_id="hydro:149180020"
+    ) == []
+
+
+def test_hydro_archive_progress_api_and_archive_only_comparison(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    result = HydroDailyArchiveBackfiller(
+        settings,
+        transport=_hydro_transport(_hydro_zip([_hydro_line()])),
+    ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+    apply_test_settings(
+        monkeypatch,
+        settings.model_copy(update={"admin_token": "test-admin-token"}),
+    )
+    client = TestClient(app)
+    headers = {"X-MeteoLens-Admin-Token": "test-admin-token"}
+
+    denied = client.get("/api/v1/archive/backfill/runs")
+    runs = client.get(
+        "/api/v1/archive/backfill/runs"
+        "?source_key=hydro&archive_kind=hydro_daily&status=completed",
+        headers=headers,
+    )
+    detail = client.get(
+        f"/api/v1/archive/backfill/runs/{result.id}",
+        headers=headers,
+    )
+    comparison = client.get(
+        "/api/v1/stations/compare"
+        "?station_ids=hydro%3A149180020&metric=water_level"
+    )
+    ranking = client.get(
+        "/api/v1/rankings?metric=water_level&type=hydro&direction=highest"
+    )
+    export_json = client.get(
+        "/api/v1/export/station/hydro:149180020/observations.json"
+        "?metric=water_level"
+    )
+
+    assert denied.status_code == 401
+    assert runs.status_code == 200
+    assert runs.json()["runs"][0]["archive_kind"] == "hydro_daily"
+    assert detail.status_code == 200
+    assert detail.json()["files"][0]["status"] == "completed"
+    assert comparison.status_code == 200
+    assert len(comparison.json()["series"]["hydro:149180020"]) == 1
+    assert ranking.status_code == 200
+    assert ranking.json()["rankings"][0]["station_id"] == "hydro:149180020"
+    assert ranking.json()["rankings"][0]["origin"] == "archive_import"
+    assert ranking.json()["rankings"][0]["quality_status"] == (
+        "not_provided_by_source"
+    )
+    exported = export_json.json()["observations"][0]
+    assert exported["archive_kind"] == "hydro_daily"
+    assert exported["temporal_resolution"] == "1d"
+    assert exported["source_file_sha256"]
+
+
+def test_hydro_observation_api_reports_true_mixed_origin(monkeypatch, tmp_path) -> None:
+    settings = _prepare(tmp_path, monkeypatch)
+    HydroDailyArchiveBackfiller(
+        settings,
+        transport=_hydro_transport(_hydro_zip([_hydro_line()])),
+    ).run(observed_from=date(2023, 11, 1), observed_to=date(2023, 11, 1))
+    get_engine().execute(
+        """
+        INSERT INTO observation_history (
+            station_id, station_name, source_key, station_type, metric, value,
+            unit, observed_at, retrieved_at, missing, raw_field, origin
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 'live_refresh')
+        """,
+        (
+            "hydro:149180020",
+            "NOWA NAZWA",
+            "hydro",
+            "hydro",
+            "water_level",
+            114.0,
+            "cm",
+            datetime(2023, 11, 1, tzinfo=UTC).isoformat(),
+            datetime(2023, 11, 1, 8, tzinfo=UTC).isoformat(),
+            "stan_wody",
+        ),
+    )
+    get_engine().commit()
+
+    response = TestClient(app).get(
+        "/api/v1/stations/hydro:149180020/observations?metric=water_level"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["series_origin"] == "mixed"
+    assert response.json()["origin_counts"] == {
+        "archive_import": 1,
+        "live_refresh": 1,
+    }
 
 
 def test_synop_daily_archive_parser_preserves_values_nulls_and_statuses() -> None:
@@ -178,7 +662,7 @@ def test_synop_daily_backfill_records_failed_discovery(monkeypatch, tmp_path) ->
     assert "404" in row["errors"]
 
 
-def test_archive_rows_follow_retention_pruning(monkeypatch, tmp_path) -> None:
+def test_archive_rows_survive_live_retention_pruning(monkeypatch, tmp_path) -> None:
     settings = _prepare(tmp_path, monkeypatch)
     backfiller = SynopDailyArchiveBackfiller(
         settings,
@@ -188,7 +672,7 @@ def test_archive_rows_follow_retention_pruning(monkeypatch, tmp_path) -> None:
 
     deleted = ObservationRepository().prune_older_than(retention_days=1)
 
-    assert deleted == 10
+    assert deleted == 0
 
 
 def test_synop_daily_archive_keeps_unmapped_nsp_explicit() -> None:

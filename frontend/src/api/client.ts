@@ -83,6 +83,7 @@ export interface Observation {
   value: number | null;
   unit: string | null;
   observed_at: string | null;
+  retrieved_at?: string | null;
   raw_field: string;
   missing: boolean;
   data_delay_seconds?: number | null;
@@ -98,6 +99,12 @@ export interface Observation {
   station_mapping_version?: string | null;
   station_mapping_source_url?: string | null;
   station_mapping_retrieved_at?: string | null;
+  archive_kind?: string | null;
+  quality_status?: string | null;
+  missing_reason?: "source_null" | "source_sentinel" | null;
+  temporal_resolution?: "1d" | null;
+  source_file_sha256?: string | null;
+  source_file_last_modified?: string | null;
 }
 
 export interface StationListItem {
@@ -602,6 +609,20 @@ export function stationCsvUrl(id: string): string {
 
 export function stationJsonUrl(id: string): string {
   return `${API_BASE_URL}/api/v1/export/station/${encodeURIComponent(id)}.json`;
+}
+
+export function stationObservationsCsvUrl(id: string, metric?: string): string {
+  return `${API_BASE_URL}/api/v1/export/station/${encodeURIComponent(id)}/observations.csv${query({
+    metric,
+    limit: 5000,
+  })}`;
+}
+
+export function stationObservationsJsonUrl(id: string, metric?: string): string {
+  return `${API_BASE_URL}/api/v1/export/station/${encodeURIComponent(id)}/observations.json${query({
+    metric,
+    limit: 5000,
+  })}`;
 }
 
 export function mapGeoJsonUrl(layers: LayerKey[]): string {

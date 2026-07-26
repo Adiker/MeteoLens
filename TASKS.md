@@ -781,52 +781,52 @@ Goal: extend bounded historical imports beyond daily SYNOP.
 
 Implementation tasks:
 
-- [ ] Research hydro archive files, directory layout, formats, encodings, and
+- [x] Research hydro archive files, directory layout, formats, encodings, and
   update cadence.
-- [ ] Document parsing status and quality/status fields.
-- [ ] Handle nulls, sentinel values, measurement status, corrections,
+- [x] Document parsing status and quality/status fields.
+- [x] Handle nulls, sentinel values, measurement status, corrections,
   duplicates, and station-ID changes.
-- [ ] Add bounded and resumable hydro archive imports.
-- [ ] Add progress reporting for hydro import runs.
-- [ ] Apply admin protection and rate limits from Stage 19.
-- [ ] Define database retention interaction for hydro history.
-- [ ] Preserve live/archive/mixed-series behavior.
-- [ ] Add hydro charts, rankings, comparisons, and exports where data quality
+- [x] Add bounded and resumable hydro archive imports.
+- [x] Add progress reporting for hydro import runs.
+- [x] Apply admin protection and rate limits from Stage 19.
+- [x] Define database retention interaction for hydro history.
+- [x] Preserve live/archive/mixed-series behavior.
+- [x] Add hydro charts, rankings, comparisons, and exports where data quality
   supports them.
-- [ ] Preserve attribution, source URLs, import timestamps, and processed-data
+- [x] Preserve attribution, source URLs, import timestamps, and processed-data
   notices.
 
 Documentation tasks:
 
-- [ ] Update `DATA_SOURCES.md` with verified hydro archive formats only.
-- [ ] Update `API_CONTRACT.md` with supported import kinds and series metadata.
-- [ ] Update `LEGAL_ATTRIBUTION.md` if source terms or attribution differ.
-- [ ] Update `README.md` and `TROUBLESHOOTING.md`.
-- [ ] Update `TASKS.md` only as work is completed.
+- [x] Update `DATA_SOURCES.md` with verified hydro archive formats only.
+- [x] Update `API_CONTRACT.md` with supported import kinds and series metadata.
+- [x] Update `LEGAL_ATTRIBUTION.md` if source terms or attribution differ.
+- [x] Update `README.md` and `TROUBLESHOOTING.md`.
+- [x] Update `TASKS.md` only as work is completed.
 
 Test tasks:
 
-- [ ] Add parser tests using realistic hydro archive fixtures.
-- [ ] Add duplicate, null, sentinel, correction, and station-ID-change tests.
-- [ ] Add importer resume and bound tests.
-- [ ] Add retention interaction tests.
-- [ ] Add live/archive/mixed-series API tests.
-- [ ] Add frontend tests for hydro chart and export labels.
+- [x] Add parser tests using realistic hydro archive fixtures.
+- [x] Add duplicate, null, sentinel, correction, and station-ID-change tests.
+- [x] Add importer resume and bound tests.
+- [x] Add retention interaction tests.
+- [x] Add live/archive/mixed-series API tests.
+- [x] Add frontend tests for hydro chart and export labels.
 
 Non-goals and blocked items:
 
-- [ ] Do not claim support for archive families that remain unverified.
-- [ ] Do not add unbounded public import triggers.
-- [ ] Do not replace missing or invalid measurements with zero.
+- [x] Do not claim support for archive families that remain unverified.
+- [x] Do not add unbounded public import triggers.
+- [x] Do not replace missing or invalid measurements with zero.
 
 Acceptance criteria:
 
-- [ ] At least one verified hydro archive family imports through a bounded
+- [x] At least one verified hydro archive family imports through a bounded
   server-side path.
-- [ ] Imported hydro observations preserve source quality and missing-value
+- [x] Imported hydro observations preserve source quality and missing-value
   metadata.
-- [ ] Live/archive/mixed labels remain visible in APIs, charts, and exports.
-- [ ] Unsupported archive families remain documented as unsupported.
+- [x] Live/archive/mixed labels remain visible in APIs, charts, and exports.
+- [x] Unsupported archive families remain documented as unsupported.
 
 ## Stage 24 - Warning History And Change Timeline
 

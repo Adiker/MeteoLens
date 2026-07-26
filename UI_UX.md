@@ -262,17 +262,29 @@ target spec above, driven by current backend data:
 - Stage 15 labels station history as live-refresh, archive-import, or mixed
   data. Expert mode also shows archive import markers in observation raw-field
   metadata; exported history includes the import run and archive source URL.
+- Stage 23 gives hydrological stations a Polish metric selector: `Stan wody`,
+  `Przepływ`, and `Temperatura wody`. Only the selected metric is requested
+  from the history API. The chart keeps `live_refresh` and `archive_import` as
+  separate series (with `mixed` still visible as aggregate provenance), never
+  averages them together, and uses null points as visible gaps.
+- A history tooltip shows origin, `1d` resolution, missing reason, and source
+  quality status. In expert mode CODZ observations also show archive kind,
+  source URL, SHA-256, Last-Modified, and import time. Midnight UTC on a daily
+  point is described as the day marker, not a measurement hour.
+- Archive-only station IDs remain usable in history/comparison/export APIs but
+  do not acquire synthetic map markers. On mobile, the existing station
+  bottom-sheet layout retains the selector, chart legend, provenance, and
+  export controls.
 
 ## Future UX Candidates
 
 - Richer product timelines and multi-variable COSMO rendering once additional
   GRIB paths are reviewed.
-- Hydrological archive charts and rankings after Stage 23 bounded imports.
 - Warning history after Stage 24 retention and correction handling.
 - Hydro basin `refined` / `coarse` / `coastal` polygons remain labelled
   approximations; future work may tighten mapping without hiding precision.
-- Hydrological archive backfill may add date-range import progress controls,
-  but archive fetching must stay backend-only and bounded.
+- Archive import remains an API/CLI operator action. The public station panel
+  does not expose administrative import controls.
 - PDF reports may add report download actions for selected stations, source
   freshness, location summaries, or map-state snapshots, with attribution and
   processed-data notices on every report.

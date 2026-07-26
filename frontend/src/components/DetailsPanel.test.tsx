@@ -1,10 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ObservationResponse, StationResponse, WarningResponse } from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { DetailsPanel } from "./DetailsPanel";
+
+vi.mock("echarts", () => ({
+  init: () => ({
+    setOption: () => {},
+    resize: () => {},
+    dispose: () => {},
+  }),
+}));
 
 function renderWithClient() {
   const client = new QueryClient({
@@ -231,6 +239,70 @@ describe("DetailsPanel", () => {
     expect(screen.getByText("21,7 °C")).toBeInTheDocument();
     expect(screen.queryByText("30,3 °C")).not.toBeInTheDocument();
     expect(screen.queryByText("25,5 °C")).not.toBeInTheDocument();
+  });
+
+  it("selects one hydro metric and exposes archive provenance in expert mode", async () => {
+    const archiveHistory: ObservationResponse = {
+      ...observationsResponse,
+      series_kind: "history",
+      series_origin: "archive_import",
+      origin_counts: { archive_import: 2 },
+      observations: [
+        {
+          metric: "water_level",
+          value: 120,
+          unit: "cm",
+          observed_at: "2024-01-01T00:00:00Z",
+          raw_field: "COSTAN:120",
+          missing: false,
+          origin: "archive_import",
+          archive_kind: "hydro_daily",
+          quality_status: "not_provided_by_source",
+          temporal_resolution: "1d",
+          import_source_url: "https://danepubliczne.imgw.pl/codz_2024.zip",
+          source_file_sha256: "a".repeat(64),
+          source_file_last_modified: "Thu, 28 Aug 2025 12:27:00 GMT",
+        },
+        {
+          metric: "water_level",
+          value: 121,
+          unit: "cm",
+          observed_at: "2024-01-02T00:00:00Z",
+          raw_field: "COSTAN:121",
+          missing: false,
+          origin: "archive_import",
+        },
+      ],
+    };
+    mockFetchByPath({
+      "/stations/hydro%3A151140030/observations": {
+        status: 200,
+        body: archiveHistory,
+      },
+      "/stations/hydro%3A151140030": { status: 200, body: stationResponse },
+    });
+    useAppStore.setState({
+      selection: { kind: "station", id: "hydro:151140030" },
+      mode: "expert",
+    });
+
+    renderWithClient();
+    expect(await screen.findByText("Przewoźniki")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Wykres" }));
+
+    const metric = screen.getByLabelText("Metryka wykresu");
+    expect(metric).toHaveValue("water_level");
+    expect(await screen.findByText("hydro_daily")).toBeInTheDocument();
+    expect(screen.getByText("a".repeat(64))).toBeInTheDocument();
+    expect(vi.mocked(fetch).mock.calls.some(([url]) =>
+      String(url).includes("metric=water_level"),
+    )).toBe(true);
+    fireEvent.change(metric, { target: { value: "flow" } });
+    await waitFor(() =>
+      expect(vi.mocked(fetch).mock.calls.some(([url]) =>
+        String(url).includes("metric=flow"),
+      )).toBe(true),
+    );
   });
 
   it("shows warning details with the missing-geometry notice and attribution", async () => {

@@ -54,6 +54,7 @@ values to zero.
 Symptoms:
 
 - `POST /api/v1/archive/backfill/synop-daily` returns `422`,
+- `POST /api/v1/archive/backfill/hydro-daily` returns `422`,
 - station chart still shows a snapshot after an import,
 - imported rows disappear after a cleanup run.
 
@@ -64,12 +65,38 @@ Actions:
   `METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`; current-year daily SYNOP imports are
   monthly ZIPs, while older years can resolve to many station-code ZIPs.
 - Check the response `status`, `files_processed`, `parser_warnings`, and
-  `errors`; failed runs are recorded in `archive_import_runs`.
+  `errors`. Inspect current and previous progress with the admin-protected
+  `GET /api/v1/archive/backfill/runs` and
+  `GET /api/v1/archive/backfill/runs/{id}` routes; their detail includes each
+  file's URL, status, hash and counters.
+- For CODZ, remember that November/December belong to the next hydrological
+  year. `archive_files_not_found` means no annual/monthly `codz_RRRR[_WW].zip`
+  matched the selected dates; it is not an empty successful import.
+- `archive_row_invalid` usually means a new encoding/delimiter/field/date
+  variant. Stop rather than weakening validation. Re-check the official
+  catalogue, `CODZ_publiczne_format.txt`, `UWAGA.txt`, and current IMGW terms,
+  then add a representative fixture before changing the parser.
+- `archive_row_limit_exceeded` on a verified annual CODZ file means the
+  configured `METEOLENS_ARCHIVE_MAX_ROWS_PER_FILE` is below that publication's
+  row count. The default is 500000, which covers the verified 2024 file; keep a
+  finite reviewed bound.
 - Query `/api/v1/stations/{id}/observations?metric=temperature` for a stable
   station ID such as `synop:349190600`; map/list discovery still requires live
   cache data and reviewed coordinates.
-- Remember that imported rows use the same SQLite retention policy as live
-  history. `METEOLENS_OBSERVATION_RETENTION_DAYS` can prune old archive rows.
+- Query a CODZ series with the exact source code, for example
+  `/api/v1/stations/hydro:149180020/observations?metric=water_level`.
+  Historical-only stations are queryable/exportable but intentionally have no
+  map marker without reviewed coordinates.
+- `METEOLENS_OBSERVATION_RETENTION_DAYS` prunes only `live_refresh`; it does
+  not remove archive imports. For intentional cleanup, first create and verify
+  an essential backup, then run
+  `python -m app.operations.archive_history prune --archive-kind hydro_daily
+  --from YYYY-MM-DD --to YYYY-MM-DD`. Review the dry-run count and repeat with
+  `--confirm` only for the exact intended range.
+- A corrected IMGW file is authoritative for its selected slice: after full
+  parsing, changed values are updated and withdrawn rows removed. Compare
+  `observations_deleted`, file hash and source sample. A failed/partial parse
+  performs no withdrawal deletion.
 - Do not call IMGW archive ZIPs from the browser. Archive fetching is backend
   only.
 

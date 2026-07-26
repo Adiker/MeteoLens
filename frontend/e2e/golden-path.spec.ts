@@ -35,7 +35,9 @@ test("searches for a station and shows its details honestly, including missing v
   const csvLink = panel.getByRole("link", { name: "CSV" });
   await expect(csvLink).toHaveAttribute(
     "href",
-    new RegExp(`/export/station/${encodeURIComponent(HYDRO_STATION_ID)}\\.csv$`),
+    new RegExp(
+      `/export/station/${encodeURIComponent(HYDRO_STATION_ID)}/observations\\.csv\\?metric=water_level&limit=5000$`,
+    ),
   );
 
   await panel.getByLabel("Zamknij panel szczegółów").click();

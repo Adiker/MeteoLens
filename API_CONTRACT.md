@@ -251,12 +251,17 @@ unit metadata where available. Historical observations may also include
 `origin`, `import_run_id`, `import_source_url`, `source_station_id` (the
 original archive `NSP`, or the source `id_stacji` for persisted live history),
 `station_mapping_status`, `station_mapping_version`,
-`station_mapping_source_url`, and `station_mapping_retrieved_at`. Mapping
-status is `mapped`, `unmapped_not_current_synop`, or
+`station_mapping_source_url`, `station_mapping_retrieved_at`, `archive_kind`,
+`quality_status`, `missing_reason`, `temporal_resolution`,
+`source_file_sha256`, and `source_file_last_modified`. Mapping status is
+`mapped`, `unmapped_not_current_synop`, or
 `unmapped_not_in_mapping_source`; the mapping-specific fields are `null` for
-live-only points.
+live-only points. CODZ points use `temporal_resolution="1d"` and midnight UTC
+only as a calendar-day marker, not a measurement hour.
 
 `POST /api/v1/archive/backfill/synop-daily`
+
+`POST /api/v1/archive/backfill/hydro-daily`
 
 Administrative route. It is disabled unless `METEOLENS_ADMIN_TOKEN` is set.
 When enabled, clients must send the matching value in the
@@ -269,18 +274,34 @@ Query parameters:
 - `from`: required date (`YYYY-MM-DD`), inclusive.
 - `to`: required date (`YYYY-MM-DD`), inclusive.
 
-Runs an opt-in server-side import from the public IMGW daily SYNOP archive into
-the existing observation-history schema. The endpoint is bounded by
+The first route imports reviewed daily SYNOP archives. The second imports only
+the verified IMGW daily hydrological `CODZ` family: water level, flow, and
+water temperature. CODZ discovery converts the requested calendar dates into
+hydrological years (November and December belong to the next year), accepts
+`codz_RRRR.zip` and `codz_RRRR_WW.zip`, and fails explicitly when no matching
+file is published. `ZJAW`, monthly, semi-annual, and annual summary families
+are not accepted.
+
+Both routes write into the existing observation-history schema and are bounded by
 `METEOLENS_ARCHIVE_BACKFILL_MAX_DAYS` and
-`METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`, waits
+`METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`, wait
 `METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS` between files, and never asks
-the browser to fetch IMGW archive files directly. Duplicate records are handled
+the browser to fetch IMGW archive files directly. Download bytes, ZIP entries,
+expanded entry/total size, and CSV rows also have hard configured limits.
+Duplicate records are handled
 by upsert on `station_id + metric + observed_at + origin`; repeated runs refresh
 archive-import metadata without creating duplicate archive observations, while
 an equal-time live observation remains a separate point. Import fails if the reviewed
 mapping artifact cannot be loaded or validated. An unmapped `NSP` does not fail
 the whole bounded run: it is retained under `synop-archive:<NSP>` and reported
 in `parser_warnings`.
+
+CODZ identity is exact `hydro:<PSKDSZS>`; station/river names are never mapping
+keys. Each source file is parsed completely before one atomic synchronization
+updates corrected values and removes source-withdrawn rows for that file's
+selected date slice. Identical source duplicates are collapsed and counted;
+conflicting duplicates fail the file. A parse or persistence error performs no
+withdrawal deletion.
 
 Only one archive import may run per backend process. A successfully completed
 date range enters the configured duplicate cooldown; repeating it during that
@@ -305,6 +326,8 @@ Response shape:
   "observations_inserted": 620,
   "observations_updated": 0,
   "observations_unchanged": 0,
+  "observations_deleted": 0,
+  "duplicate_rows": 0,
   "parser_warnings": [],
   "errors": [],
   "attribution": "Źródło danych: IMGW-PIB.",
@@ -317,7 +340,36 @@ Errors use the standard error envelope with codes such as
 `archive_download_too_large`, `archive_zip_invalid`, `archive_zip_too_many_entries`,
 `archive_zip_central_directory_too_large`, `archive_zip_entry_too_large`, `archive_zip_uncompressed_too_large`,
 `archive_row_limit_exceeded`, `invalid_time_range`, or
-`archive_backfill_failed`.
+`archive_backfill_failed`. CODZ also returns `archive_files_not_found`,
+`archive_row_invalid`, `archive_zip_missing_csv`, or
+`archive_conflicting_duplicate` where applicable.
+
+`GET /api/v1/archive/backfill/runs`
+
+Administrative route with optional exact filters `source_key`, `archive_kind`,
+and `status`, plus `limit` (1-100). It returns newest runs first, including
+current counters and statuses `running`, `completed`,
+`completed_with_warnings`, `failed`, or `interrupted`.
+
+`GET /api/v1/archive/backfill/runs/{id}`
+
+Administrative route returning the run plus each source file's URL,
+hydrological year, status, start/finish time, SHA-256, source
+`Last-Modified`, row/observation counters, duplicate count, warnings and
+errors. Runs and running files left after process restart become
+`interrupted`; retrying the same range creates a new idempotent run.
+
+`METEOLENS_OBSERVATION_RETENTION_DAYS` prunes only `origin=live_refresh`.
+Archive history has no automatic expiry. Operators can count or remove a
+selected kind/date range with:
+
+```bash
+python -m app.operations.archive_history prune \
+  --archive-kind hydro_daily --from 2024-01-01 --to 2024-01-31
+```
+
+The command is dry-run unless `--confirm` is present. A verified backup is
+required before confirmed cleanup.
 
 `GET /api/v1/stations/compare`
 
@@ -327,7 +379,7 @@ Errors use the standard error envelope with codes such as
 
 `GET /api/v1/export/station/{id}/observations.json`
 
-Planned station comparison parameters:
+Station comparison parameters:
 
 - `station_ids`: comma-separated stable station IDs.
 - `metric`: required metric key.
@@ -336,7 +388,7 @@ Planned station comparison parameters:
 - `interval`: optional aggregation interval.
 - `limit`: optional point limit.
 
-Planned ranking parameters:
+Ranking parameters:
 
 - `metric`: one of supported ranking metrics, for example temperature,
   wind speed, precipitation, or water level.
@@ -347,8 +399,10 @@ Planned ranking parameters:
 - `limit`: optional result limit.
 
 Ranking responses preserve source metadata, missing-field metadata, processed-
-data notices, and observation origin metadata where history rows include it.
-Ranking logic must not replace missing values with zero.
+Ranking logic omits missing values and does not replace them with zero.
+Comparisons and rankings accept stable station IDs present only in persisted
+history. Archive-only stations remain available through these APIs and exports
+without being placed on the map unless reviewed coordinates exist.
 
 ## Warnings
 
@@ -482,6 +536,17 @@ Observation CSV columns:
 - `origin`
 - `import_run_id`
 - `import_source_url`
+- `source_station_id`
+- `station_mapping_status`
+- `station_mapping_version`
+- `station_mapping_source_url`
+- `station_mapping_retrieved_at`
+- `archive_kind`
+- `quality_status`
+- `missing_reason`
+- `temporal_resolution`
+- `source_file_sha256`
+- `source_file_last_modified`
 - `source_key`
 - `attribution`
 - `processed_notice`

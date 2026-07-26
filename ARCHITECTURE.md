@@ -185,6 +185,23 @@ limit; ZIP entry count, per-entry uncompressed size, total uncompressed size, an
 CSV row count are checked before and during extraction so ZIP bombs and oversized
 payloads fail the import run with an explicit error.
 
+Stage 23 extends that pipeline with a `HydroDailyArchiveBackfiller` for only
+the reviewed daily hydrological `CODZ` family. Discovery maps calendar dates
+onto hydrological years and accepts annual or monthly CODZ ZIPs. The parser
+uses only the standard library to decode UTF-8/CP1250, detect comma/semicolon
+rows, unwrap the 2024 whole-row quotation, require ten fields, and validate
+hydrological year/month against the calendar date. It normalizes only water
+level, flow, and water temperature; source sentinels/nulls remain explicit.
+Station IDs are exact `hydro:<PSKDSZS>` identifiers, so historical names and
+rivers cannot merge or relocate a series.
+
+Each CODZ file is the transaction boundary. After a complete successful parse,
+`sync_archive_observations` upserts the requested slice and deletes only
+previous `hydro_daily` archive rows withdrawn from that same slice. Conflicting
+duplicates or any parse/persistence error roll back the file and perform no
+withdrawal deletion. An identical rerun is idempotent; retry after interruption
+uses a new run and safely reprocesses completed slices.
+
 The Stage 21 reconciliation follow-up adds
 `app/imgw/station_mapping.py` and the versioned
 `app/imgw/data/synop_station_mapping.v1.json`. The reproducible fetch script
@@ -264,6 +281,16 @@ notice. Archive and live rows share `synop:<id_stacji>` only through an approved
 map entry. Unmapped rows remain separate, and no name-based or hardcoded merge
 is allowed.
 
+Stage 23 adds `archive_kind`, `quality_status`, `missing_reason`,
+`temporal_resolution`, `source_file_sha256`, and
+`source_file_last_modified` to observation history, plus deleted/duplicate
+counters on runs. `archive_import_run_files` stores URL, hydrological year,
+status, counters, hash, errors, and completion time for resumable operator
+inspection. SQLite schema upgrades and the origin-key rebuild are transactional
+and preserve existing rows. Automatic age retention now targets only
+`live_refresh`; archive rows require the dry-run-first cleanup CLI and a
+verified backup before `--confirm`.
+
 Stage 9 geometry design should add imported geometry metadata without mixing
 external dataset ingestion into IMGW parsers. Candidate tables include:
 
@@ -319,6 +346,15 @@ refreshes:
 Stage 15 added `POST /api/v1/archive/backfill/synop-daily` for manual bounded
 imports and extends station observation responses/exports with
 `series_origin`, `origin_counts`, and per-point archive import metadata.
+
+Stage 23 adds the admin-only
+`POST /api/v1/archive/backfill/hydro-daily`,
+`GET /api/v1/archive/backfill/runs`, and
+`GET /api/v1/archive/backfill/runs/{id}` routes. It extends observation
+responses and CSV/JSON exports with archive kind, quality/missing reason,
+temporal resolution, file SHA-256, and Last-Modified. Comparisons and rankings
+resolve archive-only IDs from observation history; they do not fabricate
+station coordinates.
 
 Stage 16 stabilized the public `/api/v1` surface in `API_CONTRACT.md`, added
 responsible-use and backwards-compatibility notes, and added:

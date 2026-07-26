@@ -4,6 +4,12 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 23 bounded daily hydrological `CODZ` archive imports with
+  CP1250/UTF-8 and comma/semicolon handling, annual/monthly hydrological-year
+  discovery, exact `PSKDSZS` station identity, missing/quality/file provenance,
+  atomic correction and withdrawal synchronization, run/file progress APIs,
+  archive-safe retention and a dry-run-first cleanup CLI. The hydro station
+  panel now selects one metric and renders live/archive series separately.
 - Added Stage 22 reviewed hydro basin geometry: bundled II aPGW JCWP catchment
   polygons (CC BY 4.0, PGW Wody Polskie) mapped to IMGW `kod_zlewni`, dissolved
   and simplified via `scripts/geometry/convert_apgw_hydro_basins.py`, imported

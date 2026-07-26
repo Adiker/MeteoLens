@@ -2,14 +2,15 @@
 
 **Status: public alpha (`v0.1.0-alpha`).** MeteoLens works end to end against
 live IMGW-PIB data, but it is an alpha: expect the gaps listed in
-[Known Limitations](#known-limitations) (hydro warning basins still lack
-reviewed polygons, radar downloads are blocked at the source, history starts
-empty unless backfilled). Validation evidence:
+[Known Limitations](#known-limitations) (radar downloads are blocked at the
+source and history starts empty unless refreshed or backfilled). Validation evidence:
 [docs/release/STAGE_21_VALIDATION_2026-07-14.md](docs/release/STAGE_21_VALIDATION_2026-07-14.md)
 and
 [docs/release/STAGE_21_PRETAG_2026-07-20.md](docs/release/STAGE_21_PRETAG_2026-07-20.md).
 Release notes:
 [docs/release/RELEASE_NOTES_v0.1.0-alpha.md](docs/release/RELEASE_NOTES_v0.1.0-alpha.md).
+Stage 23 evidence:
+[docs/release/STAGE_23_VALIDATION_2026-07-24.md](docs/release/STAGE_23_VALIDATION_2026-07-24.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
 hydrological data for Poland. Stages 0-21 (research, documentation, backend
@@ -21,10 +22,11 @@ rendering MVP with the COSMO 2 m temperature map overlay, bounded SYNOP daily
 archive backfill, the public API/SDK/export stabilization pass, documentation
 status stabilization, reviewed WMO OSCAR/Surface synop station coordinates,
 Stage 19 public-internet security hardening, Stage 20 production
-observability/backup/recovery, and Stage 21 validation plus this alpha tag)
-are implemented. Stages 22-26 remain planned and cover hydrology, warning
-history, performance, and PDF reports. See [TASKS.md](TASKS.md) for the full
-staged backlog.
+observability/backup/recovery, Stage 21 validation plus this alpha tag,
+reviewed Stage 22 hydro basin geometry, and bounded Stage 23 daily CODZ
+hydrological archive backfill) are implemented. Stages 24-26 remain planned
+and cover warning history, performance, and PDF reports. See
+[TASKS.md](TASKS.md) for the full staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
 PogodoScope, HydroMeteo Atlas, MeteoMapa PL.
@@ -150,6 +152,15 @@ Implemented now:
   client with OpenAPI-generated metadata; and runnable integration examples
   live in `examples/api/`.
 
+- Stage 23 daily hydrological archive backfill: an admin-only, bounded,
+  synchronous importer for IMGW `CODZ` annual and monthly ZIPs
+  (`POST /api/v1/archive/backfill/hydro-daily`). It imports only daily water
+  level, flow, and water temperature, preserves source sentinels/nulls and file
+  provenance, exposes run/file progress, and applies authoritative corrections
+  atomically per source file. The station panel requests one selected hydro
+  metric and draws live and archive points as separate series with gaps for
+  missing values.
+
 - Stage 20 production operations: separate liveness/readiness health checks,
   private Prometheus metrics, request-correlated JSON logs, conservative Docker
   CPU/memory/log limits, and verified essential backup/restore tooling for
@@ -214,16 +225,34 @@ frontend is marked ready. It also enables `METEOLENS_REFRESH_ENABLED=true`, so
 the backend keeps re-fetching each source on its configured
 `METEOLENS_REFRESH_*_SECONDS` interval while it runs.
 
-Optional daily SYNOP archive backfill is manual and bounded:
+Daily SYNOP and CODZ hydrological archive backfills are manual, admin-only,
+server-side, and bounded:
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/archive/backfill/synop-daily?from=2026-05-01&to=2026-05-07"
+curl -X POST \
+  -H "X-MeteoLens-Admin-Token: $METEOLENS_ADMIN_TOKEN" \
+  "http://localhost:8000/api/v1/archive/backfill/hydro-daily?from=2024-01-01&to=2024-01-07"
+
+curl -H "X-MeteoLens-Admin-Token: $METEOLENS_ADMIN_TOKEN" \
+  "http://localhost:8000/api/v1/archive/backfill/runs?source_key=hydro&archive_kind=hydro_daily&limit=10"
 ```
 
 Limits are controlled with `METEOLENS_ARCHIVE_BACKFILL_MAX_DAYS`,
 `METEOLENS_ARCHIVE_BACKFILL_MAX_FILES`, and
-`METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS`. Archive fetching always runs
+`METEOLENS_ARCHIVE_BACKFILL_RATE_LIMIT_SECONDS`, plus hard download, ZIP and
+row limits documented in `.env.example`. Archive fetching always runs
 server-side; the browser never calls IMGW archive files directly.
+
+Archive rows are not removed by
+`METEOLENS_OBSERVATION_RETENTION_DAYS`; that setting prunes only
+`live_refresh`. Manual archive cleanup is dry-run by default:
+
+```bash
+cd backend
+python -m app.operations.archive_history prune \
+  --archive-kind hydro_daily --from 2024-01-01 --to 2024-01-31
+# Verify a current backup, repeat the command, then add --confirm.
+```
 
 Public API examples:
 
@@ -350,12 +379,13 @@ data (see `AGENTS.md`).
   reviewed dataset remain explicit as `missing_lat_lon`.
 - **Observation history is local-only.** Time series are persisted to SQLite
   from this deployment's own IMGW refreshes, and Stage 15 can optionally
-  backfill bounded daily SYNOP archive ranges. Other measurement archives
-  (hydro daily/monthly/annual and non-SYNOP meteorological archive families)
-  remain documented but not imported. Fresh deployments without a live cache can
-  still serve imported station observations by stable station ID, but map/list
-  station discovery still depends on current cache data and reviewed geometry.
-  Retention is capped by `METEOLENS_OBSERVATION_RETENTION_DAYS`.
+  backfill bounded daily SYNOP ranges while Stage 23 imports daily CODZ
+  hydrological observations. `ZJAW`, hydrological monthly summaries, and
+  semi-annual/annual summary families remain unsupported. Fresh deployments
+  without a live cache can still serve imported station observations by exact
+  `hydro:<PSKDSZS>` or SYNOP station ID, but archive-only stations are not
+  invented as map points. Automatic retention applies only to live refresh
+  rows; archive cleanup is an explicit dry-run/`--confirm` operator action.
 - **SYNOP reconciliation is source-map bounded.** The reviewed 2026-07-14 map
   resolves 61 of the 62 current SYNOP identifiers through the official IMGW
   `NSP` + station-code catalogue; the current `Platforma` station has no archive

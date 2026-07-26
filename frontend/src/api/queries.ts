@@ -68,10 +68,10 @@ export function useStationQuery(id: string | null) {
   });
 }
 
-export function useObservationsQuery(id: string | null) {
+export function useObservationsQuery(id: string | null, metric?: string) {
   return useQuery({
-    queryKey: ["observations", id],
-    queryFn: () => fetchObservations(id as string),
+    queryKey: ["observations", id, metric ?? null],
+    queryFn: () => fetchObservations(id as string, { metric, limit: 5000 }),
     enabled: Boolean(id),
   });
 }
