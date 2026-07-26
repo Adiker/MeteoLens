@@ -219,11 +219,34 @@ blocked at the source (`rendering_status: download_blocked`). See
   `missing=true`/`value=null` and preserves blank `9` phenomenon fields as
   `value=null` without silently converting them to zero.
 - Hydrological reference files observed: `lista_stacji_hydro.csv`,
-  `hydrologia_info_ogolne.txt`, daily/monthly/annual directories.
-- Hydrological archive format verified on 2026-07-05: files are grouped by
-  hydrological year; daily file names use `codz_RRRR_WW.csv`, monthly files use
-  `mies_RRRR.csv`, and semi-annual files use `polr_x_RRRR.csv`. The
-  hydrological year starts on 1 November of the previous calendar year.
+  `hydrologia_info_ogolne.txt`, daily/monthly/annual directories. The Stage 23
+  contract was reverified on 2026-07-24 against the official daily directory
+  and `CODZ_publiczne_format.txt`.
+- Implemented hydrological family: daily `CODZ` only. Files are grouped by
+  hydrological year and are published as annual `codz_RRRR.zip` or monthly
+  `codz_RRRR_WW.zip`; the hydrological year starts on 1 November of the
+  previous calendar year. November and December therefore belong to the next
+  hydrological year. When an annual and overlapping monthly publication both
+  exist, the importer selects the annual file once and reports that choice.
+- Verified CODZ variants include older CP1250/comma rows, 2023
+  UTF-8/semicolon rows, and the CP1250 2024 annual file whose complete
+  comma-separated row is itself quoted. Every accepted row has exactly ten
+  fields: `PSKDSZS`, `PSNZWP`, `KDNRZK`, `COROKH`, `COMSCH`, `CODZIEN`,
+  `COSTAN`, `COPRZP`, `COPTMP`, `COMSCK`. Encoding, delimiter, calendar month,
+  hydrological month/year, and archive year are validated rather than guessed.
+- CODZ normalization is deliberately narrow: `COSTAN` becomes `water_level`
+  in cm, `COPRZP` becomes `flow` in m³/s, and `COPTMP` becomes
+  `water_temperature` in °C. Source sentinels `9999`, `99999.999`, and `99.9`
+  become `value=null`, `missing=true`, `missing_reason=source_sentinel`;
+  `NULL` or an empty source field becomes `source_null`. Numeric values use
+  `quality_status=not_provided_by_source`; MeteoLens does not invent a quality
+  grade.
+- A CODZ date is stored as `00:00:00Z` with `temporal_resolution=1d`. This is
+  a day marker, not the time at which an individual measurement was made.
+- Station identity is exactly `hydro:<PSKDSZS>`. Names and river names are
+  historical observation metadata, never reconciliation keys. A code change
+  creates a separate series; an archive-only code remains queryable and
+  exportable but receives no fabricated map coordinates.
 - Format: CSV/TXT/PDF and nested directories; encodings may require detection.
 - Update frequency: archive-specific.
 - Stability: useful but larger than MVP.
@@ -247,12 +270,15 @@ blocked at the source (`rendering_status: download_blocked`). See
   `synop-archive:<NSP>`. A new or changed station requires a regenerated and
   reviewed artifact, never a runtime name match or manual identifier list.
 - Cache: manifest-based refresh, file checksum, and parser version.
-- Parser: `synop_daily_archive` implemented for bounded daily SYNOP imports;
-  hydrological and non-SYNOP meteorological archives remain researched/planned.
+- Parsers: `synop_daily_archive` and `hydro_daily_archive` are implemented for
+  bounded daily SYNOP and CODZ imports. `ZJAW`, hydrological monthly,
+  semi-annual/annual summaries, and non-SYNOP meteorological families remain
+  unsupported.
 - Normalized model: `Station`, `Observation`, `ArchiveManifest`.
-- Status: Stage 15 implements opt-in bounded daily SYNOP backfill into the
-  existing observation-history SQLite schema. Hydrological and broader
-  meteorological archive backfill remain `planned`.
+- Status: Stage 15 implements daily SYNOP backfill; Stage 23 implements
+  admin-only bounded daily CODZ backfill into the existing observation-history
+  SQLite schema. Broader archive families remain `planned` or unsupported as
+  listed above.
 
 Historical ingestion preserves observed timestamp, import/retrieval timestamp,
 data delay, missing/null values, source attribution, processed-data notices,
@@ -263,6 +289,20 @@ through upserts on `station_id + metric + observed_at + origin`, so equal-time
 live and archive observations remain separate and can produce honest `mixed`
 counts. Resource limits reject oversized downloads, ZIP bombs, and excessive
 CSV row counts before they exhaust server memory.
+
+Stage 23 records the source ZIP SHA-256 and `Last-Modified`, preserves
+identical-row duplicate counts, rejects conflicting duplicates, and synchronizes
+each fully parsed source-file slice atomically. A later corrected IMGW file may
+update values or withdraw rows; no deletion occurs after partial or failed
+parsing. Automatic observation retention removes only `live_refresh` rows.
+
+Before extending or operating this importer against a newly published year,
+re-open the official daily catalogue, `CODZ_publiczne_format.txt`, `UWAGA.txt`,
+and the current IMGW regulations; compare file names, encoding, delimiter,
+field count/order, sentinel semantics, modification timestamps and terms with
+this contract. Record the review date and update this document before accepting
+any new variant. `ZJAW`, monthly, semi-annual, and annual summary datasets must
+not be enabled merely because similarly named files appear.
 
 ## External Geometry Dependencies
 

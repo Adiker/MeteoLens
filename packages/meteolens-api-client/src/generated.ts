@@ -10,6 +10,24 @@ export const OPENAPI_METADATA = {
   "operations": [
     {
       "method": "POST",
+      "path": "/api/v1/archive/backfill/hydro-daily",
+      "operationId": "backfill_hydro_daily_archive_api_v1_archive_backfill_hydro_daily_post",
+      "summary": "Backfill Hydro Daily Archive"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/archive/backfill/runs",
+      "operationId": "get_archive_runs_api_v1_archive_backfill_runs_get",
+      "summary": "Get Archive Runs"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/archive/backfill/runs/{run_id}",
+      "operationId": "get_archive_run_detail_api_v1_archive_backfill_runs__run_id__get",
+      "summary": "Get Archive Run Detail"
+    },
+    {
+      "method": "POST",
       "path": "/api/v1/archive/backfill/synop-daily",
       "operationId": "backfill_synop_daily_archive_api_v1_archive_backfill_synop_daily_post",
       "summary": "Backfill Synop Daily Archive"
@@ -179,6 +197,9 @@ export const OPENAPI_METADATA = {
   ],
   "schemas": [
     "ArchiveBackfillResponse",
+    "ArchiveRunFileResponse",
+    "ArchiveRunResponse",
+    "ArchiveRunsResponse",
     "CacheSourceState",
     "CacheStatus",
     "CompareResponse",

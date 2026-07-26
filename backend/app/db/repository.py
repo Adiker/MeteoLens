@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 from app.db.engine import get_engine, init_db
 from app.imgw.parsers.utils import SOURCE_TIMEZONE
@@ -39,16 +39,23 @@ class ArchiveObservationRow(TypedDict):
     import_run_id: str
     import_source_url: str
     source_station_id: str
-    station_mapping_status: str
-    station_mapping_version: str
-    station_mapping_source_url: str
-    station_mapping_retrieved_at: datetime
+    station_mapping_status: str | None
+    station_mapping_version: str | None
+    station_mapping_source_url: str | None
+    station_mapping_retrieved_at: datetime | None
+    archive_kind: NotRequired[str | None]
+    quality_status: NotRequired[str | None]
+    missing_reason: NotRequired[str | None]
+    temporal_resolution: NotRequired[str | None]
+    source_file_sha256: NotRequired[str | None]
+    source_file_last_modified: NotRequired[str | None]
 
 
 class ArchivePersistSummary(TypedDict):
     inserted: int
     updated: int
     unchanged: int
+    deleted: int
 
 
 class ArchiveReconciliationSummary(TypedDict):
@@ -160,8 +167,11 @@ class ObservationRepository:
                     missing, raw_field, origin, import_run_id, import_source_url,
                     source_station_id, station_mapping_status,
                     station_mapping_version, station_mapping_source_url,
-                    station_mapping_retrieved_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    station_mapping_retrieved_at, archive_kind, quality_status,
+                    missing_reason, temporal_resolution, source_file_sha256,
+                    source_file_last_modified
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                          ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(station_id, metric, observed_at, origin) DO UPDATE SET
                     station_name = excluded.station_name,
                     source_key = excluded.source_key,
@@ -178,7 +188,13 @@ class ObservationRepository:
                     station_mapping_status = excluded.station_mapping_status,
                     station_mapping_version = excluded.station_mapping_version,
                     station_mapping_source_url = excluded.station_mapping_source_url,
-                    station_mapping_retrieved_at = excluded.station_mapping_retrieved_at
+                    station_mapping_retrieved_at = excluded.station_mapping_retrieved_at,
+                    archive_kind = excluded.archive_kind,
+                    quality_status = excluded.quality_status,
+                    missing_reason = excluded.missing_reason,
+                    temporal_resolution = excluded.temporal_resolution,
+                    source_file_sha256 = excluded.source_file_sha256,
+                    source_file_last_modified = excluded.source_file_last_modified
                 """,
                 (
                     station.id,
@@ -200,6 +216,12 @@ class ObservationRepository:
                     None,
                     None,
                     None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
                 ),
             )
             if cursor.rowcount:
@@ -213,7 +235,86 @@ class ObservationRepository:
     ) -> ArchivePersistSummary:
         init_db()
         connection = get_engine()
-        summary: ArchivePersistSummary = {"inserted": 0, "updated": 0, "unchanged": 0}
+        summary: ArchivePersistSummary = {
+            "inserted": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "deleted": 0,
+        }
+        self._persist_archive_observations(connection, observations, summary)
+        connection.commit()
+        return summary
+
+    def sync_archive_observations(
+        self,
+        observations: list[ArchiveObservationRow],
+        *,
+        source_key: str,
+        archive_kind: str,
+        observed_from: datetime,
+        observed_to: datetime,
+    ) -> ArchivePersistSummary:
+        """Atomically upsert one authoritative archive slice and remove withdrawals."""
+        init_db()
+        connection = get_engine()
+        summary: ArchivePersistSummary = {
+            "inserted": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "deleted": 0,
+        }
+        incoming_keys = {
+            (
+                observation["station_id"],
+                observation["metric"],
+                _iso(observation["observed_at"]),
+            )
+            for observation in observations
+        }
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            self._persist_archive_observations(connection, observations, summary)
+            existing_rows = connection.execute(
+                """
+                SELECT id, station_id, metric, observed_at
+                FROM observation_history
+                WHERE origin = 'archive_import'
+                  AND source_key = ?
+                  AND archive_kind = ?
+                  AND observed_at >= ?
+                  AND observed_at <= ?
+                """,
+                (
+                    source_key,
+                    archive_kind,
+                    _iso(observed_from),
+                    _iso(observed_to),
+                ),
+            ).fetchall()
+            withdrawn_ids = [
+                row["id"]
+                for row in existing_rows
+                if (row["station_id"], row["metric"], row["observed_at"])
+                not in incoming_keys
+            ]
+            if withdrawn_ids:
+                connection.executemany(
+                    "DELETE FROM observation_history WHERE id = ?",
+                    ((row_id,) for row_id in withdrawn_ids),
+                )
+            summary["deleted"] = len(withdrawn_ids)
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
+        return summary
+
+    @staticmethod
+    def _persist_archive_observations(
+        connection: Any,
+        observations: list[ArchiveObservationRow],
+        summary: ArchivePersistSummary,
+    ) -> None:
         for observation in observations:
             key = (
                 observation["station_id"],
@@ -225,7 +326,10 @@ class ObservationRepository:
                 SELECT value, unit, retrieved_at, missing, raw_field, origin,
                        import_run_id, import_source_url, source_station_id,
                        station_mapping_status, station_mapping_version,
-                       station_mapping_source_url, station_mapping_retrieved_at
+                       station_mapping_source_url, station_mapping_retrieved_at,
+                       archive_kind, quality_status, missing_reason,
+                       temporal_resolution, source_file_sha256,
+                       source_file_last_modified
                 FROM observation_history
                 WHERE station_id = ? AND metric = ? AND observed_at = ?
                     AND origin = 'archive_import'
@@ -240,8 +344,11 @@ class ObservationRepository:
                     missing, raw_field, origin, import_run_id, import_source_url,
                     source_station_id, station_mapping_status,
                     station_mapping_version, station_mapping_source_url,
-                    station_mapping_retrieved_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    station_mapping_retrieved_at, archive_kind, quality_status,
+                    missing_reason, temporal_resolution, source_file_sha256,
+                    source_file_last_modified
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                          ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(station_id, metric, observed_at, origin) DO UPDATE SET
                     station_name = excluded.station_name,
                     source_key = excluded.source_key,
@@ -258,7 +365,13 @@ class ObservationRepository:
                     station_mapping_status = excluded.station_mapping_status,
                     station_mapping_version = excluded.station_mapping_version,
                     station_mapping_source_url = excluded.station_mapping_source_url,
-                    station_mapping_retrieved_at = excluded.station_mapping_retrieved_at
+                    station_mapping_retrieved_at = excluded.station_mapping_retrieved_at,
+                    archive_kind = excluded.archive_kind,
+                    quality_status = excluded.quality_status,
+                    missing_reason = excluded.missing_reason,
+                    temporal_resolution = excluded.temporal_resolution,
+                    source_file_sha256 = excluded.source_file_sha256,
+                    source_file_last_modified = excluded.source_file_last_modified
                 WHERE
                     value IS NOT excluded.value OR
                     unit IS NOT excluded.unit OR
@@ -272,7 +385,13 @@ class ObservationRepository:
                     station_mapping_status IS NOT excluded.station_mapping_status OR
                     station_mapping_version IS NOT excluded.station_mapping_version OR
                     station_mapping_source_url IS NOT excluded.station_mapping_source_url OR
-                    station_mapping_retrieved_at IS NOT excluded.station_mapping_retrieved_at
+                    station_mapping_retrieved_at IS NOT excluded.station_mapping_retrieved_at OR
+                    archive_kind IS NOT excluded.archive_kind OR
+                    quality_status IS NOT excluded.quality_status OR
+                    missing_reason IS NOT excluded.missing_reason OR
+                    temporal_resolution IS NOT excluded.temporal_resolution OR
+                    source_file_sha256 IS NOT excluded.source_file_sha256 OR
+                    source_file_last_modified IS NOT excluded.source_file_last_modified
                 """,
                 (
                     observation["station_id"],
@@ -290,10 +409,18 @@ class ObservationRepository:
                     observation["import_run_id"],
                     observation["import_source_url"],
                     observation["source_station_id"],
-                    observation["station_mapping_status"],
-                    observation["station_mapping_version"],
-                    observation["station_mapping_source_url"],
-                    _iso(observation["station_mapping_retrieved_at"]),
+                    observation.get("station_mapping_status"),
+                    observation.get("station_mapping_version"),
+                    observation.get("station_mapping_source_url"),
+                    _iso(observation["station_mapping_retrieved_at"])
+                    if observation.get("station_mapping_retrieved_at")
+                    else None,
+                    observation.get("archive_kind"),
+                    observation.get("quality_status"),
+                    observation.get("missing_reason"),
+                    observation.get("temporal_resolution"),
+                    observation.get("source_file_sha256"),
+                    observation.get("source_file_last_modified"),
                 ),
             )
             if existing is None:
@@ -302,20 +429,64 @@ class ObservationRepository:
                 summary["updated"] += 1
             else:
                 summary["unchanged"] += 1
-        connection.commit()
-        return summary
-
     def prune_older_than(self, *, retention_days: int) -> int:
         if retention_days <= 0:
             return 0
         cutoff = _iso(datetime.now(UTC) - timedelta(days=retention_days))
         connection = get_engine()
         cursor = connection.execute(
-            "DELETE FROM observation_history WHERE observed_at < ?",
+            """
+            DELETE FROM observation_history
+            WHERE origin = 'live_refresh' AND observed_at < ?
+            """,
             (cutoff,),
         )
         connection.commit()
         return cursor.rowcount
+
+    def cleanup_archive_range(
+        self,
+        *,
+        archive_kind: str,
+        observed_from: datetime,
+        observed_to_exclusive: datetime,
+        confirm: bool,
+    ) -> int:
+        """Count or delete one explicit archive slice; live history is never targeted."""
+        init_db()
+        connection = get_engine()
+        params = (
+            archive_kind,
+            _iso(observed_from),
+            _iso(observed_to_exclusive),
+        )
+        count = int(
+            connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM observation_history
+                WHERE origin = 'archive_import'
+                  AND archive_kind = ?
+                  AND observed_at >= ?
+                  AND observed_at < ?
+                """,
+                params,
+            ).fetchone()[0]
+        )
+        if not confirm or count == 0:
+            return count
+        connection.execute(
+            """
+            DELETE FROM observation_history
+            WHERE origin = 'archive_import'
+              AND archive_kind = ?
+              AND observed_at >= ?
+              AND observed_at < ?
+            """,
+            params,
+        )
+        connection.commit()
+        return count
 
     def query_observations(
         self,
@@ -351,7 +522,9 @@ class ObservationRepository:
                    missing, raw_field, origin, import_run_id, import_source_url,
                    source_station_id, station_mapping_status,
                    station_mapping_version, station_mapping_source_url,
-                   station_mapping_retrieved_at
+                   station_mapping_retrieved_at, archive_kind, quality_status,
+                   missing_reason, temporal_resolution, source_file_sha256,
+                   source_file_last_modified
             FROM observation_history
             WHERE {where}
             ORDER BY observed_at {order_direction}
@@ -423,7 +596,9 @@ class ObservationRepository:
                    missing, raw_field, origin, import_run_id, import_source_url,
                    source_station_id, station_mapping_status,
                    station_mapping_version, station_mapping_source_url,
-                   station_mapping_retrieved_at
+                   station_mapping_retrieved_at, archive_kind, quality_status,
+                   missing_reason, temporal_resolution, source_file_sha256,
+                   source_file_last_modified
             FROM observation_history
             WHERE {where}
             ORDER BY observed_at DESC
@@ -500,6 +675,7 @@ class ObservationRepository:
             SELECT station_id, station_name, source_key, station_type,
                    MIN(observed_at) AS first_observed_at,
                    MAX(observed_at) AS latest_observed_at,
+                   MAX(retrieved_at) AS latest_retrieved_at,
                    COUNT(*) AS observation_count
             FROM observation_history
             WHERE station_id = ?
@@ -518,6 +694,7 @@ class ObservationRepository:
             "station_type": row["station_type"],
             "first_observed_at": row["first_observed_at"],
             "latest_observed_at": row["latest_observed_at"],
+            "latest_retrieved_at": row["latest_retrieved_at"],
             "observation_count": row["observation_count"],
         }
 
@@ -544,6 +721,12 @@ def _row_to_observation(row: Any) -> dict[str, Any]:
         "station_mapping_version": row["station_mapping_version"],
         "station_mapping_source_url": row["station_mapping_source_url"],
         "station_mapping_retrieved_at": row["station_mapping_retrieved_at"],
+        "archive_kind": row["archive_kind"],
+        "quality_status": row["quality_status"],
+        "missing_reason": row["missing_reason"],
+        "temporal_resolution": row["temporal_resolution"],
+        "source_file_sha256": row["source_file_sha256"],
+        "source_file_last_modified": row["source_file_last_modified"],
         "station_id": row["station_id"],
         "station_name": row["station_name"],
         "station_type": row["station_type"],

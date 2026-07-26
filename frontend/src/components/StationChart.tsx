@@ -5,6 +5,14 @@ import type { Observation } from "../api/client";
 import { metricLabel } from "../lib/format";
 import { useAppStore } from "../store/appStore";
 
+type SeriesOrigin = "live_refresh" | "archive_import" | "mixed";
+
+const ORIGIN_LABEL: Record<SeriesOrigin, string> = {
+  live_refresh: "Live IMGW",
+  archive_import: "Archiwum IMGW",
+  mixed: "Seria zagregowana",
+};
+
 function cssVarColor(name: string, fallback: string): string {
   if (typeof window === "undefined") {
     return fallback;
@@ -13,9 +21,23 @@ function cssVarColor(name: string, fallback: string): string {
   return raw ? `hsl(${raw})` : fallback;
 }
 
+function observationOrigin(observation: Observation): SeriesOrigin {
+  return observation.origin ?? "live_refresh";
+}
+
+function missingReasonLabel(reason: Observation["missing_reason"]): string {
+  if (reason === "source_sentinel") {
+    return "brak oznaczony sentinelem IMGW";
+  }
+  if (reason === "source_null") {
+    return "brak NULL w źródle";
+  }
+  return "brak danych";
+}
+
 /**
- * Shows a time-series line chart when historical points exist; otherwise a bar
- * chart of the latest numeric metrics from the current snapshot.
+ * Shows separate live/archive history series. Missing archive points remain
+ * nulls, so ECharts renders honest gaps instead of joining across absent data.
  */
 export function StationChart({
   observations,
@@ -26,39 +48,52 @@ export function StationChart({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useAppStore((state) => state.theme);
+  const numeric = useMemo(
+    () => observations.filter((obs) => obs.value !== null && !obs.missing),
+    [observations],
+  );
 
-  const numeric = observations.filter((obs) => obs.value !== null && !obs.missing);
   const timeSeriesMetric = useMemo(() => {
     if (seriesKind !== "history") {
       return null;
     }
     const counts = new Map<string, number>();
-    for (const obs of numeric) {
-      if (!obs.observed_at) {
-        continue;
+    for (const observation of observations) {
+      if (observation.observed_at) {
+        counts.set(observation.metric, (counts.get(observation.metric) ?? 0) + 1);
       }
-      counts.set(obs.metric, (counts.get(obs.metric) ?? 0) + 1);
     }
-    const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-    return ranked.find(([, count]) => count > 1)?.[0] ?? ranked[0]?.[0] ?? null;
-  }, [numeric, seriesKind]);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  }, [observations, seriesKind]);
 
   const timeSeriesPoints = useMemo(
     () =>
       timeSeriesMetric
-        ? numeric
-            .filter((obs) => obs.metric === timeSeriesMetric && obs.observed_at)
-            .sort((a, b) => String(a.observed_at).localeCompare(String(b.observed_at)))
+        ? observations
+            .filter(
+              (observation) =>
+                observation.metric === timeSeriesMetric && observation.observed_at,
+            )
+            .sort((a, b) =>
+              String(a.observed_at).localeCompare(String(b.observed_at)),
+            )
         : [],
-    [numeric, timeSeriesMetric],
+    [observations, timeSeriesMetric],
   );
 
-  const barPoints = useMemo(() => {
-    if (timeSeriesPoints.length > 1) {
-      return [];
+  const pointsByOrigin = useMemo(() => {
+    const grouped = new Map<SeriesOrigin, Observation[]>();
+    for (const observation of timeSeriesPoints) {
+      const origin = observationOrigin(observation);
+      grouped.set(origin, [...(grouped.get(origin) ?? []), observation]);
     }
-    return numeric;
-  }, [numeric, timeSeriesPoints.length]);
+    return grouped;
+  }, [timeSeriesPoints]);
+
+  const barPoints = useMemo(
+    () => (timeSeriesPoints.length > 1 ? [] : numeric),
+    [numeric, timeSeriesPoints.length],
+  );
 
   useEffect(() => {
     const element = containerRef.current;
@@ -80,27 +115,85 @@ export function StationChart({
     const primary = cssVarColor("--primary", "#0e7490");
 
     if (timeSeriesPoints.length > 1 && timeSeriesMetric) {
+      const originColors: Record<SeriesOrigin, string> = {
+        live_refresh: primary,
+        archive_import: "#a16207",
+        mixed: "#7c3aed",
+      };
+      const series = [...pointsByOrigin.entries()].map(([origin, originPoints]) => ({
+        name: ORIGIN_LABEL[origin],
+        type: "line" as const,
+        connectNulls: false,
+        showSymbol: true,
+        symbolSize: 5,
+        lineStyle: {
+          type: origin === "archive_import" ? ("dashed" as const) : ("solid" as const),
+        },
+        itemStyle: { color: originColors[origin] },
+        data: originPoints.map((observation) => ({
+          value: [observation.observed_at, observation.value],
+          metadata: {
+            missing: observation.missing,
+            missingReason: missingReasonLabel(observation.missing_reason),
+            temporalResolution: observation.temporal_resolution,
+            qualityStatus: observation.quality_status,
+          },
+        })),
+      }));
       chart.setOption({
-        grid: { left: 8, right: 16, top: 16, bottom: 24, containLabel: true },
-        tooltip: { trigger: "axis" },
+        grid: { left: 8, right: 16, top: 34, bottom: 24, containLabel: true },
+        legend: {
+          show: series.length > 1,
+          data: series.map((item) => item.name),
+          textStyle: { color: muted },
+        },
+        tooltip: {
+          trigger: "axis",
+          formatter: (rawParams: unknown) => {
+            const params = Array.isArray(rawParams) ? rawParams : [rawParams];
+            return params
+              .map((rawParam) => {
+                const param = rawParam as {
+                  seriesName?: string;
+                  data?: {
+                    value?: [string, number | null];
+                    metadata?: {
+                      missingReason?: string;
+                      temporalResolution?: string | null;
+                      qualityStatus?: string | null;
+                    };
+                  };
+                };
+                const value = param.data?.value?.[1];
+                const details = [
+                  param.seriesName ?? "",
+                  value === null || value === undefined
+                    ? param.data?.metadata?.missingReason
+                    : String(value),
+                  param.data?.metadata?.temporalResolution
+                    ? `rozdzielczość ${param.data.metadata.temporalResolution}`
+                    : null,
+                  param.data?.metadata?.qualityStatus
+                    ? `jakość ${param.data.metadata.qualityStatus}`
+                    : null,
+                ].filter(Boolean);
+                return details.join(" · ");
+              })
+              .join("<br/>");
+          },
+        },
         xAxis: {
-          type: "category",
-          data: timeSeriesPoints.map((obs) => obs.observed_at ?? ""),
+          type: "time",
           axisLabel: { color: muted, hideOverlap: true },
         },
         yAxis: {
           type: "value",
+          name: metricLabel(timeSeriesMetric),
+          nameTextStyle: { color: muted },
           axisLabel: { color: muted },
           splitLine: { lineStyle: { color: border } },
         },
-        series: [
-          {
-            type: "line",
-            data: timeSeriesPoints.map((obs) => obs.value),
-            smooth: true,
-            itemStyle: { color: primary },
-          },
-        ],
+        series,
       });
     } else {
       chart.setOption({
@@ -113,14 +206,14 @@ export function StationChart({
         },
         yAxis: {
           type: "category",
-          data: barPoints.map((obs) => metricLabel(obs.metric)),
+          data: barPoints.map((observation) => metricLabel(observation.metric)),
           axisLabel: { color: foreground },
           axisLine: { lineStyle: { color: border } },
         },
         series: [
           {
             type: "bar",
-            data: barPoints.map((obs) => obs.value),
+            data: barPoints.map((observation) => observation.value),
             itemStyle: { color: primary, borderRadius: [0, 3, 3, 0] },
             barMaxWidth: 18,
           },
@@ -134,7 +227,7 @@ export function StationChart({
       observer.disconnect();
       chart.dispose();
     };
-  }, [barPoints, theme, timeSeriesMetric, timeSeriesPoints]);
+  }, [barPoints, pointsByOrigin, theme, timeSeriesMetric, timeSeriesPoints]);
 
   if (numeric.length === 0) {
     return (
@@ -144,7 +237,7 @@ export function StationChart({
     );
   }
 
-  if (seriesKind === "history" && timeSeriesPoints.length <= 1) {
+  if (seriesKind === "history" && numeric.length <= 1) {
     return (
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">

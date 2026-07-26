@@ -1,7 +1,12 @@
 import { BarChart3, Download, ExternalLink, ListTree, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
-import { ApiError, stationCsvUrl, stationJsonUrl, type SourceMetadata } from "../api/client";
+import {
+  ApiError,
+  stationObservationsCsvUrl,
+  stationObservationsJsonUrl,
+  type SourceMetadata,
+} from "../api/client";
 import {
   useObservationsQuery,
   useStationQuery,
@@ -91,10 +96,23 @@ function seriesOriginLabel(origin?: "live_refresh" | "archive_import" | "mixed")
   return "Seria z odświeżeń live IMGW-PIB";
 }
 
+const HYDRO_HISTORY_METRICS = [
+  { key: "water_level", label: "Stan wody" },
+  { key: "flow", label: "Przepływ" },
+  { key: "water_temperature", label: "Temperatura wody" },
+] as const;
+
 function StationDetails({ id, expert }: { id: string; expert: boolean }) {
   const stationQuery = useStationQuery(id);
-  const observationsQuery = useObservationsQuery(id);
+  const [selectedMetric, setSelectedMetric] = useState<string | undefined>(
+    id.startsWith("hydro:") ? "water_level" : undefined,
+  );
+  const observationsQuery = useObservationsQuery(id, selectedMetric);
   const [tab, setTab] = useState<"data" | "chart">("data");
+
+  useEffect(() => {
+    setSelectedMetric(id.startsWith("hydro:") ? "water_level" : undefined);
+  }, [id]);
 
   if (stationQuery.isLoading) {
     return <Spinner label="Ładowanie stacji..." />;
@@ -110,6 +128,9 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
   const currentObservations = station.observations;
   const chartObservations = observationsQuery.data?.observations ?? currentObservations;
   const seriesOrigin = observationsQuery.data?.series_origin ?? "live_refresh";
+  const archiveMetadata = chartObservations.find(
+    (observation) => observation.origin === "archive_import",
+  );
   const hasCoords = station.lat != null && station.lon != null;
 
   const tabClass = (active: boolean) =>
@@ -180,22 +201,59 @@ function StationDetails({ id, expert }: { id: string; expert: boolean }) {
           )}
         </ul>
       ) : (
-        <StationChart
-          observations={chartObservations}
-          seriesKind={observationsQuery.data?.series_kind ?? "snapshot"}
-        />
+        <div className="space-y-3">
+          {station.station_type === "hydro" && (
+            <label className="block space-y-1 text-xs text-muted-foreground">
+              <span>Metryka wykresu</span>
+              <select
+                aria-label="Metryka wykresu"
+                value={selectedMetric}
+                onChange={(event) => setSelectedMetric(event.target.value)}
+                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+              >
+                {HYDRO_HISTORY_METRICS.map((metric) => (
+                  <option key={metric.key} value={metric.key}>
+                    {metric.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <StationChart
+            observations={chartObservations}
+            seriesKind={observationsQuery.data?.series_kind ?? "snapshot"}
+          />
+          {expert && archiveMetadata && (
+            <dl className="grid grid-cols-[110px_1fr] gap-x-2 gap-y-1 break-all text-[11px] text-muted-foreground">
+              <dt>Rodzaj archiwum</dt>
+              <dd>{archiveMetadata.archive_kind ?? "—"}</dd>
+              <dt>Jakość</dt>
+              <dd>{archiveMetadata.quality_status ?? "—"}</dd>
+              <dt>Rozdzielczość</dt>
+              <dd>{archiveMetadata.temporal_resolution ?? "—"}</dd>
+              <dt>Plik źródłowy</dt>
+              <dd>{archiveMetadata.import_source_url ?? "—"}</dd>
+              <dt>SHA-256</dt>
+              <dd>{archiveMetadata.source_file_sha256 ?? "—"}</dd>
+              <dt>Last-Modified</dt>
+              <dd>{archiveMetadata.source_file_last_modified ?? "—"}</dd>
+              <dt>Czas importu</dt>
+              <dd>{archiveMetadata.retrieved_at ?? "—"}</dd>
+            </dl>
+          )}
+        </div>
       )}
 
       <div className="flex flex-wrap gap-2">
         <a
-          href={stationCsvUrl(station.id)}
+          href={stationObservationsCsvUrl(station.id, selectedMetric)}
           download
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:border-primary"
         >
           <Download aria-hidden className="size-3.5" /> CSV
         </a>
         <a
-          href={stationJsonUrl(station.id)}
+          href={stationObservationsJsonUrl(station.id, selectedMetric)}
           download
           className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-sm hover:border-primary"
         >

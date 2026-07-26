@@ -28,14 +28,23 @@ def _settings(tmp_path: Path, **overrides: object) -> Settings:
     )
 
 
-def test_admin_backfill_fails_closed_without_configured_token(monkeypatch, tmp_path) -> None:
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/archive/backfill/synop-daily?from=2026-05-01&to=2026-05-01",
+        "/api/v1/archive/backfill/hydro-daily?from=2024-01-01&to=2024-01-01",
+    ],
+)
+def test_admin_backfill_fails_closed_without_configured_token(
+    monkeypatch,
+    tmp_path,
+    path: str,
+) -> None:
     settings = _settings(tmp_path, env="production", admin_token=None)
     apply_test_settings(monkeypatch, settings)
     archive_backfill_gate.reset()
 
-    response = TestClient(create_app()).post(
-        "/api/v1/archive/backfill/synop-daily?from=2026-05-01&to=2026-05-01"
-    )
+    response = TestClient(create_app()).post(path)
 
     assert response.status_code == 403
     assert response.json()["detail"]["error"]["code"] == "admin_operations_disabled"

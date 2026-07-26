@@ -31,6 +31,12 @@ CREATE TABLE IF NOT EXISTS observation_history (
     station_mapping_version TEXT,
     station_mapping_source_url TEXT,
     station_mapping_retrieved_at TEXT,
+    archive_kind TEXT,
+    quality_status TEXT,
+    missing_reason TEXT,
+    temporal_resolution TEXT,
+    source_file_sha256 TEXT,
+    source_file_last_modified TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
     UNIQUE(station_id, metric, observed_at, origin)
 );
@@ -60,27 +66,65 @@ CREATE TABLE IF NOT EXISTS archive_import_runs (
     observations_inserted INTEGER NOT NULL DEFAULT 0,
     observations_updated INTEGER NOT NULL DEFAULT 0,
     observations_unchanged INTEGER NOT NULL DEFAULT 0,
+    observations_deleted INTEGER NOT NULL DEFAULT 0,
+    duplicate_rows INTEGER NOT NULL DEFAULT 0,
     parser_warnings TEXT NOT NULL DEFAULT '[]',
     errors TEXT NOT NULL DEFAULT '[]',
     attribution TEXT NOT NULL,
     processed_notice TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
+
+CREATE TABLE IF NOT EXISTS archive_import_run_files (
+    run_id TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    hydrological_year INTEGER,
+    status TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    source_file_sha256 TEXT,
+    source_file_last_modified TEXT,
+    rows_seen INTEGER NOT NULL DEFAULT 0,
+    observations_seen INTEGER NOT NULL DEFAULT 0,
+    observations_inserted INTEGER NOT NULL DEFAULT 0,
+    observations_updated INTEGER NOT NULL DEFAULT 0,
+    observations_unchanged INTEGER NOT NULL DEFAULT 0,
+    observations_deleted INTEGER NOT NULL DEFAULT 0,
+    duplicate_rows INTEGER NOT NULL DEFAULT 0,
+    parser_warnings TEXT NOT NULL DEFAULT '[]',
+    errors TEXT NOT NULL DEFAULT '[]',
+    PRIMARY KEY (run_id, source_url),
+    FOREIGN KEY (run_id) REFERENCES archive_import_runs(id) ON DELETE CASCADE
+);
 """
 
-POST_MIGRATION_SQL = """
-CREATE INDEX IF NOT EXISTS idx_obs_station_metric_time
-    ON observation_history(station_id, metric, observed_at);
-
-CREATE INDEX IF NOT EXISTS idx_obs_metric_time
-    ON observation_history(metric, observed_at);
-
-CREATE INDEX IF NOT EXISTS idx_obs_station_type
-    ON observation_history(station_type);
-
-CREATE INDEX IF NOT EXISTS idx_obs_origin
-    ON observation_history(origin);
-"""
+POST_MIGRATION_STATEMENTS = (
+    """
+    CREATE INDEX IF NOT EXISTS idx_obs_station_metric_time
+        ON observation_history(station_id, metric, observed_at)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_obs_metric_time
+        ON observation_history(metric, observed_at)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_obs_station_type
+        ON observation_history(station_type)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_obs_origin
+        ON observation_history(origin)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_obs_archive_kind_time
+        ON observation_history(archive_kind, observed_at)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_archive_run_files_run
+        ON archive_import_run_files(run_id, status)
+    """,
+)
 
 MIGRATIONS: tuple[tuple[str, str], ...] = (
     (
@@ -116,6 +160,40 @@ MIGRATIONS: tuple[tuple[str, str], ...] = (
         "observation_history",
         "ALTER TABLE observation_history ADD COLUMN station_mapping_retrieved_at TEXT",
     ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN archive_kind TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN quality_status TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN missing_reason TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN temporal_resolution TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN source_file_sha256 TEXT",
+    ),
+    (
+        "observation_history",
+        "ALTER TABLE observation_history ADD COLUMN source_file_last_modified TEXT",
+    ),
+    (
+        "archive_import_runs",
+        "ALTER TABLE archive_import_runs "
+        "ADD COLUMN observations_deleted INTEGER NOT NULL DEFAULT 0",
+    ),
+    (
+        "archive_import_runs",
+        "ALTER TABLE archive_import_runs "
+        "ADD COLUMN duplicate_rows INTEGER NOT NULL DEFAULT 0",
+    ),
 )
 
 
@@ -149,17 +227,26 @@ def get_engine() -> sqlite3.Connection:
 
 def init_db() -> None:
     connection = get_engine()
-    connection.executescript(SCHEMA_SQL)
-    for table_name, statement in MIGRATIONS:
-        existing_columns = {
-            row["name"] for row in connection.execute(f"PRAGMA table_info({table_name})")
-        }
-        column_name = statement.rsplit("ADD COLUMN ", maxsplit=1)[1].split()[0]
-        if column_name not in existing_columns:
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        for statement in SCHEMA_SQL.split(";"):
+            if statement.strip():
+                connection.execute(statement)
+        for table_name, statement in MIGRATIONS:
+            existing_columns = {
+                row["name"]
+                for row in connection.execute(f"PRAGMA table_info({table_name})")
+            }
+            column_name = statement.rsplit("ADD COLUMN ", maxsplit=1)[1].split()[0]
+            if column_name not in existing_columns:
+                connection.execute(statement)
+        _migrate_observation_history_origin_key(connection)
+        for statement in POST_MIGRATION_STATEMENTS:
             connection.execute(statement)
-    _migrate_observation_history_origin_key(connection)
-    connection.executescript(POST_MIGRATION_SQL)
-    connection.commit()
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
 
 
 def _migrate_observation_history_origin_key(connection: sqlite3.Connection) -> None:
@@ -186,13 +273,12 @@ def _migrate_observation_history_origin_key(connection: sqlite3.Connection) -> N
         "unit, observed_at, retrieved_at, missing, raw_field, origin, import_run_id, "
         "import_source_url, source_station_id, station_mapping_status, "
         "station_mapping_version, station_mapping_source_url, "
-        "station_mapping_retrieved_at, created_at"
+        "station_mapping_retrieved_at, archive_kind, quality_status, "
+        "missing_reason, temporal_resolution, source_file_sha256, "
+        "source_file_last_modified, created_at"
     )
-    connection.commit()
-    try:
-        connection.execute("BEGIN IMMEDIATE")
-        connection.execute(
-            """
+    connection.execute(
+        """
             CREATE TABLE observation_history_new (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 station_id TEXT NOT NULL,
@@ -214,23 +300,25 @@ def _migrate_observation_history_origin_key(connection: sqlite3.Connection) -> N
                 station_mapping_version TEXT,
                 station_mapping_source_url TEXT,
                 station_mapping_retrieved_at TEXT,
+                archive_kind TEXT,
+                quality_status TEXT,
+                missing_reason TEXT,
+                temporal_resolution TEXT,
+                source_file_sha256 TEXT,
+                source_file_last_modified TEXT,
                 created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
                 UNIQUE(station_id, metric, observed_at, origin)
             )
-            """
-        )
-        connection.execute(
-            f"INSERT INTO observation_history_new ({columns}) "
-            f"SELECT {columns} FROM observation_history"
-        )
-        connection.execute("DROP TABLE observation_history")
-        connection.execute(
-            "ALTER TABLE observation_history_new RENAME TO observation_history"
-        )
-        connection.commit()
-    except Exception:
-        connection.rollback()
-        raise
+        """
+    )
+    connection.execute(
+        f"INSERT INTO observation_history_new ({columns}) "
+        f"SELECT {columns} FROM observation_history"
+    )
+    connection.execute("DROP TABLE observation_history")
+    connection.execute(
+        "ALTER TABLE observation_history_new RENAME TO observation_history"
+    )
 
 
 def reset_engine_cache() -> None:

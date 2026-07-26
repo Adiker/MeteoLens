@@ -20,7 +20,13 @@ from app.geometry.spatial import (
     warning_matches_spatial_filters,
     warnings_matching_point,
 )
-from app.imgw.archive import ArchiveBackfillError, SynopDailyArchiveBackfiller
+from app.imgw.archive import (
+    ArchiveBackfillError,
+    HydroDailyArchiveBackfiller,
+    SynopDailyArchiveBackfiller,
+    get_archive_run,
+    list_archive_runs,
+)
 from app.imgw.cache import CachedSourcePayload, CacheStatus, SourceCache
 from app.imgw.parsers.utils import SOURCE_TIMEZONE
 from app.imgw.sources import SOURCE_BY_KEY, SOURCE_DEFINITIONS
@@ -156,7 +162,13 @@ class ArchiveBackfillResponse(BaseModel):
     id: str
     source_key: str
     archive_kind: str
-    status: str
+    status: Literal[
+        "running",
+        "completed",
+        "completed_with_warnings",
+        "failed",
+        "interrupted",
+    ]
     started_at: datetime
     finished_at: datetime
     observed_from: date
@@ -168,10 +180,48 @@ class ArchiveBackfillResponse(BaseModel):
     observations_inserted: int
     observations_updated: int
     observations_unchanged: int
+    observations_deleted: int = 0
+    duplicate_rows: int = 0
     parser_warnings: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
     attribution: str = ATTRIBUTION
     processed_notice: str = PROCESSED_NOTICE
+
+
+class ArchiveRunFileResponse(BaseModel):
+    run_id: str
+    source_url: str
+    file_name: str
+    hydrological_year: int | None
+    status: Literal[
+        "running",
+        "completed",
+        "completed_with_warnings",
+        "failed",
+        "interrupted",
+    ]
+    started_at: datetime
+    finished_at: datetime | None
+    source_file_sha256: str | None
+    source_file_last_modified: str | None
+    rows_seen: int
+    observations_seen: int
+    observations_inserted: int
+    observations_updated: int
+    observations_unchanged: int
+    observations_deleted: int
+    duplicate_rows: int
+    parser_warnings: list[str]
+    errors: list[str]
+
+
+class ArchiveRunResponse(ArchiveBackfillResponse):
+    finished_at: datetime | None
+    files: list[ArchiveRunFileResponse] = Field(default_factory=list)
+
+
+class ArchiveRunsResponse(BaseModel):
+    runs: list[ArchiveRunResponse]
 
 
 class CompareResponse(BaseModel):
@@ -407,6 +457,85 @@ def backfill_synop_daily_archive(
             },
         ) from exc
     return ArchiveBackfillResponse(**result.model_dump())
+
+
+@router.post("/archive/backfill/hydro-daily", response_model=ArchiveBackfillResponse)
+def backfill_hydro_daily_archive(
+    observed_from: Annotated[date, Query(alias="from")],
+    observed_to: Annotated[date, Query(alias="to")],
+    _: Annotated[None, Depends(require_admin)] = None,
+) -> ArchiveBackfillResponse:
+    """Import a bounded server-side slice of public IMGW daily CODZ archives."""
+    settings = get_settings()
+    try:
+        key = f"hydro-daily:{observed_from.isoformat()}:{observed_to.isoformat()}"
+        with archive_backfill_gate.acquire(
+            key=key,
+            cooldown_seconds=settings.archive_backfill_cooldown_seconds,
+        ):
+            result = HydroDailyArchiveBackfiller(settings).run(
+                observed_from=observed_from,
+                observed_to=observed_to,
+            )
+    except ArchiveBackfillError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": {
+                    "code": exc.code,
+                    "message": str(exc),
+                    "source_key": "hydro",
+                }
+            },
+        ) from exc
+    return ArchiveBackfillResponse(**result.model_dump())
+
+
+@router.get("/archive/backfill/runs", response_model=ArchiveRunsResponse)
+def get_archive_runs(
+    source_key: str | None = None,
+    archive_kind: str | None = None,
+    status: Literal[
+        "running",
+        "completed",
+        "completed_with_warnings",
+        "failed",
+        "interrupted",
+    ]
+    | None = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    _: Annotated[None, Depends(require_admin)] = None,
+) -> ArchiveRunsResponse:
+    return ArchiveRunsResponse(
+        runs=[
+            ArchiveRunResponse(**run)
+            for run in list_archive_runs(
+                source_key=source_key,
+                archive_kind=archive_kind,
+                status=status,
+                limit=limit,
+            )
+        ]
+    )
+
+
+@router.get("/archive/backfill/runs/{run_id}", response_model=ArchiveRunResponse)
+def get_archive_run_detail(
+    run_id: str,
+    _: Annotated[None, Depends(require_admin)] = None,
+) -> ArchiveRunResponse:
+    run = get_archive_run(run_id)
+    if run is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "archive_run_not_found",
+                    "message": "Archive import run was not found.",
+                }
+            },
+        )
+    return ArchiveRunResponse(**run)
 
 
 @router.get("/geometry/datasets", response_model=GeometryDatasetsResponse)
@@ -742,7 +871,7 @@ def compare_stations(
             },
         )
     for station_id in ids:
-        _get_station_or_404(station_id)
+        _station_context_for_observations(station_id)
 
     return CompareResponse(
         generated_at=datetime.now(UTC),
@@ -1058,6 +1187,12 @@ def export_station_observations_csv(
             "station_mapping_version",
             "station_mapping_source_url",
             "station_mapping_retrieved_at",
+            "archive_kind",
+            "quality_status",
+            "missing_reason",
+            "temporal_resolution",
+            "source_file_sha256",
+            "source_file_last_modified",
             "source_key",
             "attribution",
             "processed_notice",
@@ -1091,6 +1226,14 @@ def export_station_observations_csv(
                 ),
                 "station_mapping_retrieved_at": (
                     observation.get("station_mapping_retrieved_at") or ""
+                ),
+                "archive_kind": observation.get("archive_kind") or "",
+                "quality_status": observation.get("quality_status") or "",
+                "missing_reason": observation.get("missing_reason") or "",
+                "temporal_resolution": observation.get("temporal_resolution") or "",
+                "source_file_sha256": observation.get("source_file_sha256") or "",
+                "source_file_last_modified": (
+                    observation.get("source_file_last_modified") or ""
                 ),
                 "source_key": source.source_key,
                 "attribution": source.attribution,
@@ -1638,16 +1781,20 @@ def _station_context_for_observations(
         if history_summary is None:
             raise exc
         source_key = str(history_summary.get("source_key") or "synop")
+        archive_path = (
+            "/data/dane_pomiarowo_obserwacyjne/dane_hydrologiczne/dobowe/"
+            if source_key == "hydro"
+            else "/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/"
+        )
         return (
             None,
             history_summary,
             SourceMetadata(
                 source_key=source_key,
-                url=(
-                    f"{str(get_settings().imgw_base_url).rstrip('/')}"
-                    "/data/dane_pomiarowo_obserwacyjne/dane_meteorologiczne/dobowe/synop/"
+                url=f"{str(get_settings().imgw_base_url).rstrip('/')}{archive_path}",
+                retrieved_at=datetime.fromisoformat(
+                    str(history_summary["latest_retrieved_at"])
                 ),
-                retrieved_at=datetime.now(UTC),
             ),
         )
 

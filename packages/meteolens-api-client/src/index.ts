@@ -87,6 +87,12 @@ export interface Observation {
   station_mapping_version?: string | null;
   station_mapping_source_url?: string | null;
   station_mapping_retrieved_at?: string | null;
+  archive_kind?: string | null;
+  quality_status?: string | null;
+  missing_reason?: "source_null" | "source_sentinel" | null;
+  temporal_resolution?: "1d" | null;
+  source_file_sha256?: string | null;
+  source_file_last_modified?: string | null;
 }
 
 export interface ObservationResponse {
@@ -99,6 +105,55 @@ export interface ObservationResponse {
   origin_counts: Record<string, number>;
   interval: Interval;
   empty_state: EmptyState | null;
+}
+
+export interface ArchiveBackfillResponse {
+  id: string;
+  source_key: string;
+  archive_kind: string;
+  status: "running" | "completed" | "completed_with_warnings" | "failed" | "interrupted";
+  started_at: string;
+  finished_at: string | null;
+  observed_from: string;
+  observed_to: string;
+  files_total: number;
+  files_processed: number;
+  rows_seen: number;
+  observations_seen: number;
+  observations_inserted: number;
+  observations_updated: number;
+  observations_unchanged: number;
+  observations_deleted: number;
+  duplicate_rows: number;
+  parser_warnings: string[];
+  errors: string[];
+  attribution: string;
+  processed_notice: string;
+}
+
+export interface ArchiveRunFile {
+  run_id: string;
+  source_url: string;
+  file_name: string;
+  hydrological_year: number | null;
+  status: ArchiveBackfillResponse["status"];
+  started_at: string;
+  finished_at: string | null;
+  source_file_sha256: string | null;
+  source_file_last_modified: string | null;
+  rows_seen: number;
+  observations_seen: number;
+  observations_inserted: number;
+  observations_updated: number;
+  observations_unchanged: number;
+  observations_deleted: number;
+  duplicate_rows: number;
+  parser_warnings: string[];
+  errors: string[];
+}
+
+export interface ArchiveRunResponse extends ArchiveBackfillResponse {
+  files: ArchiveRunFile[];
 }
 
 export interface SourceFreshnessItem {
@@ -201,6 +256,41 @@ export class MeteoLensClient {
     return this.getJson<FreshnessResponse>("/api/v1/status/freshness");
   }
 
+  backfillHydroDaily(
+    params: { from: string; to: string },
+    adminToken: string,
+  ) {
+    return this.requestJson<ArchiveBackfillResponse>(
+      `/api/v1/archive/backfill/hydro-daily${query(params)}`,
+      {
+        method: "POST",
+        headers: { "X-MeteoLens-Admin-Token": adminToken },
+      },
+    );
+  }
+
+  listArchiveRuns(
+    params: {
+      source_key?: string;
+      archive_kind?: string;
+      status?: ArchiveBackfillResponse["status"];
+      limit?: number;
+    },
+    adminToken: string,
+  ) {
+    return this.requestJson<{ runs: ArchiveRunResponse[] }>(
+      `/api/v1/archive/backfill/runs${query(params)}`,
+      { headers: { "X-MeteoLens-Admin-Token": adminToken } },
+    );
+  }
+
+  getArchiveRun(runId: string, adminToken: string) {
+    return this.requestJson<ArchiveRunResponse>(
+      `/api/v1/archive/backfill/runs/${encodeURIComponent(runId)}`,
+      { headers: { "X-MeteoLens-Admin-Token": adminToken } },
+    );
+  }
+
   getActiveWarningsForLocation(params: { lat: number; lon: number; radius_km?: number }) {
     return this.getJson<LocationSummaryResponse>(
       `/api/v1/location/summary${query(params)}`,
@@ -244,7 +334,11 @@ export class MeteoLensClient {
   }
 
   private async getJson<T>(path: string): Promise<T> {
-    const response = await this.fetchImpl(this.url(path));
+    return this.requestJson<T>(path);
+  }
+
+  private async requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await this.fetchImpl(this.url(path), init);
     if (!response.ok) {
       throw await toApiError(response);
     }
