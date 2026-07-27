@@ -261,4 +261,57 @@ describe("ControlPanel warnings geometry states", () => {
       expect(last).toContain("basin=Z_P_WP_1856");
     });
   });
+
+  it("browses prospective warning events and keeps ambiguity visible", async () => {
+    stubFetch({
+      "/api/v1/map/layers": mapLayersResponse([polygonFeature], []),
+      "/api/v1/warnings": { warnings: [warningRecord()], empty_state: null },
+      "/api/v1/warning-events": {
+        generated_at: "2026-07-27T10:10:00Z",
+        cache: [],
+        empty_state: null,
+        next_cursor: null,
+        history_started_at: "2026-07-27T10:00:00Z",
+        attribution: "Źródło danych: IMGW-PIB.",
+        processed_notice: "Dane IMGW-PIB zostały przetworzone przez MeteoLens.",
+        alerting_disclaimer: "MeteoLens nie jest oficjalnym systemem ostrzegania.",
+        events: [
+          {
+            event_id: "we:1",
+            history_id: "wh:1",
+            source_key: "warningsmeteo",
+            source_id: "w1",
+            warning_type: "meteo",
+            detected_at: "2026-07-27T10:10:00Z",
+            effective_at: "2026-07-27T10:10:00Z",
+            change_kinds: ["removed_from_source"],
+            changed_fields: [],
+            classification_basis: "source_presence",
+            confidence: "ambiguous",
+            from_version_id: "wv:1",
+            to_version_id: "wv:1",
+            identity_status: "exact",
+            history_status: "removed",
+            history_started_at: "2026-07-27T10:00:00Z",
+            warning: warningRecord(),
+            source: warningRecord().source,
+            snapshot: null,
+          },
+        ],
+      },
+      "/api/v1/sources": { sources: [] },
+    });
+
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "Historia" }));
+
+    const historyEvent = await screen.findByRole("button", {
+      name: /Zniknęło ze źródła.*niepotwierdzone/,
+    });
+    fireEvent.click(historyEvent);
+    expect(useAppStore.getState().selection).toEqual({
+      kind: "warning-history",
+      id: "wh:1",
+    });
+  });
 });

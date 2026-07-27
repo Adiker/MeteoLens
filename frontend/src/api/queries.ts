@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import type { LayerKey, StationType, WarningType } from "../lib/layers";
 import {
@@ -14,8 +14,11 @@ import {
   fetchStation,
   fetchStations,
   fetchWarning,
+  fetchWarningEvents,
+  fetchWarningHistory,
   fetchWarningStationComparison,
   fetchWarnings,
+  type WarningEventParams,
 } from "./client";
 
 const STALE_TIME = 60_000;
@@ -104,6 +107,30 @@ export function useWarningQuery(id: string | null) {
     queryKey: ["warning", id],
     queryFn: () => fetchWarning(id as string),
     enabled: Boolean(id),
+  });
+}
+
+export function useWarningEventsQuery(params: WarningEventParams) {
+  return useInfiniteQuery({
+    queryKey: ["warning-events", params],
+    queryFn: ({ pageParam }) =>
+      fetchWarningEvents({
+        ...params,
+        cursor: pageParam || undefined,
+        limit: 50,
+      }),
+    initialPageParam: "",
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    staleTime: STALE_TIME,
+  });
+}
+
+export function useWarningHistoryQuery(historyId: string | null) {
+  return useQuery({
+    queryKey: ["warning-history", historyId],
+    queryFn: () => fetchWarningHistory(historyId as string),
+    enabled: Boolean(historyId),
+    staleTime: STALE_TIME,
   });
 }
 

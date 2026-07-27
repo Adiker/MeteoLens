@@ -1,3 +1,5 @@
+import type { WarningChangeKind } from "../api/client";
+
 /** Human-readable labels for normalized metric keys. Falls back to the raw key. */
 const METRIC_LABELS: Record<string, string> = {
   temperature: "Temperatura",
@@ -89,6 +91,7 @@ export function formatValue(value: number | null | undefined, unit: string | nul
 }
 
 const WARNING_LEVEL_LABEL: Record<number, string> = {
+  [-1]: "−1 — susza hydrologiczna",
   1: "1 — żółty",
   2: "2 — pomarańczowy",
   3: "3 — czerwony",
@@ -99,6 +102,26 @@ export function warningLevelLabel(level: number | null | undefined): string {
     return "—";
   }
   return WARNING_LEVEL_LABEL[level] ?? String(level);
+}
+
+const WARNING_CHANGE_LABELS: Record<WarningChangeKind, string> = {
+  first_observed: "Pierwsza obserwacja",
+  created: "Wydano",
+  appeared_in_source: "Pojawiło się w źródle",
+  updated: "Zaktualizowano",
+  extended: "Rozszerzono",
+  escalated: "Podniesiono stopień",
+  downgraded: "Obniżono stopień",
+  expired: "Wygasło",
+  removed_from_source: "Zniknęło ze źródła",
+  reappeared: "Pojawiło się ponownie",
+  cancelled: "Odwołano",
+  correction: "Korekta źródłowa",
+  duplicate_conflict: "Konflikt duplikatów",
+};
+
+export function warningChangeKindLabel(kind: WarningChangeKind): string {
+  return WARNING_CHANGE_LABELS[kind];
 }
 
 export const WARNING_LEVEL_COLOR: Record<number, string> = {

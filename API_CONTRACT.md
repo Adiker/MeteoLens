@@ -436,6 +436,16 @@ failing validation report `invalid_dataset`.
 Returns warning detail, affected areas, geometry references, source metadata, and
 raw JSON availability.
 
+Both current-warning endpoints retain their existing fields and add:
+
+- `history_id`: stable local history identifier when the current warning has a
+  persisted identity,
+- `history_available`: whether retained history detail can be opened,
+- `history_started_at`: first local observation time for that history.
+
+These fields do not claim that history exists before the local deployment
+started recording successful refreshes.
+
 Warnings expose `area_codes` from IMGW TERYT/basin/province metadata. When
 reviewed geometry datasets are cached under `METEOLENS_GEOMETRY_DIR`, map layers
 and warning detail responses include resolved polygon GeoJSON plus
@@ -451,6 +461,44 @@ mappings, not official IMGW warning polygons.
 Stage 9 added reviewed geometry references or GeoJSON features for warning
 areas where code mapping is reliable. Responses continue to expose
 unresolved codes and missing geometry reasons instead of hiding partial data.
+
+### Warning Change History
+
+`GET /api/v1/warning-events`
+
+Returns a prospective, newest-first feed ordered by `detected_at DESC` and then
+stable `event_id DESC`. Supported filters are:
+
+- `type`: exact `meteo` or `hydro`,
+- `level`: exact normalized warning level,
+- `area`: exact source area code,
+- `change_kind`: exact event category,
+- `from` and `to`: inclusive ISO timestamps applied to `detected_at`,
+- `phenomenon` and `office`: case-insensitive text filters,
+- `limit`: 1-200, default 100,
+- `cursor`: opaque continuation token returned as `next_cursor`.
+
+Events expose `change_kinds`, `changed_fields`, `detected_at`, `effective_at`,
+`classification_basis`, `confidence`, source metadata, identity completeness,
+the retained normalized/raw version, missing fields, and
+`history_started_at`. Supported categories are `first_observed`, `created`,
+`appeared_in_source`, `updated`, `extended`, `escalated`, `downgraded`,
+`expired`, `removed_from_source`, `reappeared`, `cancelled`, `correction`, and
+`duplicate_conflict`. Categories that require an explicit source signal are
+not inferred from free text.
+
+`GET /api/v1/warning-histories/{history_id}`
+
+Returns the exact local identity, identity status, lifecycle status, all
+deduplicated versions, and the chronological event timeline. It remains
+available after a warning disappears from the current cache. A missing
+`history_id` returns `404`.
+
+Both responses include IMGW-PIB attribution, the MeteoLens processed-data
+notice, the official-warning disclaimer, and an explicit prospective-history
+boundary. Empty filtered feeds return the standard `empty_state`. Partial
+snapshots and ambiguous identities remain visible; fetch/parser errors and
+`404` source responses do not manufacture empty snapshots.
 
 ## Location Summary
 
@@ -489,12 +537,24 @@ unresolved geometry via `notes`.
 
 `GET /api/v1/export/warnings.geojson`
 
+`GET /api/v1/export/warning-events.csv`
+
+`GET /api/v1/export/warning-events.json`
+
 `GET /api/v1/export/map-state.json`
 
 Export query parameters mirror the related station, observations, warning, and
 map filters. Every export includes attribution, processed-data notice when
 relevant, generated timestamp, retrieval timestamp where applicable, and
 missing-field or missing-geometry metadata.
+
+Warning-event exports accept the same `type`, `level`, `area`, `change_kind`,
+`from`, `to`, `phenomenon`, and `office` filters as the feed. Their bounded
+export limit is 1-5000, default 1000. They include uncertain and ambiguous
+events rather than silently omitting them. JSON retains the structured event
+payload; CSV includes stable event/history ids, change categories, changed
+fields, classification basis, confidence, source identity, affected area
+codes, `history_started_at`, attribution, processed notice, and disclaimer.
 
 Station CSV columns:
 

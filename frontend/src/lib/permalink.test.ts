@@ -49,6 +49,34 @@ describe("permalink", () => {
     });
   });
 
+  it("round-trips a warning-history browser selection and filters", () => {
+    const qs = encodePermalink({
+      ...baseState,
+      selection: { kind: "warning-history", id: "wh:abc" },
+      warningPanelView: "history",
+      warningHistoryFilters: {
+        warningType: "hydro",
+        office: "Kraków",
+        area: "Z_K_MA_1",
+        changeKind: "extended",
+        from: "2026-07-01",
+        to: "2026-07-27",
+      },
+    });
+    const decoded = decodePermalink(qs);
+
+    expect(decoded.selection).toEqual({ kind: "warning-history", id: "wh:abc" });
+    expect(decoded.warningPanelView).toBe("history");
+    expect(decoded.warningHistoryFilters).toEqual({
+      warningType: "hydro",
+      office: "Kraków",
+      area: "Z_K_MA_1",
+      changeKind: "extended",
+      from: "2026-07-01",
+      to: "2026-07-27",
+    });
+  });
+
   it("accepts legacy spatial filter aliases", () => {
     expect(decodePermalink("pr=12&co=1205&ba=B1").filters).toMatchObject({
       province: "12",

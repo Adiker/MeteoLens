@@ -19,9 +19,10 @@ import {
 
 export type ThemePreference = "system" | "light" | "dark";
 export type ViewMode = "simple" | "expert";
+export type WarningPanelView = "active" | "history";
 
 export interface Selection {
-  kind: "station" | "warning";
+  kind: "station" | "warning" | "warning-history";
   id: string;
 }
 
@@ -32,7 +33,7 @@ export interface MapView {
 }
 
 export interface Filters {
-  /** Warning level filter (1-3) or null for all. */
+  /** Warning level filter (-1 or 1-3) or null for all. */
   warningLevel: number | null;
   /** Free-text phenomenon/event filter. */
   phenomenon: string;
@@ -46,6 +47,15 @@ export interface Filters {
   maxDataDelayMinutes: number | null;
   /** Expert: surface only layers backed by stale/error cache. */
   onlyStaleCache: boolean;
+}
+
+export interface WarningHistoryFilters {
+  warningType: "" | "meteo" | "hydro";
+  office: string;
+  area: string;
+  changeKind: string;
+  from: string;
+  to: string;
 }
 
 export type TimelineSpeed = 0.5 | 1 | 2 | 4;
@@ -80,6 +90,8 @@ export interface AppState {
   savedViews: SavedMapView[];
   alertRules: AlertRule[];
   dashboardWidgets: DashboardWidgets;
+  warningPanelView: WarningPanelView;
+  warningHistoryFilters: WarningHistoryFilters;
 
   toggleLayer: (key: LayerKey) => void;
   setLayerActive: (key: LayerKey, active: boolean) => void;
@@ -117,6 +129,11 @@ export interface AppState {
   updateAlertRule: (rule: AlertRule) => void;
   removeAlertRule: (id: string) => void;
   setDashboardWidgets: (widgets: DashboardWidgets) => void;
+  setWarningPanelView: (view: WarningPanelView) => void;
+  setWarningHistoryFilter: <K extends keyof WarningHistoryFilters>(
+    key: K,
+    value: WarningHistoryFilters[K],
+  ) => void;
 }
 
 function buildActiveLayers(keys: LayerKey[]): Record<LayerKey, boolean> {
@@ -135,6 +152,15 @@ const DEFAULT_FILTERS: Filters = {
   basin: "",
   maxDataDelayMinutes: null,
   onlyStaleCache: false,
+};
+
+const DEFAULT_WARNING_HISTORY_FILTERS: WarningHistoryFilters = {
+  warningType: "",
+  office: "",
+  area: "",
+  changeKind: "",
+  from: "",
+  to: "",
 };
 
 const THEME_CYCLE: ThemePreference[] = ["system", "light", "dark"];
@@ -168,6 +194,8 @@ export const useAppStore = create<AppState>((set) => ({
   savedViews: readSavedViews(),
   alertRules: readAlertRules(),
   dashboardWidgets: readDashboardWidgets(),
+  warningPanelView: "active",
+  warningHistoryFilters: DEFAULT_WARNING_HISTORY_FILTERS,
 
   toggleLayer: (key) =>
     set((state) => ({ activeLayers: { ...state.activeLayers, [key]: !state.activeLayers[key] } })),
@@ -282,6 +310,11 @@ export const useAppStore = create<AppState>((set) => ({
     writeDashboardWidgets(widgets);
     set({ dashboardWidgets: widgets });
   },
+  setWarningPanelView: (warningPanelView) => set({ warningPanelView }),
+  setWarningHistoryFilter: (key, value) =>
+    set((state) => ({
+      warningHistoryFilters: { ...state.warningHistoryFilters, [key]: value },
+    })),
 }));
 
 export function activeLayerKeys(active: Record<LayerKey, boolean>): LayerKey[] {

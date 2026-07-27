@@ -11,6 +11,8 @@ Release notes:
 [docs/release/RELEASE_NOTES_v0.1.0-alpha.md](docs/release/RELEASE_NOTES_v0.1.0-alpha.md).
 Stage 23 evidence:
 [docs/release/STAGE_23_VALIDATION_2026-07-24.md](docs/release/STAGE_23_VALIDATION_2026-07-24.md).
+Stage 24 evidence:
+[docs/release/STAGE_24_VALIDATION_2026-07-27.md](docs/release/STAGE_24_VALIDATION_2026-07-27.md).
 
 MeteoLens is a web application for visualising public IMGW-PIB weather and
 hydrological data for Poland. Stages 0-21 (research, documentation, backend
@@ -24,8 +26,9 @@ status stabilization, reviewed WMO OSCAR/Surface synop station coordinates,
 Stage 19 public-internet security hardening, Stage 20 production
 observability/backup/recovery, Stage 21 validation plus this alpha tag,
 reviewed Stage 22 hydro basin geometry, and bounded Stage 23 daily CODZ
-hydrological archive backfill) are implemented. Stages 24-26 remain planned
-and cover warning history, performance, and PDF reports. See
+hydrological archive backfill, plus Stage 24 prospective warning history and
+change timeline) are implemented. Stages 25-26 remain planned and cover
+performance and PDF reports. See
 [TASKS.md](TASKS.md) for the full staged backlog.
 
 The working package name is `meteolens`. Possible future product names:
@@ -161,6 +164,16 @@ Implemented now:
   metric and draws live and archive points as separate series with gaps for
   missing values.
 
+- Stage 24 warning history: each successfully parsed warning refresh is
+  persisted as an atomic prospective snapshot with exact or explicitly
+  ambiguous identity, deduplicated versions, change classification, conflict
+  reporting, and a two-complete-snapshot rule for unconfirmed disappearance.
+  The warning panel now has `Aktywne` and `Historia` tabs, filters, CSV/JSON
+  exports, retained historical detail, vertical timelines, and permalinked
+  `history_id`. A fetch/parser failure or source `404` never creates a false
+  removal, and the UI always shows the local completeness boundary,
+  attribution, ambiguity, and official-warning disclaimer.
+
 - Stage 20 production operations: separate liveness/readiness health checks,
   private Prometheus metrics, request-correlated JSON logs, conservative Docker
   CPU/memory/log limits, and verified essential backup/restore tooling for
@@ -254,6 +267,15 @@ python -m app.operations.archive_history prune \
 # Verify a current backup, repeat the command, then add --confirm.
 ```
 
+Warning history has no automatic retention. Manual cleanup removes only whole,
+closed histories older than the boundary and is also dry-run first:
+
+```bash
+cd backend
+python -m app.operations.warning_history prune --before 2026-01-01
+# Review exact history/version/snapshot/event counts, then repeat with --confirm.
+```
+
 Public API examples:
 
 ```bash
@@ -331,6 +353,9 @@ The target layout is specified in [UI_UX.md](UI_UX.md).
 - GeoJSON for visible map objects.
 - GeoJSON for warning polygons/non-spatial warning records with unresolved
   geometry metadata.
+- CSV and JSON for the filtered warning-change feed, including uncertain
+  events, classification basis, completeness boundary, attribution, processed
+  notice, and official-warning disclaimer.
 - PNG for the current map view.
 - PDF reports are not implemented; the optional plan is documented in
   [docs/power-user/PDF_EXPORT_PLAN.md](docs/power-user/PDF_EXPORT_PLAN.md).

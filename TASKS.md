@@ -834,52 +834,57 @@ Goal: preserve and explain how warnings change over time.
 
 Implementation tasks:
 
-- [ ] Persist warning snapshots.
-- [ ] Define stable warning identity rules.
-- [ ] Detect creation, update, extension, escalation, downgrade, cancellation,
+- [x] Persist warning snapshots.
+- [x] Define stable warning identity rules.
+- [x] Detect creation, update, extension, escalation, downgrade, cancellation,
   and expiry events.
-- [ ] Support meteorological and hydrological warning history.
-- [ ] Add a warning-change API.
-- [ ] Add timeline UI for warning changes.
-- [ ] Add filters by warning type, level, phenomenon, office, and area.
-- [ ] Show the relationship between warning changes and station observations
-  where useful.
-- [ ] Explicitly handle source corrections and duplicated warning records.
-- [ ] Define retention policy.
-- [ ] Add exports for warning history and change timelines.
-- [ ] Preserve attribution and the official-warning disclaimer.
+- [x] Support meteorological and hydrological warning history.
+- [x] Add a warning-change API.
+- [x] Add timeline UI for warning changes.
+- [x] Add filters by warning type, level, phenomenon, office, and area.
+- [x] Evaluate station correlation and keep it out of Stage 24; warning
+  timelines remain independent from station observations.
+- [x] Explicitly handle structured source corrections and duplicated warning
+  records; never infer correction/cancellation from free text.
+- [x] Define retention policy: no automatic retention, only dry-run-first
+  removal of whole closed histories.
+- [x] Add exports for warning history and change timelines.
+- [x] Preserve attribution and the official-warning disclaimer.
 
 Documentation tasks:
 
-- [ ] Update `ARCHITECTURE.md` with warning identity, snapshot, and retention
+- [x] Update `ARCHITECTURE.md` with warning identity, snapshot, and retention
   design.
-- [ ] Update `API_CONTRACT.md` for warning-history endpoints.
-- [ ] Update `UI_UX.md` for the timeline interaction.
-- [ ] Update `LEGAL_ATTRIBUTION.md` for exported warning history.
-- [ ] Update `README.md` and `TASKS.md` after implementation.
+- [x] Update `API_CONTRACT.md` for warning-history endpoints.
+- [x] Update `UI_UX.md` for the timeline interaction.
+- [x] Update `DATA_SOURCES.md` for prospective live history and the deferred
+  archive families.
+- [x] Update `LEGAL_ATTRIBUTION.md` for exported warning history.
+- [x] Update `README.md`, `CHANGELOG.md`, `TROUBLESHOOTING.md`, and `TASKS.md`
+  after implementation.
 
 Test tasks:
 
-- [ ] Add backend snapshot and identity tests.
-- [ ] Add change-detection tests for creation, update, extension, escalation,
+- [x] Add backend snapshot and identity tests.
+- [x] Add change-detection tests for creation, update, extension, escalation,
   downgrade, cancellation, expiry, corrections, and duplicates.
-- [ ] Add API tests for warning-history filters.
-- [ ] Add frontend timeline tests.
-- [ ] Add migration and retention tests.
-- [ ] Add E2E tests for a warning-change workflow.
+- [x] Add API tests for warning-history filters and stable cursor pagination.
+- [x] Add frontend timeline tests.
+- [x] Add migration, backup/restore, atomic rollback, and retention tests.
+- [x] Add E2E tests for a warning-change workflow.
 
 Non-goals and blocked items:
 
-- [ ] Do not present MeteoLens as an official warning service.
-- [ ] Do not infer official warning changes when the source data is ambiguous;
+- [x] Do not present MeteoLens as an official warning service.
+- [x] Do not infer official warning changes when the source data is ambiguous;
   expose ambiguity instead.
 
 Acceptance criteria:
 
-- [ ] Warning changes can be reviewed from persisted snapshots.
-- [ ] Change categories are deterministic and tested.
-- [ ] Timeline UI and exports preserve attribution and disclaimers.
-- [ ] Source corrections and duplicated records are explicit.
+- [x] Warning changes can be reviewed from persisted snapshots.
+- [x] Change categories are deterministic and tested.
+- [x] Timeline UI and exports preserve attribution and disclaimers.
+- [x] Source corrections and duplicated records are explicit.
 
 ## Stage 25 - Performance And Scalability Hardening
 

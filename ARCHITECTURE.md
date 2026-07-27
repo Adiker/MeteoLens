@@ -202,6 +202,26 @@ duplicates or any parse/persistence error roll back the file and perform no
 withdrawal deletion. An identical rerun is idempotent; retry after interruption
 uses a new run and safely reprocesses completed slices.
 
+Stage 24 adds prospective warning history in
+`app/services/warning_history.py`. Every successful `warningsmeteo` or
+`warningshydro` refresh is persisted as one SQLite transaction after the full
+payload has been parsed. Consecutive identical source sets and warning versions
+are deduplicated. A parser warning or conflicting identity makes the snapshot
+`partial`: valid records may be retained, but absence from that snapshot cannot
+close another warning. Fetch failures and `404` responses create no snapshot
+and therefore never become inferred cancellations.
+
+Warning identity is deliberately narrower than display matching.
+Meteorological warnings use the exact source ID; hydrological warnings use the
+exact source number plus exact office. Missing identity fields remain
+`ambiguous` and are never joined by phenomenon, text, name, or area. The first
+capture is `first_observed`, not an official creation. Field diffs may label
+updates, extensions, and comparable level changes; finite `valid_to` produces
+a derived expiry. Two consecutive complete snapshots are required before
+`removed_from_source`, which remains ambiguous rather than being presented as
+an official cancellation. `cancelled` and `correction` require an explicit
+future source signal.
+
 The Stage 21 reconciliation follow-up adds
 `app/imgw/station_mapping.py` and the versioned
 `app/imgw/data/synop_station_mapping.v1.json`. The reproducible fetch script
@@ -291,6 +311,20 @@ and preserve existing rows. Automatic age retention now targets only
 `live_refresh`; archive rows require the dry-run-first cleanup CLI and a
 verified backup before `--confirm`.
 
+Stage 24 adds normalized `warning_histories`, `warning_versions`,
+`warning_version_areas`, `warning_snapshots`, `warning_snapshot_members`, and
+`warning_events` tables. Versions preserve normalized and raw payloads, source
+metadata, missing fields, first/last-seen times, and a content hash. Events keep
+change categories, changed fields, detection/effective times, classification
+basis, and confidence. Feed, identity, area, and time indexes support bounded
+cursor pagination. The migration is additive and does not rewrite observation
+history.
+
+Warning history has no scheduled retention. The dry-run-first
+`python -m app.operations.warning_history prune --before YYYY-MM-DD` command
+can transactionally remove only whole closed histories; `--confirm` is required
+and active timelines are never partially trimmed.
+
 Stage 9 geometry design should add imported geometry metadata without mixing
 external dataset ingestion into IMGW parsers. Candidate tables include:
 
@@ -355,6 +389,15 @@ responses and CSV/JSON exports with archive kind, quality/missing reason,
 temporal resolution, file SHA-256, and Last-Modified. Comparisons and rankings
 resolve archive-only IDs from observation history; they do not fabricate
 station coordinates.
+
+Stage 24 keeps `/api/v1/warnings` and `/api/v1/warnings/{id}` compatible while
+adding `history_id`, `history_available`, and `history_started_at`. The
+prospective history surface consists of paginated
+`GET /api/v1/warning-events`, retained detail at
+`GET /api/v1/warning-histories/{history_id}`, and filtered CSV/JSON event
+exports. Cursor ordering is `detected_at DESC, event_id DESC`; public list
+limits are bounded to 200 records. Historical detail reads SQLite versions and
+does not depend on the warning still being present in the live cache.
 
 Stage 16 stabilized the public `/api/v1` surface in `API_CONTRACT.md`, added
 responsible-use and backwards-compatibility notes, and added:
@@ -483,6 +526,13 @@ from real-shape IMGW fixtures.
 Stage 16 added backend tests for warning GeoJSON and map-state exports, a
 generated-client metadata drift check for public routes, and syntax checks for
 the Node API examples when Node.js is available.
+
+Stage 24 adds migration, snapshot-atomicity, identity, duplicate/conflict,
+change-classification, pagination/export, retention, restart, and failure-path
+tests. The Playwright fixture persists a deterministic warning sequence so the
+history browser, filtered feed, retained detail, vertical timeline,
+attribution, ambiguity, and official-warning disclaimer are exercised against
+the real backend.
 
 Stage 6:
 

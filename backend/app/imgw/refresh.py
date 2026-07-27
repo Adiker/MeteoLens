@@ -52,14 +52,40 @@ async def refresh_source(
             parser_warnings=parse_result.warnings,
         )
         from app.db.engine import init_db
-        from app.normalization.models import Station
+        from app.normalization.models import Station, Warning
         from app.services.observation_history import persist_station
+        from app.services.warning_history import persist_warning_snapshot
 
         stage = "persist"
         init_db()
         for record in parse_result.records:
             if isinstance(record, Station):
                 persist_station(record)
+        warning_records = [
+            record for record in parse_result.records if isinstance(record, Warning)
+        ]
+        if source.key in {"warningsmeteo", "warningshydro"}:
+            history_result = persist_warning_snapshot(
+                warning_records,
+                source_key=source.key,
+                retrieved_at=fetch.retrieved_at,
+                parser_warnings=parse_result.warnings,
+            )
+            metrics.warning_history_snapshots.labels(
+                source_key=source.key,
+                completeness=history_result.completeness,
+            ).inc()
+            metrics.warning_history_versions.labels(source_key=source.key).inc(
+                history_result.versions_created
+            )
+            for change_kind, count in history_result.event_kind_counts.items():
+                metrics.warning_history_events.labels(
+                    source_key=source.key,
+                    change_kind=change_kind,
+                ).inc(count)
+            metrics.warning_history_conflicts.labels(source_key=source.key).inc(
+                history_result.conflicting_duplicates
+            )
         log_source_fetch(
             source_key=source.key,
             url=fetch.url,
@@ -83,6 +109,11 @@ async def refresh_source(
     except Exception as exc:
         error = str(exc)
         cache.write_error(source_key=source.key, error=error)
+        if source.key in {"warningsmeteo", "warningshydro"}:
+            metrics.warning_history_snapshots.labels(
+                source_key=source.key,
+                completeness="error",
+            ).inc()
         log_source_fetch(
             source_key=source.key,
             url=source.url(client.base_url),

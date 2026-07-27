@@ -6,10 +6,15 @@ import {
   stationObservationsCsvUrl,
   stationObservationsJsonUrl,
   type SourceMetadata,
+  type WarningEvent,
+  type WarningHistoryVersion,
+  type WarningRecord,
+  type WarningSnapshotMetadata,
 } from "../api/client";
 import {
   useObservationsQuery,
   useStationQuery,
+  useWarningHistoryQuery,
   useWarningQuery,
 } from "../api/queries";
 import {
@@ -17,6 +22,7 @@ import {
   formatTimestamp,
   formatValue,
   metricLabel,
+  warningChangeKindLabel,
   warningLevelLabel,
 } from "../lib/format";
 import { cn } from "../lib/utils";
@@ -334,6 +340,9 @@ function WarningGeometryNotice({
 
 function WarningDetails({ id, expert }: { id: string; expert: boolean }) {
   const warningQuery = useWarningQuery(id);
+  const historyQuery = useWarningHistoryQuery(
+    warningQuery.data?.warning.history_id ?? null,
+  );
 
   if (warningQuery.isLoading) {
     return <Spinner label="Ładowanie ostrzeżenia..." />;
@@ -381,8 +390,222 @@ function WarningDetails({ id, expert }: { id: string; expert: boolean }) {
       />
 
       <MissingFields fields={warning.missing_fields} />
+      {!warning.history_available && (
+        <p className="text-xs text-muted-foreground">
+          {warningQuery.data.alerting_disclaimer}
+        </p>
+      )}
+      {warning.history_available && warning.history_id && (
+        <WarningHistoryTimeline
+          events={historyQuery.data?.history.events ?? []}
+          versions={historyQuery.data?.history.versions ?? []}
+          snapshots={historyQuery.data?.history.snapshots ?? []}
+          historyStartedAt={warning.history_started_at ?? null}
+          disclaimer={
+            historyQuery.data?.alerting_disclaimer ??
+            warningQuery.data.alerting_disclaimer
+          }
+          loading={historyQuery.isLoading}
+          error={historyQuery.isError}
+          expert={expert}
+        />
+      )}
       {expert && <RawSection raw={warning.raw} />}
       <SourceFooter source={warning.source} expert={expert} />
+    </div>
+  );
+}
+
+function WarningHistoryTimeline({
+  events,
+  versions,
+  snapshots,
+  historyStartedAt,
+  disclaimer,
+  loading,
+  error,
+  expert,
+}: {
+  events: WarningEvent[];
+  versions: WarningHistoryVersion[];
+  snapshots: WarningSnapshotMetadata[];
+  historyStartedAt: string | null;
+  disclaimer?: string;
+  loading: boolean;
+  error: boolean;
+  expert: boolean;
+}) {
+  const byId = new Map(versions.map((version) => [version.version_id, version.warning]));
+  if (loading) {
+    return <Spinner label="Ładowanie osi zmian..." />;
+  }
+  if (error) {
+    return (
+      <StateNotice tone="error" title="Nie udało się pobrać osi zmian.">
+        Bieżące ostrzeżenie pozostaje dostępne. {disclaimer}
+      </StateNotice>
+    );
+  }
+  return (
+    <section className="space-y-3 border-t border-border pt-3">
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
+        <ListTree aria-hidden className="size-3.5" /> Oś zmian
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        Historia lokalna od {formatTimestamp(historyStartedAt)}. {disclaimer}
+      </p>
+      {events.length === 0 && (
+        <StateNotice tone="info" title="Brak zmian po pierwszej obserwacji" />
+      )}
+      <ol className="relative ml-2 space-y-4 border-l border-border pl-4">
+        {events.map((event) => {
+          const before = event.from_version_id ? byId.get(event.from_version_id) : undefined;
+          const after = event.to_version_id ? byId.get(event.to_version_id) : undefined;
+          const visibleChangedFields = event.changed_fields.filter(
+            (field) => expert || field !== "raw",
+          );
+          return (
+            <li key={event.event_id} className="relative">
+              <span
+                className={cn(
+                  "absolute -left-[21px] top-1 size-2.5 rounded-full border border-card",
+                  event.confidence === "ambiguous" ? "bg-warning" : "bg-primary",
+                )}
+                aria-hidden
+              />
+              <p className="text-sm font-medium">
+                {event.change_kinds.map(warningChangeKindLabel).join(" · ")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatTimestamp(event.detected_at)} · {event.classification_basis}
+                {event.confidence === "ambiguous" && " · niepotwierdzone przez źródło"}
+                {event.snapshot?.completeness === "partial" && " · snapshot częściowy"}
+              </p>
+              {visibleChangedFields.length > 0 && (
+                <ul className="mt-1 space-y-0.5 text-xs">
+                  {visibleChangedFields.map((field) => (
+                    <li key={field}>
+                      <span className="text-muted-foreground">{field}:</span>{" "}
+                      {field === "raw"
+                        ? "zmieniono — pełne wersje w metadanych zdarzenia"
+                        : `${_warningFieldValue(before, field)} → ${_warningFieldValue(after, field)}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {expert && (
+                <details className="mt-1 text-xs">
+                  <summary className="cursor-pointer text-primary">Metadane zdarzenia</summary>
+                  <pre className="mt-1 max-h-48 overflow-auto rounded border border-border bg-background p-2 text-[10px]">
+                    {JSON.stringify(event, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {expert && (
+        <details className="text-xs">
+          <summary className="cursor-pointer text-primary">
+            Surowe wersje i metadane snapshotów
+          </summary>
+          <pre className="mt-1 max-h-72 overflow-auto rounded border border-border bg-background p-2 text-[10px]">
+            {JSON.stringify({ versions, snapshots }, null, 2)}
+          </pre>
+        </details>
+      )}
+    </section>
+  );
+}
+
+function _warningFieldValue(warning: WarningRecord | undefined, field: string): string {
+  if (!warning) {
+    return "—";
+  }
+  const value = warning[field as keyof WarningRecord];
+  if (value === null || value === undefined) {
+    return "—";
+  }
+  if (field === "valid_from" || field === "valid_to" || field === "published_at") {
+    return formatTimestamp(String(value));
+  }
+  if (field === "level") {
+    return warningLevelLabel(value as number);
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) =>
+        typeof item === "object" && item && "code" in item
+          ? String(item.code)
+          : String(item),
+      )
+      .join(", ");
+  }
+  return typeof value === "object" ? JSON.stringify(value) : String(value);
+}
+
+function WarningHistoryDetails({ id, expert }: { id: string; expert: boolean }) {
+  const historyQuery = useWarningHistoryQuery(id);
+  if (historyQuery.isLoading) {
+    return <Spinner label="Ładowanie historii ostrzeżenia..." />;
+  }
+  if (historyQuery.isError) {
+    return apiErrorNotice(historyQuery.error);
+  }
+  if (!historyQuery.data) {
+    return null;
+  }
+  const { history } = historyQuery.data;
+  const current =
+    history.versions.find((version) => version.version_id === history.current_version_id) ??
+    history.versions[history.versions.length - 1];
+  if (!current) {
+    return (
+      <StateNotice tone="warning" title="Historia nie ma poprawnej wersji">
+        Konflikt źródłowy uniemożliwił wybranie reprezentatywnego ostrzeżenia.
+      </StateNotice>
+    );
+  }
+  const warning = current.warning;
+  return (
+    <div className="space-y-4">
+      <header>
+        <p className="text-xs uppercase text-muted-foreground">
+          Historia ostrzeżenia {warning.warning_type}
+        </p>
+        <h2 className="text-lg font-semibold leading-tight">{warning.event}</h2>
+        <p className="text-xs text-muted-foreground">
+          Stan: {history.status} · tożsamość: {history.identity_status}
+        </p>
+      </header>
+      <dl className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1.5 text-sm">
+        <Field label="Poziom">{warningLevelLabel(warning.level)}</Field>
+        <Field label="Od">{formatTimestamp(warning.valid_from)}</Field>
+        <Field label="Do">{formatTimestamp(warning.valid_to)}</Field>
+        <Field label="Publikacja">{formatTimestamp(warning.published_at)}</Field>
+        {warning.office && <Field label="Biuro">{warning.office}</Field>}
+        <Field label="Obszary">
+          {warning.areas.map((area) => area.label ?? area.code).join(", ") || "—"}
+        </Field>
+      </dl>
+      {history.identity_status === "ambiguous" && (
+        <StateNotice tone="warning" title="Niejednoznaczna tożsamość">
+          MeteoLens nie łączy tego rekordu heurystycznie z innymi ostrzeżeniami.
+        </StateNotice>
+      )}
+      <WarningHistoryTimeline
+        events={history.events}
+        versions={history.versions}
+        snapshots={history.snapshots}
+        historyStartedAt={history.history_started_at}
+        disclaimer={historyQuery.data.alerting_disclaimer}
+        loading={false}
+        error={false}
+        expert={expert}
+      />
+      {expert && <RawSection raw={current.raw} />}
+      <SourceFooter source={current.source} expert={expert} />
     </div>
   );
 }
@@ -424,6 +647,8 @@ export function DetailsPanel() {
 
       {selection.kind === "station" ? (
         <StationDetails id={selection.id} expert={expert} />
+      ) : selection.kind === "warning-history" ? (
+        <WarningHistoryDetails id={selection.id} expert={expert} />
       ) : (
         <WarningDetails id={selection.id} expert={expert} />
       )}

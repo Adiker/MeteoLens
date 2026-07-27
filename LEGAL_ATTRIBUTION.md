@@ -157,6 +157,22 @@ review does not make a broader commercial-use determination. Before accepting
 a new publication year or format, repeat the source/format/terms review and
 record the result in `DATA_SOURCES.md`.
 
+### Prospective Warning History And Exports (Stage 24)
+
+Stage 24 introduces no new provider and does not ingest the separate IMGW
+warning archive directories. It retains successive observations of the public
+`warningsmeteo` and `warningshydro` JSON endpoints from the deployment's
+`history_started_at` boundary.
+
+History pages and CSV/JSON exports must retain IMGW-PIB attribution, the
+MeteoLens processed-data notice, source/retrieval timing, missing-field and
+identity-ambiguity metadata, and the permanent statement that MeteoLens is not
+an official warning service. A diff-derived category is labelled as a
+MeteoLens classification, not an official IMGW action. Temporary disappearance
+is not called cancellation or correction; those categories require an explicit
+structured source signal. Uncertain events and conflicting duplicates remain
+visible in exports.
+
 ### Reviewed SYNOP Identifier Mapping (Stage 21 Follow-up)
 
 The mapping introduces no new data provider. Both authoritative inputs are in
