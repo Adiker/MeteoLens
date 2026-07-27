@@ -91,6 +91,26 @@ class MeteoLensMetrics:
             "meteolens_archive_import_active",
             "Archive imports currently marked running.",
         )
+        self.warning_history_snapshots = Counter(
+            "meteolens_warning_history_snapshot_total",
+            "Persisted warning history snapshots.",
+            ("source_key", "completeness"),
+        )
+        self.warning_history_versions = Counter(
+            "meteolens_warning_history_version_total",
+            "New deduplicated warning versions.",
+            ("source_key",),
+        )
+        self.warning_history_events = Counter(
+            "meteolens_warning_history_event_total",
+            "New warning history events.",
+            ("source_key", "change_kind"),
+        )
+        self.warning_history_conflicts = Counter(
+            "meteolens_warning_history_conflict_total",
+            "Conflicting source records sharing a warning identity.",
+            ("source_key",),
+        )
         self.storage_bytes = Gauge(
             "meteolens_storage_bytes",
             "Bytes stored in a MeteoLens runtime area.",

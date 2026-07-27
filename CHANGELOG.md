@@ -4,6 +4,15 @@ All notable changes to MeteoLens will be documented in this file.
 
 ## Unreleased
 
+- Added Stage 24 prospective meteorological and hydrological warning history:
+  atomic SQLite snapshots, exact/ambiguous identity handling, deduplicated
+  versions, explicit change events and duplicate conflicts, two-complete-
+  snapshot removal semantics, paginated/filterable API and CSV/JSON exports,
+  retained historical detail, an `Aktywne`/`Historia` browser with vertical
+  timeline and permalinks, and a dry-run-first manual prune command. Source
+  failures never manufacture removals, and attribution, completeness boundary,
+  ambiguity, processed-data notice, and official-warning disclaimer remain
+  visible.
 - Added Stage 23 bounded daily hydrological `CODZ` archive imports with
   CP1250/UTF-8 and comma/semicolon handling, annual/monthly hydrological-year
   discovery, exact `PSKDSZS` station identity, missing/quality/file provenance,

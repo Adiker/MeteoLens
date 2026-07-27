@@ -18,6 +18,10 @@ def test_generated_client_metadata_includes_stage16_operations() -> None:
     assert "/api/v1/export/map-state.json" in generated
     assert "/api/v1/status/freshness" in generated
     assert "/api/v1/location/summary" in generated
+    assert "/api/v1/warning-events" in generated
+    assert "/api/v1/warning-histories/{history_id}" in generated
+    assert "/api/v1/export/warning-events.csv" in generated
+    assert "/api/v1/export/warning-events.json" in generated
 
 
 def test_api_examples_do_not_call_imgw_directly() -> None:

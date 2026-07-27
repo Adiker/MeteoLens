@@ -38,6 +38,7 @@ export default defineConfig({
       port: BACKEND_PORT,
       env: {
         METEOLENS_CACHE_DIR: ".e2e-cache",
+        METEOLENS_DATABASE_URL: "sqlite:///.e2e-cache/meteolens.sqlite3",
         METEOLENS_FRONTEND_ORIGIN: `http://localhost:${FRONTEND_PORT}`,
       },
       reuseExistingServer: false,

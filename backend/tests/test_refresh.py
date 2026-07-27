@@ -1,4 +1,6 @@
 import asyncio
+import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -6,6 +8,7 @@ from fastapi.testclient import TestClient
 
 import app.main as main
 from app.core.config import Settings
+from app.db.engine import get_engine, init_db
 from app.imgw.cache import SourceCache
 from app.imgw.client import ImgwClient
 from app.imgw.refresh import SourceRefreshResult, refresh_source
@@ -88,6 +91,66 @@ async def test_refresh_source_records_error_without_masking_it(tmp_path) -> None
     assert result.error == "connection reset"
     assert status.status == "error"
     assert status.error == "connection reset"
+
+
+@pytest.mark.asyncio
+async def test_warning_404_does_not_mutate_existing_history(
+    tmp_path, monkeypatch
+) -> None:
+    settings = Settings(
+        cache_dir=tmp_path / "cache",
+        geometry_dir=tmp_path / "geometry",
+        database_url=f"sqlite:///{tmp_path / 'warnings.sqlite3'}",
+    )
+    apply_test_settings(monkeypatch, settings)
+    init_db()
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures" / "warningsmeteo.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    attempts = 0
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(200, json=fixture, request=request)
+        return httpx.Response(404, request=request)
+
+    cache = SourceCache(settings.cache_dir)
+    client = ImgwClient(
+        base_url="https://example.test",
+        max_retries=0,
+        transport=httpx.MockTransport(handler),
+    )
+    first = await refresh_source(
+        source=SOURCE_BY_KEY["warningsmeteo"], client=client, cache=cache
+    )
+    before = tuple(
+        get_engine().execute(
+            "SELECT "
+            "(SELECT COUNT(*) FROM warning_histories), "
+            "(SELECT COUNT(*) FROM warning_versions), "
+            "(SELECT COUNT(*) FROM warning_events)"
+        ).fetchone()
+    )
+    failed = await refresh_source(
+        source=SOURCE_BY_KEY["warningsmeteo"], client=client, cache=cache
+    )
+    after = tuple(
+        get_engine().execute(
+            "SELECT "
+            "(SELECT COUNT(*) FROM warning_histories), "
+            "(SELECT COUNT(*) FROM warning_versions), "
+            "(SELECT COUNT(*) FROM warning_events)"
+        ).fetchone()
+    )
+
+    assert first.status == "success"
+    assert failed.status == "error"
+    assert "404" in (failed.error or "")
+    assert after == before
 
 
 def test_app_lifespan_runs_startup_refresh_when_enabled(monkeypatch, tmp_path) -> None:

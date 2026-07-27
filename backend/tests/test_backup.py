@@ -1,11 +1,12 @@
 import json
 import os
+import sqlite3
 import tarfile
 
 import pytest
 
 from app.core.config import Settings
-from app.db.engine import init_db
+from app.db.engine import get_engine, init_db
 from app.operations.backup import _chown_tree, create_backup, restore_backup, verify_backup
 from tests.settings_helpers import apply_test_settings
 
@@ -22,6 +23,22 @@ def test_essential_backup_restores_sqlite_cache_and_geometry(monkeypatch, tmp_pa
     settings = _settings(tmp_path)
     apply_test_settings(monkeypatch, settings)
     init_db()
+    database = get_engine()
+    database.execute(
+        """
+        INSERT INTO warning_histories (
+            history_id, identity_key, generation, identity_status, source_key,
+            source_id, warning_type, office, status, first_observed_at,
+            last_observed_at, history_started_at
+        ) VALUES (
+            'wh:backup', 'v1:warningsmeteo:backup', 1, 'exact',
+            'warningsmeteo', 'backup', 'meteo', 'CBPM', 'active',
+            '2026-07-27T10:00:00+00:00', '2026-07-27T10:00:00+00:00',
+            '2026-07-27T10:00:00+00:00'
+        )
+        """
+    )
+    database.commit()
     settings.cache_dir.mkdir(parents=True)
     settings.geometry_dir.mkdir(parents=True)
     (settings.cache_dir / "synop.json").write_text('{"source_key":"synop"}', encoding="utf-8")
@@ -42,6 +59,13 @@ def test_essential_backup_restores_sqlite_cache_and_geometry(monkeypatch, tmp_pa
 
     assert result["restored"] is True
     assert (target / "meteolens.sqlite3").exists()
+    with sqlite3.connect(target / "meteolens.sqlite3") as restored_database:
+        assert (
+            restored_database.execute(
+                "SELECT history_id FROM warning_histories"
+            ).fetchone()[0]
+            == "wh:backup"
+        )
     assert (target / "cache" / "synop.json").exists()
     assert (target / "geometry" / "manifest.json").exists()
     assert not (target / "products").exists()

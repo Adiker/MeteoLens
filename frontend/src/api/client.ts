@@ -204,6 +204,10 @@ export interface WarningRecord {
   source: SourceMetadata;
   raw: Record<string, unknown>;
   raw_available: boolean;
+  history_id?: string | null;
+  history_available?: boolean;
+  history_started_at?: string | null;
+  history_identity_status?: "exact" | "ambiguous" | null;
 }
 
 export interface WarningsResponse extends ApiEnvelope {
@@ -215,6 +219,101 @@ export interface WarningResponse {
   warning: WarningRecord;
   geometry_status: string;
   raw_available: boolean;
+  alerting_disclaimer: string;
+}
+
+export type WarningChangeKind =
+  | "first_observed"
+  | "created"
+  | "appeared_in_source"
+  | "updated"
+  | "extended"
+  | "escalated"
+  | "downgraded"
+  | "expired"
+  | "removed_from_source"
+  | "reappeared"
+  | "cancelled"
+  | "correction"
+  | "duplicate_conflict";
+
+export interface WarningSnapshotMetadata {
+  snapshot_id: number;
+  source_key?: string;
+  completeness: "complete" | "partial";
+  first_retrieved_at: string;
+  last_retrieved_at: string;
+  seen_count: number;
+  parser_warnings: string[];
+  exact_duplicate_count: number;
+  conflicting_duplicate_count: number;
+}
+
+export interface WarningEvent {
+  event_id: string;
+  history_id: string;
+  source_key: string;
+  source_id: string | null;
+  warning_type: WarningType;
+  detected_at: string;
+  effective_at: string | null;
+  change_kinds: WarningChangeKind[];
+  changed_fields: string[];
+  classification_basis: string;
+  confidence: "confirmed" | "derived" | "ambiguous";
+  from_version_id: string | null;
+  to_version_id: string | null;
+  identity_status: "exact" | "ambiguous";
+  history_status: "active" | "expired" | "removed" | "cancelled" | "ambiguous";
+  history_started_at: string;
+  warning: WarningRecord | null;
+  source: SourceMetadata | null;
+  snapshot: WarningSnapshotMetadata | null;
+}
+
+export interface WarningEventsResponse extends ApiEnvelope {
+  events: WarningEvent[];
+  next_cursor: string | null;
+  history_started_at: string | null;
+  attribution: string;
+  processed_notice: string;
+  alerting_disclaimer: string;
+}
+
+export interface WarningHistoryVersion {
+  version_id: string;
+  content_hash: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  warning: WarningRecord;
+  raw: Record<string, unknown>;
+  source: SourceMetadata;
+}
+
+export interface WarningHistory {
+  history_id: string;
+  source_key: string;
+  source_id: string | null;
+  warning_type: WarningType;
+  office: string | null;
+  identity_status: "exact" | "ambiguous";
+  status: "active" | "expired" | "removed" | "cancelled" | "ambiguous";
+  first_observed_at: string;
+  last_observed_at: string;
+  history_started_at: string;
+  current_version_id: string | null;
+  versions: WarningHistoryVersion[];
+  snapshots: WarningSnapshotMetadata[];
+  events: WarningEvent[];
+}
+
+export interface WarningHistoryResponse {
+  generated_at: string;
+  history: WarningHistory;
+  attribution: string;
+  processed_notice: string;
+  alerting_disclaimer: string;
+  history_is_prospective: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -528,6 +627,29 @@ export function fetchWarning(id: string) {
   return getJson<WarningResponse>(`/api/v1/warnings/${encodeURIComponent(id)}`);
 }
 
+export interface WarningEventParams {
+  type?: WarningType;
+  level?: number;
+  phenomenon?: string;
+  office?: string;
+  area?: string;
+  change_kind?: WarningChangeKind;
+  from?: string;
+  to?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export function fetchWarningEvents(params: WarningEventParams = {}) {
+  return getJson<WarningEventsResponse>(`/api/v1/warning-events${query({ ...params })}`);
+}
+
+export function fetchWarningHistory(historyId: string) {
+  return getJson<WarningHistoryResponse>(
+    `/api/v1/warning-histories/${encodeURIComponent(historyId)}`,
+  );
+}
+
 export function fetchLocationSummary(params: { lat: number; lon: number; radius_km?: number }) {
   return getJson<LocationSummaryResponse>(`/api/v1/location/summary${query(params)}`);
 }
@@ -639,6 +761,13 @@ export function warningsGeoJsonUrl(params: {
   basin?: string;
 }): string {
   return `${API_BASE_URL}/api/v1/export/warnings.geojson${query(params)}`;
+}
+
+export function warningEventsExportUrl(
+  format: "csv" | "json",
+  params: WarningEventParams,
+): string {
+  return `${API_BASE_URL}/api/v1/export/warning-events.${format}${query({ ...params })}`;
 }
 
 export function mapStateJsonUrl(params: {

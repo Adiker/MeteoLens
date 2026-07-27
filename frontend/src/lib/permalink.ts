@@ -1,5 +1,13 @@
 import { DEFAULT_ACTIVE_LAYERS, type LayerKey } from "./layers";
-import type { Filters, MapView, Selection, ThemePreference, ViewMode } from "../store/appStore";
+import type {
+  Filters,
+  MapView,
+  Selection,
+  ThemePreference,
+  ViewMode,
+  WarningHistoryFilters,
+  WarningPanelView,
+} from "../store/appStore";
 
 /** Compact codes keep permalinks short and stable. */
 const LAYER_CODE: Record<LayerKey, string> = {
@@ -23,6 +31,8 @@ export interface PermalinkState {
   mode: ViewMode;
   theme: ThemePreference;
   filters: Filters;
+  warningPanelView?: WarningPanelView;
+  warningHistoryFilters?: WarningHistoryFilters;
 }
 
 /** Serialize app state into a URL query string (no sensitive local state). */
@@ -36,7 +46,13 @@ export function encodePermalink(state: PermalinkState): string {
     params.set("t", THEME_CODE[state.theme]);
   }
   if (state.selection) {
-    params.set("sel", `${state.selection.kind === "warning" ? "w" : "s"}:${state.selection.id}`);
+    const prefix =
+      state.selection.kind === "warning-history"
+        ? "h"
+        : state.selection.kind === "warning"
+          ? "w"
+          : "s";
+    params.set("sel", `${prefix}:${state.selection.id}`);
   }
   if (state.filters.warningLevel !== null) {
     params.set("wl", String(state.filters.warningLevel));
@@ -59,6 +75,16 @@ export function encodePermalink(state: PermalinkState): string {
   if (state.filters.onlyStaleCache) {
     params.set("osc", "1");
   }
+  if (state.warningPanelView === "history") {
+    params.set("wv", "h");
+  }
+  const history = state.warningHistoryFilters;
+  if (history?.warningType) params.set("wt", history.warningType);
+  if (history?.office.trim()) params.set("wo", history.office.trim());
+  if (history?.area.trim()) params.set("wa", history.area.trim());
+  if (history?.changeKind) params.set("wk", history.changeKind);
+  if (history?.from) params.set("wf", history.from);
+  if (history?.to) params.set("wto", history.to);
   return params.toString();
 }
 
@@ -100,8 +126,11 @@ export function decodePermalink(search: string): Partial<PermalinkState> {
   if (sel) {
     const [prefix, ...rest] = sel.split(":");
     const id = rest.join(":");
-    if (id && (prefix === "w" || prefix === "s")) {
-      result.selection = { kind: prefix === "w" ? "warning" : "station", id };
+    if (id && (prefix === "w" || prefix === "s" || prefix === "h")) {
+      result.selection = {
+        kind: prefix === "h" ? "warning-history" : prefix === "w" ? "warning" : "station",
+        id,
+      };
     }
   }
 
@@ -132,6 +161,22 @@ export function decodePermalink(search: string): Partial<PermalinkState> {
       maxDataDelayMinutes: maxDelay !== null && Number.isFinite(delay) ? delay : null,
       onlyStaleCache: onlyStale === "1",
     };
+  }
+
+  if (params.get("wv") === "h") {
+    result.warningPanelView = "history";
+  }
+  const warningType = params.get("wt");
+  const historyFilterValues = {
+    warningType: warningType === "meteo" || warningType === "hydro" ? warningType : "",
+    office: params.get("wo") ?? "",
+    area: params.get("wa") ?? "",
+    changeKind: params.get("wk") ?? "",
+    from: params.get("wf") ?? "",
+    to: params.get("wto") ?? "",
+  } satisfies WarningHistoryFilters;
+  if (Object.values(historyFilterValues).some(Boolean)) {
+    result.warningHistoryFilters = historyFilterValues;
   }
 
   return result;

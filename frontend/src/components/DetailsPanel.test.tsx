@@ -2,7 +2,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { ObservationResponse, StationResponse, WarningResponse } from "../api/client";
+import type {
+  ObservationResponse,
+  StationResponse,
+  WarningHistoryResponse,
+  WarningResponse,
+} from "../api/client";
 import { useAppStore } from "../store/appStore";
 import { DetailsPanel } from "./DetailsPanel";
 
@@ -108,6 +113,7 @@ const warningResponse: WarningResponse = {
   generated_at: "2026-06-30T07:30:00Z",
   geometry_status: "missing_area_geometry_dataset",
   raw_available: true,
+  alerting_disclaimer: "MeteoLens nie jest urzędowym systemem ostrzegania.",
   warning: {
     kind: "warning",
     id: "warningsmeteo:Sk1",
@@ -129,6 +135,92 @@ const warningResponse: WarningResponse = {
     source: stationResponse.station.source,
     raw: { id: "Sk1" },
     raw_available: true,
+  },
+};
+
+const warningHistoryResponse: WarningHistoryResponse = {
+  generated_at: "2026-07-27T10:10:00Z",
+  attribution: "Źródło danych: IMGW-PIB.",
+  processed_notice: "Dane IMGW-PIB zostały przetworzone przez MeteoLens.",
+  alerting_disclaimer: "MeteoLens nie jest oficjalnym systemem ostrzegania.",
+  history_is_prospective: true,
+  history: {
+    history_id: "wh:1",
+    source_key: "warningsmeteo",
+    source_id: "Sk1",
+    warning_type: "meteo",
+    office: "Centralne Biuro Prognoz",
+    identity_status: "exact",
+    status: "active",
+    first_observed_at: "2026-07-27T10:00:00Z",
+    last_observed_at: "2026-07-27T10:10:00Z",
+    history_started_at: "2026-07-27T10:00:00Z",
+    current_version_id: "wv:2",
+    snapshots: [],
+    versions: [
+      {
+        version_id: "wv:1",
+        content_hash: "one",
+        first_seen_at: "2026-07-27T10:00:00Z",
+        last_seen_at: "2026-07-27T10:00:00Z",
+        warning: { ...warningResponse.warning, level: 1 },
+        raw: { id: "Sk1", stopien: "1" },
+        source: warningResponse.warning.source,
+      },
+      {
+        version_id: "wv:2",
+        content_hash: "two",
+        first_seen_at: "2026-07-27T10:10:00Z",
+        last_seen_at: "2026-07-27T10:10:00Z",
+        warning: { ...warningResponse.warning, level: 2 },
+        raw: { id: "Sk1", stopien: "2" },
+        source: warningResponse.warning.source,
+      },
+    ],
+    events: [
+      {
+        event_id: "we:1",
+        history_id: "wh:1",
+        source_key: "warningsmeteo",
+        source_id: "Sk1",
+        warning_type: "meteo",
+        detected_at: "2026-07-27T10:00:00Z",
+        effective_at: "2026-07-27T10:00:00Z",
+        change_kinds: ["first_observed"],
+        changed_fields: [],
+        classification_basis: "local_baseline",
+        confidence: "confirmed",
+        from_version_id: null,
+        to_version_id: "wv:1",
+        identity_status: "exact",
+        history_status: "active",
+        history_started_at: "2026-07-27T10:00:00Z",
+        warning: { ...warningResponse.warning, level: 1 },
+        source: warningResponse.warning.source,
+        snapshot: null,
+      },
+      {
+        event_id: "we:2",
+        history_id: "wh:1",
+        source_key: "warningsmeteo",
+        source_id: "Sk1",
+        warning_type: "meteo",
+        detected_at: "2026-07-27T10:10:00Z",
+        effective_at: "2026-07-27T10:10:00Z",
+        change_kinds: ["updated", "escalated"],
+        changed_fields: ["level"],
+        classification_basis: "field_diff",
+        confidence: "derived",
+        from_version_id: "wv:1",
+        to_version_id: "wv:2",
+        identity_status: "exact",
+        history_status: "active",
+        history_started_at: "2026-07-27T10:00:00Z",
+        warning: { ...warningResponse.warning, level: 2 },
+        source: warningResponse.warning.source,
+        snapshot: null,
+      },
+    ],
   },
 };
 
@@ -424,6 +516,26 @@ describe("DetailsPanel", () => {
     expect(screen.getByText("Geometria obszaru dostępna")).toBeInTheDocument();
     expect(screen.getByText(/precyzję mapowania refined/)).toBeInTheDocument();
     expect(screen.getByText(/przybliżenie obszaru prognostycznego IMGW/)).toBeInTheDocument();
+  });
+
+  it("opens a retained historical warning with a vertical, sourced change timeline", async () => {
+    mockFetchByPath({
+      "/warning-histories/wh%3A1": { status: 200, body: warningHistoryResponse },
+    });
+    useAppStore.setState({
+      selection: { kind: "warning-history", id: "wh:1" },
+      mode: "simple",
+    });
+
+    renderWithClient();
+
+    expect(await screen.findByText("Historia ostrzeżenia meteo")).toBeInTheDocument();
+    expect(screen.getByText("Oś zmian")).toBeInTheDocument();
+    expect(screen.getByText("Zaktualizowano · Podniesiono stopień")).toBeInTheDocument();
+    expect(screen.getByText(/1 — żółty → 2 — pomarańczowy/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/MeteoLens nie jest oficjalnym systemem ostrzegania/),
+    ).toBeInTheDocument();
   });
 
   it("shows a cache-empty notice instead of masking the error as no-data", async () => {

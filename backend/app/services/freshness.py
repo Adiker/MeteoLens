@@ -10,7 +10,7 @@ from app.normalization.models import ATTRIBUTION, PROCESSED_NOTICE
 
 ALERTING_DISCLAIMER = (
     "MeteoLens nie jest urzędowym systemem ostrzegania. Lokalne reguły, "
-    "powiadomienia i porównania służą wyłąnie informacji operacyjnej i nie "
+    "powiadomienia i porównania służą wyłącznie informacji operacyjnej i nie "
     "zastępują komunikatów IMGW-PIB."
 )
 

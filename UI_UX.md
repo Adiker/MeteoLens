@@ -275,12 +275,27 @@ target spec above, driven by current backend data:
   do not acquire synthetic map markers. On mobile, the existing station
   bottom-sheet layout retains the selector, chart legend, provenance, and
   export controls.
+- Stage 24 divides the warnings control into `Aktywne` and `Historia` tabs.
+  The history view provides filters for warning kind, level, phenomenon,
+  office, exact area code, change category, and detected date range, plus
+  matching CSV/JSON export links and bounded incremental loading.
+- Selecting an active warning loads its retained timeline through `history_id`.
+  Selecting a historical event opens the latest retained version without
+  requiring a current-cache record. The detail panel uses a vertical timeline,
+  separate from the map-product time control, with before/after values,
+  classification basis, confidence, and ambiguity labels. Expert mode adds
+  normalized/raw version and snapshot metadata.
+- History mode, filters, and `history_id` are permalinked. Loading, empty,
+  error, partial, and ambiguous states stay explicit. The mobile presentation
+  remains the existing bottom sheet, and attribution plus the notice that
+  MeteoLens is not an official warning service remain visible.
 
 ## Future UX Candidates
 
 - Richer product timelines and multi-variable COSMO rendering once additional
   GRIB paths are reviewed.
-- Warning history after Stage 24 retention and correction handling.
+- Optional archive-file warning backfill after format, correction, and legal
+  review; prospective Stage 24 history does not imply older coverage.
 - Hydro basin `refined` / `coarse` / `coastal` polygons remain labelled
   approximations; future work may tighten mapping without hiding precision.
 - Archive import remains an API/CLI operator action. The public station panel

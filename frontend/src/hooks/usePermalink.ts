@@ -37,6 +37,18 @@ export function usePermalink(): void {
       store.setFilter("maxDataDelayMinutes", decoded.filters.maxDataDelayMinutes);
       store.setFilter("onlyStaleCache", decoded.filters.onlyStaleCache);
     }
+    if (decoded.warningPanelView) {
+      store.setWarningPanelView(decoded.warningPanelView);
+    }
+    if (decoded.warningHistoryFilters) {
+      const history = decoded.warningHistoryFilters;
+      store.setWarningHistoryFilter("warningType", history.warningType);
+      store.setWarningHistoryFilter("office", history.office);
+      store.setWarningHistoryFilter("area", history.area);
+      store.setWarningHistoryFilter("changeKind", history.changeKind);
+      store.setWarningHistoryFilter("from", history.from);
+      store.setWarningHistoryFilter("to", history.to);
+    }
     // Theme: permalink wins, otherwise fall back to the last stored preference.
     const storedTheme = decoded.theme ?? readStoredTheme();
     if (storedTheme) {
@@ -58,6 +70,8 @@ export function usePermalink(): void {
         mode: state.mode,
         theme: state.theme,
         filters: state.filters,
+        warningPanelView: state.warningPanelView,
+        warningHistoryFilters: state.warningHistoryFilters,
       });
       const next = `${window.location.pathname}?${qs}`;
       if (next !== `${window.location.pathname}${window.location.search}`) {

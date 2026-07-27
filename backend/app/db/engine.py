@@ -97,6 +97,102 @@ CREATE TABLE IF NOT EXISTS archive_import_run_files (
     PRIMARY KEY (run_id, source_url),
     FOREIGN KEY (run_id) REFERENCES archive_import_runs(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS warning_histories (
+    history_id TEXT PRIMARY KEY,
+    identity_key TEXT NOT NULL,
+    generation INTEGER NOT NULL DEFAULT 1,
+    identity_status TEXT NOT NULL,
+    source_key TEXT NOT NULL,
+    source_id TEXT,
+    warning_type TEXT NOT NULL,
+    office TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    first_observed_at TEXT NOT NULL,
+    last_observed_at TEXT NOT NULL,
+    history_started_at TEXT NOT NULL,
+    absent_complete_snapshots INTEGER NOT NULL DEFAULT 0,
+    current_version_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    UNIQUE(identity_key, generation)
+);
+
+CREATE TABLE IF NOT EXISTS warning_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_key TEXT NOT NULL,
+    snapshot_hash TEXT NOT NULL,
+    completeness TEXT NOT NULL,
+    first_retrieved_at TEXT NOT NULL,
+    last_retrieved_at TEXT NOT NULL,
+    seen_count INTEGER NOT NULL DEFAULT 1,
+    parser_warnings TEXT NOT NULL DEFAULT '[]',
+    exact_duplicate_count INTEGER NOT NULL DEFAULT 0,
+    conflicting_duplicate_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS warning_versions (
+    version_id TEXT PRIMARY KEY,
+    history_id TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    first_seen_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL,
+    event_name TEXT NOT NULL,
+    level INTEGER,
+    probability INTEGER,
+    valid_from TEXT,
+    valid_to TEXT,
+    published_at TEXT,
+    office TEXT,
+    missing_fields TEXT NOT NULL DEFAULT '[]',
+    normalized_payload TEXT NOT NULL,
+    raw_payload TEXT NOT NULL,
+    source_metadata TEXT NOT NULL,
+    FOREIGN KEY (history_id) REFERENCES warning_histories(history_id) ON DELETE CASCADE,
+    UNIQUE(history_id, content_hash)
+);
+
+CREATE TABLE IF NOT EXISTS warning_version_areas (
+    version_id TEXT NOT NULL,
+    area_type TEXT NOT NULL,
+    code TEXT NOT NULL,
+    label TEXT,
+    region TEXT,
+    PRIMARY KEY (version_id, area_type, code),
+    FOREIGN KEY (version_id) REFERENCES warning_versions(version_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS warning_snapshot_members (
+    snapshot_id INTEGER NOT NULL,
+    history_id TEXT NOT NULL,
+    version_id TEXT NOT NULL,
+    duplicate_status TEXT NOT NULL DEFAULT 'unique',
+    PRIMARY KEY (snapshot_id, history_id, version_id),
+    FOREIGN KEY (snapshot_id) REFERENCES warning_snapshots(id) ON DELETE CASCADE,
+    FOREIGN KEY (history_id) REFERENCES warning_histories(history_id) ON DELETE CASCADE,
+    FOREIGN KEY (version_id) REFERENCES warning_versions(version_id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS warning_events (
+    event_id TEXT PRIMARY KEY,
+    history_id TEXT NOT NULL,
+    source_key TEXT NOT NULL,
+    warning_type TEXT NOT NULL,
+    detected_at TEXT NOT NULL,
+    effective_at TEXT,
+    change_kinds TEXT NOT NULL,
+    changed_fields TEXT NOT NULL DEFAULT '[]',
+    classification_basis TEXT NOT NULL,
+    confidence TEXT NOT NULL,
+    from_version_id TEXT,
+    to_version_id TEXT,
+    snapshot_id INTEGER,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    FOREIGN KEY (history_id) REFERENCES warning_histories(history_id) ON DELETE CASCADE,
+    FOREIGN KEY (from_version_id) REFERENCES warning_versions(version_id) ON DELETE SET NULL,
+    FOREIGN KEY (to_version_id) REFERENCES warning_versions(version_id) ON DELETE SET NULL,
+    FOREIGN KEY (snapshot_id) REFERENCES warning_snapshots(id) ON DELETE SET NULL
+);
 """
 
 POST_MIGRATION_STATEMENTS = (
@@ -123,6 +219,34 @@ POST_MIGRATION_STATEMENTS = (
     """
     CREATE INDEX IF NOT EXISTS idx_archive_run_files_run
         ON archive_import_run_files(run_id, status)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_warning_histories_identity
+        ON warning_histories(identity_key, generation)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_warning_histories_source_status
+        ON warning_histories(source_key, status, last_observed_at)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_warning_versions_history_time
+        ON warning_versions(history_id, first_seen_at)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_warning_version_areas_code
+        ON warning_version_areas(code, version_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_warning_snapshots_source_time
+        ON warning_snapshots(source_key, last_retrieved_at)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_warning_events_feed
+        ON warning_events(detected_at DESC, event_id DESC)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_warning_events_source_type
+        ON warning_events(source_key, warning_type, detected_at DESC)
     """,
 )
 
@@ -194,6 +318,10 @@ MIGRATIONS: tuple[tuple[str, str], ...] = (
         "ALTER TABLE archive_import_runs "
         "ADD COLUMN duplicate_rows INTEGER NOT NULL DEFAULT 0",
     ),
+    (
+        "warning_events",
+        "ALTER TABLE warning_events ADD COLUMN snapshot_id INTEGER",
+    ),
 )
 
 
@@ -222,6 +350,7 @@ def get_engine() -> sqlite3.Connection:
         path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(str(path), check_same_thread=False)
     connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
     return connection
 
 

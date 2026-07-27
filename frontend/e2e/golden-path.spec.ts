@@ -74,3 +74,22 @@ test("deep-links to a warning and surfaces resolved geometry status", async ({ p
   await expect(panel.getByText("Geometria obszaru dostępna")).toBeVisible();
   await expect(panel.getByText("Brak geometrii obszaru")).not.toBeVisible();
 });
+
+test("filters warning history and opens an attributed ambiguous timeline", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Historia" }).click();
+  await page.getByLabel("Zmiana").selectOption("removed_from_source");
+
+  const event = page.getByRole("button", { name: /Zniknęło ze źródła.*niepotwierdzone/ });
+  await expect(event).toBeVisible();
+  await event.click();
+
+  const panel = page.getByRole("dialog", { name: "Panel szczegółów" });
+  await expect(panel.getByText("Oś zmian")).toBeVisible();
+  await expect(panel.getByText(/niepotwierdzone przez źródło/)).toBeVisible();
+  await expect(
+    panel.getByText(/MeteoLens nie jest urzędowym systemem ostrzegania/),
+  ).toBeVisible();
+  await expect(panel.getByText("Źródło danych: IMGW-PIB.")).toBeVisible();
+});

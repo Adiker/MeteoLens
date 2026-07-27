@@ -116,6 +116,38 @@ area/basin information. If polygons are missing:
 - show warning details without polygon geometry,
 - label the layer as partial instead of hiding warnings.
 
+## Warning History Is Empty, Partial, Or Ambiguous
+
+Stage 24 history begins when this deployment first stores a successfully parsed
+`warningsmeteo` or `warningshydro` refresh. It does not backfill the separate
+IMGW archive ZIP/PDF/TXT families.
+
+- Check `history_started_at` before concluding that an older warning is
+  missing. `first_observed` is a local baseline, not proof of official issue
+  time.
+- A download error, parser failure, or source `404` creates no snapshot. It
+  must not close histories or create removal/cancellation events.
+- A partial snapshot keeps valid records but does not close absent histories.
+  Review source state, parser warnings, and snapshot completeness metadata.
+- `removed_from_source` requires absence from two consecutive complete
+  snapshots. It is not an official cancellation.
+- Hydro identity requires both `numer` and `biuro`. Missing identity fields and
+  conflicting duplicates remain visible as ambiguous/data-quality records.
+- A retained history remains available at
+  `/api/v1/warning-histories/{history_id}` after the live cache drops it. A
+  `404` on this MeteoLens route means that local `history_id` does not exist.
+
+There is no scheduled warning-history retention. To inspect eligible whole,
+closed histories without changing data:
+
+```bash
+cd backend
+python -m app.operations.warning_history prune --before YYYY-MM-DD
+```
+
+Create and verify a current backup, review all reported counts, and only then
+repeat the exact command with `--confirm`.
+
 ## Parsing Files And Encodings
 
 Archive CSV/TXT files may use encodings that are not UTF-8. Parsers should detect

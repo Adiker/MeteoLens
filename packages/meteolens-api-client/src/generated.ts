@@ -76,6 +76,18 @@ export const OPENAPI_METADATA = {
     },
     {
       "method": "GET",
+      "path": "/api/v1/export/warning-events.csv",
+      "operationId": "export_warning_events_csv_api_v1_export_warning_events_csv_get",
+      "summary": "Export Warning Events Csv"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/export/warning-events.json",
+      "operationId": "export_warning_events_json_api_v1_export_warning_events_json_get",
+      "summary": "Export Warning Events Json"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/export/warnings.geojson",
       "operationId": "export_warnings_geojson_api_v1_export_warnings_geojson_get",
       "summary": "Export Warnings Geojson"
@@ -166,6 +178,18 @@ export const OPENAPI_METADATA = {
     },
     {
       "method": "GET",
+      "path": "/api/v1/warning-events",
+      "operationId": "get_warning_events_api_v1_warning_events_get",
+      "summary": "Get Warning Events"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/warning-histories/{history_id}",
+      "operationId": "get_warning_history_api_v1_warning_histories__history_id__get",
+      "summary": "Get Warning History"
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/warnings",
       "operationId": "list_warnings_api_v1_warnings_get",
       "summary": "List Warnings"
@@ -228,6 +252,8 @@ export const OPENAPI_METADATA = {
     "StationsResponse",
     "TimelineLayer",
     "ValidationError",
+    "WarningEventsResponse",
+    "WarningHistoryResponse",
     "WarningResponse",
     "WarningStationComparisonResponse",
     "WarningsResponse"

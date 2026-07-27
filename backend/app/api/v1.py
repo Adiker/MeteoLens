@@ -43,7 +43,12 @@ from app.products import rendering
 from app.products.catalog import list_products, product_detail
 from app.products.detail_cache import ProductDetailCache
 from app.products.timeline import build_map_timeline
-from app.services import observation_history as history_service
+from app.services import (
+    observation_history as history_service,
+)
+from app.services import (
+    warning_history as warning_history_service,
+)
 from app.services.freshness import ALERTING_DISCLAIMER, build_freshness_report
 
 router = APIRouter(prefix="/api/v1", tags=["v1"])
@@ -252,6 +257,25 @@ class WarningResponse(BaseModel):
     warning: dict[str, Any]
     geometry_status: str
     raw_available: bool = True
+    alerting_disclaimer: str = ALERTING_DISCLAIMER
+
+
+class WarningEventsResponse(ApiEnvelope):
+    events: list[dict[str, Any]]
+    next_cursor: str | None = None
+    history_started_at: datetime | None = None
+    attribution: str = ATTRIBUTION
+    processed_notice: str = PROCESSED_NOTICE
+    alerting_disclaimer: str = ALERTING_DISCLAIMER
+
+
+class WarningHistoryResponse(BaseModel):
+    generated_at: datetime
+    history: dict[str, Any]
+    attribution: str = ATTRIBUTION
+    processed_notice: str = PROCESSED_NOTICE
+    alerting_disclaimer: str = ALERTING_DISCLAIMER
+    history_is_prospective: bool = True
 
 
 class LocationSummaryResponse(ApiEnvelope):
@@ -1074,6 +1098,102 @@ def get_warning(warning_id: str) -> WarningResponse:
     )
 
 
+@router.get("/warning-events", response_model=WarningEventsResponse)
+def get_warning_events(
+    warning_type: Annotated[
+        Literal["meteo", "hydro"] | None,
+        Query(alias="type"),
+    ] = None,
+    level: int | None = None,
+    phenomenon: str | None = None,
+    office: str | None = None,
+    area: str | None = None,
+    change_kind: Literal[
+        "first_observed",
+        "created",
+        "appeared_in_source",
+        "updated",
+        "extended",
+        "escalated",
+        "downgraded",
+        "expired",
+        "removed_from_source",
+        "reappeared",
+        "cancelled",
+        "correction",
+        "duplicate_conflict",
+    ]
+    | None = None,
+    detected_from: Annotated[datetime | None, Query(alias="from")] = None,
+    detected_to: Annotated[datetime | None, Query(alias="to")] = None,
+    cursor: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
+) -> WarningEventsResponse:
+    if detected_from and detected_to and detected_from > detected_to:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "invalid_time_range", "message": "from must not exceed to"},
+        )
+    try:
+        result = warning_history_service.list_warning_events(
+            warning_type=warning_type,
+            level=level,
+            phenomenon=phenomenon,
+            office=office,
+            area=area,
+            change_kind=change_kind,
+            detected_from=detected_from,
+            detected_to=detected_to,
+            cursor=cursor,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "invalid_cursor", "message": str(exc)},
+        ) from exc
+    events = result["events"]
+    history_started_at = (
+        datetime.fromisoformat(result["history_started_at"])
+        if result["history_started_at"]
+        else None
+    )
+    return WarningEventsResponse(
+        generated_at=datetime.now(UTC),
+        cache=_cache_states(_source_cache(), WARNING_SOURCE_KEYS),
+        empty_state=None
+        if events
+        else EmptyState(
+            code="no_warning_events",
+            message="No warning history events matched the requested filters.",
+            source_keys=list(WARNING_SOURCE_KEYS),
+        ),
+        events=events,
+        next_cursor=result["next_cursor"],
+        history_started_at=history_started_at,
+    )
+
+
+@router.get(
+    "/warning-histories/{history_id}",
+    response_model=WarningHistoryResponse,
+)
+def get_warning_history(history_id: str) -> WarningHistoryResponse:
+    history = warning_history_service.get_warning_history(history_id)
+    if history is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": "not_found",
+                "message": f"Warning history {history_id!r} was not found.",
+            },
+        )
+    return WarningHistoryResponse(
+        generated_at=datetime.now(UTC),
+        history=history,
+    )
+
+
 @router.get("/location/summary", response_model=LocationSummaryResponse)
 def get_location_summary(
     lat: Annotated[float, Query(ge=-90, le=90)],
@@ -1492,6 +1612,155 @@ def export_warnings_geojson(
     )
 
 
+@router.get("/export/warning-events.json")
+def export_warning_events_json(
+    warning_type: Annotated[
+        Literal["meteo", "hydro"] | None,
+        Query(alias="type"),
+    ] = None,
+    level: int | None = None,
+    phenomenon: str | None = None,
+    office: str | None = None,
+    area: str | None = None,
+    change_kind: str | None = None,
+    detected_from: Annotated[datetime | None, Query(alias="from")] = None,
+    detected_to: Annotated[datetime | None, Query(alias="to")] = None,
+    limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
+) -> JSONResponse:
+    result = _warning_events_for_export(
+        warning_type=warning_type,
+        level=level,
+        phenomenon=phenomenon,
+        office=office,
+        area=area,
+        change_kind=change_kind,
+        detected_from=detected_from,
+        detected_to=detected_to,
+        limit=limit,
+    )
+    payload = {
+        "generated_at": datetime.now(UTC),
+        "attribution": ATTRIBUTION,
+        "processed_notice": PROCESSED_NOTICE,
+        "alerting_disclaimer": ALERTING_DISCLAIMER,
+        "history_is_prospective": True,
+        "history_started_at": result["history_started_at"],
+        "filters": {
+            "type": warning_type,
+            "level": level,
+            "phenomenon": phenomenon,
+            "office": office,
+            "area": area,
+            "change_kind": change_kind,
+            "from": detected_from,
+            "to": detected_to,
+        },
+        "events": result["events"],
+        "empty_state": (
+            None
+            if result["events"]
+            else {
+                "code": "no_warning_events",
+                "message": "No warning history events matched the requested filters.",
+                "source_keys": list(WARNING_SOURCE_KEYS),
+            }
+        ),
+    }
+    return JSONResponse(
+        content=jsonable_encoder(payload),
+        headers={
+            "Content-Disposition": 'attachment; filename="meteolens-warning-events.json"'
+        },
+    )
+
+
+@router.get("/export/warning-events.csv")
+def export_warning_events_csv(
+    warning_type: Annotated[
+        Literal["meteo", "hydro"] | None,
+        Query(alias="type"),
+    ] = None,
+    level: int | None = None,
+    phenomenon: str | None = None,
+    office: str | None = None,
+    area: str | None = None,
+    change_kind: str | None = None,
+    detected_from: Annotated[datetime | None, Query(alias="from")] = None,
+    detected_to: Annotated[datetime | None, Query(alias="to")] = None,
+    limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
+) -> PlainTextResponse:
+    result = _warning_events_for_export(
+        warning_type=warning_type,
+        level=level,
+        phenomenon=phenomenon,
+        office=office,
+        area=area,
+        change_kind=change_kind,
+        detected_from=detected_from,
+        detected_to=detected_to,
+        limit=limit,
+    )
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "event_id",
+            "history_id",
+            "source_key",
+            "source_id",
+            "warning_type",
+            "detected_at",
+            "effective_at",
+            "change_kinds",
+            "changed_fields",
+            "classification_basis",
+            "confidence",
+            "phenomenon",
+            "level",
+            "office",
+            "area_codes",
+            "history_started_at",
+            "attribution",
+            "processed_notice",
+            "alerting_disclaimer",
+        ]
+    )
+    for event in result["events"]:
+        warning = event.get("warning") or {}
+        writer.writerow(
+            [
+                event["event_id"],
+                event["history_id"],
+                event["source_key"],
+                event.get("source_id"),
+                event["warning_type"],
+                event["detected_at"],
+                event.get("effective_at"),
+                "|".join(event["change_kinds"]),
+                "|".join(event["changed_fields"]),
+                event["classification_basis"],
+                event["confidence"],
+                warning.get("event"),
+                warning.get("level"),
+                warning.get("office"),
+                "|".join(
+                    area.get("code", "") for area in warning.get("areas", [])
+                ),
+                event.get("history_started_at"),
+                ATTRIBUTION,
+                PROCESSED_NOTICE,
+                ALERTING_DISCLAIMER,
+            ]
+        )
+    return PlainTextResponse(
+        output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="meteolens-warning-events.csv"'
+        },
+    )
+
+
 @router.get("/export/map-state.json")
 def export_map_state_json(
     layers: Annotated[str | None, Query(description="Comma-separated layer keys.")] = None,
@@ -1501,7 +1770,7 @@ def export_map_state_json(
     zoom: float | None = None,
     mode: Literal["simple", "expert"] | None = None,
     theme: Literal["system", "light", "dark"] | None = None,
-    selection_kind: Literal["station", "warning"] | None = None,
+    selection_kind: Literal["station", "warning", "warning-history"] | None = None,
     selection_id: str | None = None,
     warning_level: int | None = None,
     phenomenon: str | None = None,
@@ -1988,7 +2257,47 @@ def _warning_payload_from_geometry(warning: Warning, geometry: dict[str, Any]) -
     payload["resolved_areas"] = geometry["resolved_areas"]
     payload["unresolved_areas"] = geometry["unresolved_areas"]
     payload["raw_available"] = True
+    history_link = warning_history_service.warning_history_link(warning)
+    payload.update(
+        history_link
+        or {
+            "history_id": None,
+            "history_available": False,
+            "history_started_at": None,
+            "history_identity_status": None,
+        }
+    )
     return payload
+
+
+def _warning_events_for_export(
+    *,
+    warning_type: str | None,
+    level: int | None,
+    phenomenon: str | None,
+    office: str | None,
+    area: str | None,
+    change_kind: str | None,
+    detected_from: datetime | None,
+    detected_to: datetime | None,
+    limit: int,
+) -> dict[str, Any]:
+    if detected_from and detected_to and detected_from > detected_to:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "invalid_time_range", "message": "from must not exceed to"},
+        )
+    return warning_history_service.list_warning_events(
+        warning_type=warning_type,
+        level=level,
+        phenomenon=phenomenon,
+        office=office,
+        area=area,
+        change_kind=change_kind,
+        detected_from=detected_from,
+        detected_to=detected_to,
+        limit=limit,
+    )
 
 
 def _missing_geometry(station: Station) -> dict[str, Any]:

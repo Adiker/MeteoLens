@@ -90,6 +90,10 @@ Statuses:
 - Cache: 5-minute MVP TTL.
 - Parser: `warningsmeteo`.
 - Normalized model: `Warning`, `WarningArea`.
+- History (Stage 24): successful refreshes are stored prospectively using the
+  exact source endpoint plus `id` identity. The first local observation is a
+  baseline, not proof of issue time. Two consecutive complete snapshots are
+  required before a missing warning is classified as removed.
 - Status: `implemented`.
 
 ## Current Hydrological Warnings
@@ -110,7 +114,18 @@ Statuses:
 - Cache: 5-minute MVP TTL.
 - Parser: `warningshydro`.
 - Normalized model: `Warning`, `WarningArea`.
+- History (Stage 24): successful refreshes are stored prospectively using the
+  exact source endpoint plus `numer` and `biuro`. `numer` without an office is
+  ambiguous and is never merged by phenomenon, text, or area. Level `-1` is
+  retained but is not numerically compared with levels 1-3.
 - Status: `implemented`.
+
+For both live warning sources, parser warnings produce an explicitly partial
+snapshot that may preserve valid records but cannot close absent histories.
+Download failures, parser failures, and source `404` responses do not create a
+snapshot and never mean an official empty list. Identical duplicate records
+are collapsed and counted; conflicting records under one identity are retained
+as a data-quality event and do not advance that history.
 
 ## Product/File API
 
@@ -175,7 +190,9 @@ blocked at the source (`rendering_status: download_blocked`). See
 - Cache: manual/daily archive manifest refresh.
 - Parser: `archive_warnings_meteo`.
 - Normalized model: `Warning`, `WarningRevision`.
-- Status: `planned` for post-MVP.
+- Status: `planned` for a future extension; Stage 24 does not fetch or parse
+  these archives and exposes `history_started_at` as the local completeness
+  boundary.
 
 ## Archived Hydrological Warnings
 
@@ -190,7 +207,9 @@ blocked at the source (`rendering_status: download_blocked`). See
 - Cache: manual/daily archive manifest refresh.
 - Parser: `archive_warnings_hydro`.
 - Normalized model: `Warning`, `WarningRevision`.
-- Status: `planned` for post-MVP.
+- Status: `planned` for a future extension; Stage 24 does not fetch or parse
+  these archives and exposes `history_started_at` as the local completeness
+  boundary.
 
 ## Measurement And Observation Archives
 
