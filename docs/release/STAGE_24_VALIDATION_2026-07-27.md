@@ -59,6 +59,11 @@ reports history/version/snapshot/event counts, and rolls back an injected
 failure. The existing essential backup/verify/restore test now verifies a
 warning-history row in the restored SQLite database.
 
+Concurrent synchronous API requests use separate thread-affine connections to
+the same SQLite file. A regression test proves two worker threads receive
+distinct connection objects and observe the same committed warning-history
+state.
+
 ## Real-Source Smoke
 
 Two consecutive refreshes of each live warning endpoint ran against an isolated
@@ -84,7 +89,7 @@ deduplicated snapshot.
 Commands and results:
 
 ```text
-backend: uv run --python 3.12 pytest -q       290 passed
+backend: uv run --python 3.12 pytest -q       291 passed
 backend: uv run --python 3.12 ruff check .    passed
 frontend: npm test -- --run                  101 passed
 frontend: npm run lint                        passed

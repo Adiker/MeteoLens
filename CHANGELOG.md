@@ -14,7 +14,9 @@ All notable changes to MeteoLens will be documented in this file.
   ambiguity, processed-data notice, and official-warning disclaimer remain
   visible. Snapshot quality changes remain auditable, pruned history IDs are
   never reassigned, conflict-only detail does not select an arbitrary version,
-  and UI date filters use complete Europe/Warsaw calendar days.
+  and UI date filters use complete Europe/Warsaw calendar days. SQLite
+  connections are isolated per FastAPI worker thread so concurrent API reads do
+  not share mutable connection state.
 - Added Stage 23 bounded daily hydrological `CODZ` archive imports with
   CP1250/UTF-8 and comma/semicolon handling, annual/monthly hydrological-year
   discovery, exact `PSKDSZS` station identity, missing/quality/file provenance,

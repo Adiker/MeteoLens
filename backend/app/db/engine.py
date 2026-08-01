@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import sqlite3
-from functools import lru_cache
 from pathlib import Path
+from threading import RLock, get_ident
 from urllib.parse import urlparse
 
 from app.core.config import get_settings
@@ -347,16 +347,33 @@ def database_path_from_url(database_url: str) -> Path:
     return path
 
 
-@lru_cache
+_ENGINE_CONNECTIONS: dict[int, sqlite3.Connection] = {}
+_ENGINE_CONNECTIONS_LOCK = RLock()
+
+
 def get_engine() -> sqlite3.Connection:
-    settings = get_settings()
-    path = database_path_from_url(settings.database_url)
-    if path != Path(":memory:"):
-        path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(str(path), check_same_thread=False)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
+    """Return one SQLite connection per worker thread.
+
+    FastAPI runs synchronous endpoints in a thread pool. Sharing one cached
+    connection between those threads can overlap SQLite API calls and raise
+    ``InterfaceError`` even with ``check_same_thread=False``. Thread-affine
+    connections share the same database file without sharing connection state.
+    """
+    thread_id = get_ident()
+    with _ENGINE_CONNECTIONS_LOCK:
+        existing = _ENGINE_CONNECTIONS.get(thread_id)
+        if existing is not None:
+            return existing
+
+        settings = get_settings()
+        path = database_path_from_url(settings.database_url)
+        if path != Path(":memory:"):
+            path.parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(str(path), check_same_thread=False)
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys = ON")
+        _ENGINE_CONNECTIONS[thread_id] = connection
+        return connection
 
 
 def init_db() -> None:
@@ -456,4 +473,8 @@ def _migrate_observation_history_origin_key(connection: sqlite3.Connection) -> N
 
 
 def reset_engine_cache() -> None:
-    get_engine.cache_clear()
+    with _ENGINE_CONNECTIONS_LOCK:
+        connections = list(_ENGINE_CONNECTIONS.values())
+        _ENGINE_CONNECTIONS.clear()
+    for connection in connections:
+        connection.close()

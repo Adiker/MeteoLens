@@ -317,6 +317,11 @@ and preserve existing rows. Automatic age retention now targets only
 `live_refresh`; archive rows require the dry-run-first cleanup CLI and a
 verified backup before `--confirm`.
 
+Synchronous FastAPI endpoints use one SQLite connection per worker thread.
+Connections share the configured database file but never their mutable SQLite
+connection state, preventing overlapping requests from concurrently operating
+on one connection object.
+
 Stage 24 adds normalized `warning_histories`, `warning_identity_generations`,
 `warning_versions`,
 `warning_version_areas`, `warning_snapshots`, `warning_snapshot_members`, and
