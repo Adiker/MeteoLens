@@ -78,7 +78,7 @@ test("deep-links to a warning and surfaces resolved geometry status", async ({ p
 test("filters warning history and opens an attributed ambiguous timeline", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: "Historia" }).click();
+  await page.getByRole("tab", { name: "Historia" }).click();
   await page.getByLabel("Zmiana").selectOption("removed_from_source");
 
   const event = page.getByRole("button", { name: /Zniknęło ze źródła.*niepotwierdzone/ });
