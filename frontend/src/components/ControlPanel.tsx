@@ -2,6 +2,7 @@ import { AlertTriangle, Layers, RefreshCw, X } from "lucide-react";
 
 import {
   API_BASE_URL,
+  WARNING_CHANGE_KINDS,
   warningEventsExportUrl,
   type WarningChangeKind,
 } from "../api/client";
@@ -15,6 +16,8 @@ import { useActiveAt } from "../hooks/useActiveAt";
 import {
   cacheStatusLabel,
   formatTimestamp,
+  sourceDateEnd,
+  sourceDateStart,
   warningChangeKindLabel,
   warningLevelLabel,
   WARNING_LEVEL_COLOR,
@@ -100,7 +103,7 @@ function LayerToggles() {
   );
 }
 
-function Filters() {
+function Filters({ showSpatial = true }: { showSpatial?: boolean }) {
   const filters = useAppStore((state) => state.filters);
   const setFilter = useAppStore((state) => state.setFilter);
   return (
@@ -131,36 +134,42 @@ function Filters() {
           onChange={(event) => setFilter("phenomenon", event.target.value)}
         />
       </label>
-      <label className="block text-xs">
-        <span className="mb-1 block font-medium text-muted-foreground">Województwo (TERYT)</span>
-        <input
-          type="text"
-          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-          placeholder="np. 12"
-          value={filters.province}
-          onChange={(event) => setFilter("province", event.target.value)}
-        />
-      </label>
-      <label className="block text-xs">
-        <span className="mb-1 block font-medium text-muted-foreground">Powiat (TERYT)</span>
-        <input
-          type="text"
-          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-          placeholder="np. 1205"
-          value={filters.county}
-          onChange={(event) => setFilter("county", event.target.value)}
-        />
-      </label>
-      <label className="block text-xs">
-        <span className="mb-1 block font-medium text-muted-foreground">Zlewnia</span>
-        <input
-          type="text"
-          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-          placeholder="np. Z_P_WP_1856"
-          value={filters.basin}
-          onChange={(event) => setFilter("basin", event.target.value)}
-        />
-      </label>
+      {showSpatial && (
+        <>
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-muted-foreground">
+              Województwo (TERYT)
+            </span>
+            <input
+              type="text"
+              className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              placeholder="np. 12"
+              value={filters.province}
+              onChange={(event) => setFilter("province", event.target.value)}
+            />
+          </label>
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-muted-foreground">Powiat (TERYT)</span>
+            <input
+              type="text"
+              className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              placeholder="np. 1205"
+              value={filters.county}
+              onChange={(event) => setFilter("county", event.target.value)}
+            />
+          </label>
+          <label className="block text-xs">
+            <span className="mb-1 block font-medium text-muted-foreground">Zlewnia</span>
+            <input
+              type="text"
+              className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              placeholder="np. Z_P_WP_1856"
+              value={filters.basin}
+              onChange={(event) => setFilter("basin", event.target.value)}
+            />
+          </label>
+        </>
+      )}
     </div>
   );
 }
@@ -240,22 +249,6 @@ function ActiveWarningsList() {
   );
 }
 
-const WARNING_CHANGE_KINDS: WarningChangeKind[] = [
-  "first_observed",
-  "created",
-  "appeared_in_source",
-  "updated",
-  "extended",
-  "escalated",
-  "downgraded",
-  "expired",
-  "removed_from_source",
-  "reappeared",
-  "cancelled",
-  "correction",
-  "duplicate_conflict",
-];
-
 function HistoryFilters() {
   const filters = useAppStore((state) => state.warningHistoryFilters);
   const setFilter = useAppStore((state) => state.setWarningHistoryFilter);
@@ -280,7 +273,9 @@ function HistoryFilters() {
         <select
           className="w-full rounded border border-border bg-background px-2 py-1.5"
           value={filters.changeKind}
-          onChange={(event) => setFilter("changeKind", event.target.value)}
+          onChange={(event) =>
+            setFilter("changeKind", event.target.value as "" | WarningChangeKind)
+          }
         >
           <option value="">Wszystkie</option>
           {WARNING_CHANGE_KINDS.map((kind) => (
@@ -342,8 +337,8 @@ function WarningHistoryList() {
     office: historyFilters.office.trim() || undefined,
     area: historyFilters.area.trim() || undefined,
     change_kind: (historyFilters.changeKind || undefined) as WarningChangeKind | undefined,
-    from: historyFilters.from ? `${historyFilters.from}T00:00:00Z` : undefined,
-    to: historyFilters.to ? `${historyFilters.to}T23:59:59Z` : undefined,
+    from: historyFilters.from ? sourceDateStart(historyFilters.from) : undefined,
+    to: historyFilters.to ? sourceDateEnd(historyFilters.to) : undefined,
   };
   const query = useWarningEventsQuery(params);
   const events = query.data?.pages.flatMap((page) => page.events) ?? [];
@@ -431,9 +426,16 @@ function WarningsBrowser() {
   const setView = useAppStore((state) => state.setWarningPanelView);
   return (
     <section className="space-y-3">
-      <div className="grid grid-cols-2 rounded-md border border-border bg-background p-1">
+      <div
+        className="grid grid-cols-2 rounded-md border border-border bg-background p-1"
+        role="tablist"
+        aria-label="Widok ostrzeżeń"
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={view === "active"}
+          aria-controls="warnings-browser-panel"
           className={cn("rounded px-2 py-1.5 text-sm", view === "active" && "bg-muted")}
           onClick={() => setView("active")}
         >
@@ -441,13 +443,18 @@ function WarningsBrowser() {
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={view === "history"}
+          aria-controls="warnings-browser-panel"
           className={cn("rounded px-2 py-1.5 text-sm", view === "history" && "bg-muted")}
           onClick={() => setView("history")}
         >
           Historia
         </button>
       </div>
-      {view === "active" ? <ActiveWarningsList /> : <WarningHistoryList />}
+      <div id="warnings-browser-panel" role="tabpanel">
+        {view === "active" ? <ActiveWarningsList /> : <WarningHistoryList />}
+      </div>
     </section>
   );
 }
@@ -499,6 +506,7 @@ export function ControlPanel() {
   const mapQuery = useMapLayersQuery(activeStationKeys);
   const emptyState = mapQuery.data?.empty_state;
   const noActiveLayers = activeLayerKeys(activeLayers).length === 0;
+  const warningPanelView = useAppStore((state) => state.warningPanelView);
 
   return (
     <aside
@@ -542,7 +550,7 @@ export function ControlPanel() {
         </StateNotice>
       )}
 
-      <Filters />
+      <Filters showSpatial={warningPanelView === "active"} />
       <WarningsBrowser />
       <SourceStatus />
     </aside>

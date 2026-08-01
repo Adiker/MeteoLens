@@ -5,8 +5,12 @@ import {
   formatDelay,
   formatTimestamp,
   formatValue,
+  isDateOnly,
   metricLabel,
+  sourceDateEnd,
+  sourceDateStart,
   warningLevelLabel,
+  WARNING_LEVEL_COLOR,
 } from "./format";
 
 describe("format helpers", () => {
@@ -43,8 +47,19 @@ describe("format helpers", () => {
     expect(formatTimestamp(null)).toBe("—");
   });
 
+  it("converts date filters to complete Europe/Warsaw calendar days", () => {
+    expect(sourceDateStart("2026-07-01")).toBe("2026-06-30T22:00:00.000Z");
+    expect(sourceDateEnd("2026-07-01")).toBe("2026-07-01T21:59:59.999Z");
+    expect(sourceDateStart("2026-01-01")).toBe("2025-12-31T23:00:00.000Z");
+    expect(sourceDateEnd("2026-03-29")).toBe("2026-03-29T21:59:59.999Z");
+    expect(sourceDateStart("not-a-date")).toBeUndefined();
+    expect(isDateOnly("2026-02-29")).toBe(false);
+    expect(isDateOnly("2028-02-29")).toBe(true);
+  });
+
   it("labels warning levels and cache statuses", () => {
     expect(warningLevelLabel(3)).toContain("czerwony");
+    expect(WARNING_LEVEL_COLOR[-1]).toBeDefined();
     expect(warningLevelLabel(null)).toBe("—");
     expect(cacheStatusLabel("fresh")).toBe("aktualny");
     expect(cacheStatusLabel("unknown")).toBe("unknown");

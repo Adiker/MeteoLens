@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import type { WarningChangeKind } from "../api/client";
 import { DEFAULT_ACTIVE_LAYERS, type LayerKey } from "../lib/layers";
 import { initialTheme } from "../lib/theme";
 import {
@@ -53,7 +54,7 @@ export interface WarningHistoryFilters {
   warningType: "" | "meteo" | "hydro";
   office: string;
   area: string;
-  changeKind: string;
+  changeKind: "" | WarningChangeKind;
   from: string;
   to: string;
 }

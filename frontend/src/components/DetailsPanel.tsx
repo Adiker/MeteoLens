@@ -557,14 +557,38 @@ function WarningHistoryDetails({ id, expert }: { id: string; expert: boolean }) 
     return null;
   }
   const { history } = historyQuery.data;
-  const current =
-    history.versions.find((version) => version.version_id === history.current_version_id) ??
-    history.versions[history.versions.length - 1];
+  const current = history.current_version_id
+    ? history.versions.find((version) => version.version_id === history.current_version_id)
+    : undefined;
+  if (history.current_version_id && !current) {
+    return (
+      <StateNotice tone="error" title="Historia ma niespójne dane">
+        Wskazana bieżąca wersja nie występuje w zachowanej osi czasu.
+      </StateNotice>
+    );
+  }
   if (!current) {
     return (
-      <StateNotice tone="warning" title="Historia nie ma poprawnej wersji">
-        Konflikt źródłowy uniemożliwił wybranie reprezentatywnego ostrzeżenia.
-      </StateNotice>
+      <div className="space-y-4">
+        <header>
+          <p className="text-xs uppercase text-muted-foreground">Historia ostrzeżenia</p>
+          <h2 className="text-lg font-semibold leading-tight">Konflikt danych źródłowych</h2>
+        </header>
+        <StateNotice tone="warning" title="Historia nie ma reprezentatywnej wersji">
+          Źródło zwróciło różne rekordy o tej samej tożsamości. MeteoLens nie wybiera
+          arbitralnie żadnego z nich.
+        </StateNotice>
+        <WarningHistoryTimeline
+          events={history.events}
+          versions={history.versions}
+          snapshots={history.snapshots}
+          historyStartedAt={history.history_started_at}
+          disclaimer={historyQuery.data.alerting_disclaimer}
+          loading={false}
+          error={false}
+          expert={expert}
+        />
+      </div>
     );
   }
   const warning = current.warning;

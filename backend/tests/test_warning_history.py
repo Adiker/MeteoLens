@@ -165,6 +165,7 @@ def test_stage24_schema_is_additive_and_idempotent(monkeypatch, tmp_path) -> Non
         "warning_versions",
         "warning_snapshots",
         "warning_histories",
+        "warning_identity_generations",
     ):
         connection.execute(f"DROP TABLE {table}")
     connection.commit()
@@ -180,7 +181,7 @@ def test_stage24_schema_is_additive_and_idempotent(monkeypatch, tmp_path) -> Non
             "SELECT COUNT(*) FROM sqlite_master "
             "WHERE type = 'table' AND name LIKE 'warning_%'"
         ).fetchone()[0]
-        == 6
+        == 7
     )
 
 
@@ -416,6 +417,103 @@ def test_hydro_identity_includes_exact_office_and_conflicts_are_visible(
     assert conflict_events[0]["identity_status"] == "exact"
     assert conflict_events[0]["history_status"] == "ambiguous"
     assert conflict_events[0]["snapshot"]["completeness"] == "partial"
+    assert conflict_events[0]["snapshot"]["snapshot_id"].startswith("ws:")
+
+
+def test_snapshot_quality_changes_are_preserved_and_conflicts_are_idempotent(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(monkeypatch, tmp_path)
+    observed = datetime(2026, 7, 27, 10, tzinfo=UTC)
+    warning = _warning(retrieved_at=observed)
+    conflict = warning.model_copy(update={"content": "Sprzeczna wersja."})
+
+    first = persist_warning_snapshot(
+        [warning, conflict],
+        source_key="warningsmeteo",
+        retrieved_at=observed,
+        parser_warnings=["pierwszy problem"],
+    )
+    repeated_at = observed + timedelta(minutes=5)
+    repeated = warning.model_copy(
+        update={
+            "source": warning.source.model_copy(update={"retrieved_at": repeated_at})
+        }
+    )
+    repeated_conflict = conflict.model_copy(
+        update={
+            "source": conflict.source.model_copy(update={"retrieved_at": repeated_at})
+        }
+    )
+    unchanged = persist_warning_snapshot(
+        [repeated, repeated_conflict],
+        source_key="warningsmeteo",
+        retrieved_at=repeated_at,
+        parser_warnings=["pierwszy problem"],
+    )
+
+    assert unchanged.snapshot_id == first.snapshot_id
+    assert len(list_warning_events(change_kind="duplicate_conflict")["events"]) == 1
+
+    changed_quality_at = repeated_at + timedelta(minutes=5)
+    changed_quality = repeated.model_copy(
+        update={
+            "source": warning.source.model_copy(
+                update={"retrieved_at": changed_quality_at}
+            )
+        }
+    )
+    changed_quality_conflict = repeated_conflict.model_copy(
+        update={
+            "source": conflict.source.model_copy(
+                update={"retrieved_at": changed_quality_at}
+            )
+        }
+    )
+    changed = persist_warning_snapshot(
+        [changed_quality, changed_quality_conflict],
+        source_key="warningsmeteo",
+        retrieved_at=changed_quality_at,
+        parser_warnings=["inny problem"],
+    )
+
+    assert changed.snapshot_id != first.snapshot_id
+    snapshots = get_engine().execute(
+        "SELECT parser_warnings, seen_count FROM warning_snapshots ORDER BY id"
+    ).fetchall()
+    assert [row["parser_warnings"] for row in snapshots] == [
+        '["pierwszy problem"]',
+        '["inny problem"]',
+    ]
+    assert [row["seen_count"] for row in snapshots] == [2, 1]
+
+
+def test_exact_duplicate_count_change_creates_a_new_snapshot(monkeypatch, tmp_path) -> None:
+    _prepare(monkeypatch, tmp_path)
+    observed = datetime(2026, 7, 27, 10, tzinfo=UTC)
+    warning = _warning(retrieved_at=observed)
+    first = persist_warning_snapshot(
+        [warning, warning],
+        source_key="warningsmeteo",
+        retrieved_at=observed,
+        parser_warnings=[],
+    )
+    later = observed + timedelta(minutes=5)
+    repeated = warning.model_copy(
+        update={"source": warning.source.model_copy(update={"retrieved_at": later})}
+    )
+    second = persist_warning_snapshot(
+        [repeated],
+        source_key="warningsmeteo",
+        retrieved_at=later,
+        parser_warnings=[],
+    )
+
+    assert second.snapshot_id != first.snapshot_id
+    rows = get_engine().execute(
+        "SELECT exact_duplicate_count FROM warning_snapshots ORDER BY id"
+    ).fetchall()
+    assert [row["exact_duplicate_count"] for row in rows] == [1, 0]
 
 
 def test_hydro_special_level_is_not_ranked_and_missing_office_is_ambiguous(
@@ -467,6 +565,41 @@ def test_hydro_special_level_is_not_ranked_and_missing_office_is_ambiguous(
         "SELECT identity_status FROM warning_histories WHERE source_id = '81'"
     ).fetchone()
     assert ambiguous["identity_status"] == "ambiguous"
+
+
+def test_ambiguous_identity_content_change_stays_in_separate_histories(
+    monkeypatch, tmp_path
+) -> None:
+    _prepare(monkeypatch, tmp_path)
+    observed = datetime(2026, 7, 27, 10, tzinfo=UTC)
+    warning = _warning(retrieved_at=observed, source_id="")
+    changed_at = observed + timedelta(minutes=5)
+    changed = warning.model_copy(
+        update={
+            "level": 2,
+            "content": "Zmieniona treść bez stabilnego identyfikatora.",
+            "source": warning.source.model_copy(update={"retrieved_at": changed_at}),
+        }
+    )
+
+    persist_warning_snapshot(
+        [warning],
+        source_key="warningsmeteo",
+        retrieved_at=observed,
+        parser_warnings=[],
+    )
+    persist_warning_snapshot(
+        [changed],
+        source_key="warningsmeteo",
+        retrieved_at=changed_at,
+        parser_warnings=[],
+    )
+
+    histories = get_engine().execute(
+        "SELECT identity_status FROM warning_histories ORDER BY history_id"
+    ).fetchall()
+    assert [row["identity_status"] for row in histories] == ["ambiguous", "ambiguous"]
+    assert list_warning_events(change_kind="escalated")["events"] == []
 
 
 def test_reused_key_creates_new_generation_only_with_new_source_time(
@@ -556,6 +689,9 @@ def test_event_filters_cursor_and_prospective_api(monkeypatch, tmp_path) -> None
             "/api/v1/export/warning-events.json?phenomenon=upa%C5%82"
         )
         invalid_cursor = client.get("/api/v1/warning-events?cursor=%25%25%25")
+        invalid_export_change = client.get(
+            "/api/v1/export/warning-events.json?change_kind=not-a-change"
+        )
     assert feed.status_code == 200
     assert feed.json()["history_started_at"] is not None
     assert detail.status_code == 200
@@ -564,6 +700,7 @@ def test_event_filters_cursor_and_prospective_api(monkeypatch, tmp_path) -> None
     assert json_export.json()["history_started_at"] == "2026-07-27T10:00:00+00:00"
     assert len(json_export.json()["events"]) == 1
     assert invalid_cursor.status_code == 422
+    assert invalid_export_change.status_code == 422
 
 
 def test_prune_is_dry_run_first_and_keeps_active_histories(monkeypatch, tmp_path) -> None:
@@ -653,3 +790,55 @@ def test_prune_is_dry_run_first_and_keeps_active_histories(monkeypatch, tmp_path
         ("active", "active")
     ]
     assert get_engine().execute("SELECT COUNT(*) FROM warning_snapshots").fetchone()[0] == 1
+
+
+def test_prune_never_reuses_a_public_history_id(monkeypatch, tmp_path) -> None:
+    _prepare(monkeypatch, tmp_path)
+    started = datetime(2025, 1, 1, 10, tzinfo=UTC)
+    warning = _warning(
+        retrieved_at=started,
+        source_id="recycled-after-prune",
+        valid_to=started + timedelta(hours=1),
+    )
+    persist_warning_snapshot(
+        [warning],
+        source_key="warningsmeteo",
+        retrieved_at=started,
+        parser_warnings=[],
+    )
+    original = get_engine().execute(
+        "SELECT history_id FROM warning_histories"
+    ).fetchone()["history_id"]
+    persist_warning_snapshot(
+        [],
+        source_key="warningsmeteo",
+        retrieved_at=started + timedelta(hours=2),
+        parser_warnings=[],
+    )
+    persist_warning_snapshot(
+        [],
+        source_key="warningsmeteo",
+        retrieved_at=started + timedelta(hours=3),
+        parser_warnings=[],
+    )
+    prune_warning_histories(before=date(2026, 1, 1), confirm=True)
+
+    reissued_at = datetime(2026, 7, 27, 10, tzinfo=UTC)
+    reissued = _warning(
+        retrieved_at=reissued_at,
+        source_id="recycled-after-prune",
+        published_at=reissued_at,
+        valid_to=reissued_at + timedelta(hours=2),
+    )
+    persist_warning_snapshot(
+        [reissued],
+        source_key="warningsmeteo",
+        retrieved_at=reissued_at,
+        parser_warnings=[],
+    )
+
+    current = get_engine().execute(
+        "SELECT history_id, generation FROM warning_histories"
+    ).fetchone()
+    assert current["history_id"] != original
+    assert current["generation"] == 2

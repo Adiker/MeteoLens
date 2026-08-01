@@ -278,13 +278,19 @@ target spec above, driven by current backend data:
 - Stage 24 divides the warnings control into `Aktywne` and `Historia` tabs.
   The history view provides filters for warning kind, level, phenomenon,
   office, exact area code, change category, and detected date range, plus
-  matching CSV/JSON export links and bounded incremental loading.
+  matching CSV/JSON export links and bounded incremental loading. Date-only
+  boundaries represent complete `Europe/Warsaw` calendar days. Active-only
+  province, county, and basin controls are hidden in history mode instead of
+  appearing to filter a query that does not accept them. The two views use
+  accessible tab semantics and expose their selected state.
 - Selecting an active warning loads its retained timeline through `history_id`.
   Selecting a historical event opens the latest retained version without
   requiring a current-cache record. The detail panel uses a vertical timeline,
   separate from the map-product time control, with before/after values,
   classification basis, confidence, and ambiguity labels. Expert mode adds
-  normalized/raw version and snapshot metadata.
+  normalized/raw version and snapshot metadata. If conflicting records leave no
+  representative current version, the detail view shows an explicit conflict
+  state and never chooses an arbitrary retained version.
 - History mode, filters, and `history_id` are permalinked. Loading, empty,
   error, partial, and ambiguous states stay explicit. The mobile presentation
   remains the existing bottom sheet, and attribution plus the notice that

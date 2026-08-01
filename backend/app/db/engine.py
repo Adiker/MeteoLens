@@ -117,6 +117,11 @@ CREATE TABLE IF NOT EXISTS warning_histories (
     UNIQUE(identity_key, generation)
 );
 
+CREATE TABLE IF NOT EXISTS warning_identity_generations (
+    identity_hash TEXT PRIMARY KEY,
+    last_generation INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS warning_snapshots (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_key TEXT NOT NULL,

@@ -481,7 +481,9 @@ stable `event_id DESC`. Supported filters are:
 Events expose `change_kinds`, `changed_fields`, `detected_at`, `effective_at`,
 `classification_basis`, `confidence`, source metadata, identity completeness,
 the retained normalized/raw version, missing fields, and
-`history_started_at`. Supported categories are `first_observed`, `created`,
+`history_started_at`. Snapshot metadata uses an opaque stable `snapshot_id`;
+SQLite row numbers are not part of the public contract. Supported categories
+are `first_observed`, `created`,
 `appeared_in_source`, `updated`, `extended`, `escalated`, `downgraded`,
 `expired`, `removed_from_source`, `reappeared`, `cancelled`, `correction`, and
 `duplicate_conflict`. Categories that require an explicit source signal are
@@ -492,7 +494,10 @@ not inferred from free text.
 Returns the exact local identity, identity status, lifecycle status, all
 deduplicated versions, and the chronological event timeline. It remains
 available after a warning disappears from the current cache. A missing
-`history_id` returns `404`.
+`history_id` returns `404`. Pruning never reassigns a deleted public history ID.
+If conflicting source records prevent selection of a current version,
+`current_version_id` remains `null`; consumers must present the conflict rather
+than choose one version as representative.
 
 Both responses include IMGW-PIB attribution, the MeteoLens processed-data
 notice, the official-warning disclaimer, and an explicit prospective-history
@@ -551,7 +556,9 @@ missing-field or missing-geometry metadata.
 Warning-event exports accept the same `type`, `level`, `area`, `change_kind`,
 `from`, `to`, `phenomenon`, and `office` filters as the feed. Their bounded
 export limit is 1-5000, default 1000. They include uncertain and ambiguous
-events rather than silently omitting them. JSON retains the structured event
+events rather than silently omitting them. `change_kind` uses the same closed
+category enumeration as the paginated feed and invalid values return `422`.
+JSON retains the structured event
 payload; CSV includes stable event/history ids, change categories, changed
 fields, classification basis, confidence, source identity, affected area
 codes, `history_started_at`, attribution, processed notice, and disclaimer.

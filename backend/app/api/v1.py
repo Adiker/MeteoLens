@@ -55,6 +55,21 @@ router = APIRouter(prefix="/api/v1", tags=["v1"])
 NORMALIZED_RECORD_ADAPTER = TypeAdapter(NormalizedRecord)
 STATION_SOURCE_KEYS = ("synop", "hydro", "meteo")
 WARNING_SOURCE_KEYS = ("warningsmeteo", "warningshydro")
+WarningChangeKind = Literal[
+    "first_observed",
+    "created",
+    "appeared_in_source",
+    "updated",
+    "extended",
+    "escalated",
+    "downgraded",
+    "expired",
+    "removed_from_source",
+    "reappeared",
+    "cancelled",
+    "correction",
+    "duplicate_conflict",
+]
 MAP_LAYER_DEFINITIONS = {
     "synop_stations": {
         "title": "Stacje synoptyczne",
@@ -1108,22 +1123,7 @@ def get_warning_events(
     phenomenon: str | None = None,
     office: str | None = None,
     area: str | None = None,
-    change_kind: Literal[
-        "first_observed",
-        "created",
-        "appeared_in_source",
-        "updated",
-        "extended",
-        "escalated",
-        "downgraded",
-        "expired",
-        "removed_from_source",
-        "reappeared",
-        "cancelled",
-        "correction",
-        "duplicate_conflict",
-    ]
-    | None = None,
+    change_kind: WarningChangeKind | None = None,
     detected_from: Annotated[datetime | None, Query(alias="from")] = None,
     detected_to: Annotated[datetime | None, Query(alias="to")] = None,
     cursor: str | None = None,
@@ -1622,7 +1622,7 @@ def export_warning_events_json(
     phenomenon: str | None = None,
     office: str | None = None,
     area: str | None = None,
-    change_kind: str | None = None,
+    change_kind: WarningChangeKind | None = None,
     detected_from: Annotated[datetime | None, Query(alias="from")] = None,
     detected_to: Annotated[datetime | None, Query(alias="to")] = None,
     limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
@@ -1684,7 +1684,7 @@ def export_warning_events_csv(
     phenomenon: str | None = None,
     office: str | None = None,
     area: str | None = None,
-    change_kind: str | None = None,
+    change_kind: WarningChangeKind | None = None,
     detected_from: Annotated[datetime | None, Query(alias="from")] = None,
     detected_to: Annotated[datetime | None, Query(alias="to")] = None,
     limit: Annotated[int, Query(ge=1, le=5000)] = 1000,
@@ -2277,7 +2277,7 @@ def _warning_events_for_export(
     phenomenon: str | None,
     office: str | None,
     area: str | None,
-    change_kind: str | None,
+    change_kind: WarningChangeKind | None,
     detected_from: datetime | None,
     detected_to: datetime | None,
     limit: int,

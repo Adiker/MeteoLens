@@ -20,7 +20,12 @@ Automated coverage proves:
 - missing identity components remain in separate ambiguous histories and are
   never joined by phenomenon, text, or area;
 - identical duplicates collapse and are counted, while conflicting duplicates
-  remain visible without advancing the affected history;
+  remain visible without advancing the affected history; repeated persistence
+  of the same deduplicated snapshot does not manufacture another conflict event;
+- snapshot identity includes parser warnings and duplicate-quality counters, so
+  changes in source quality remain auditable instead of being overwritten;
+- pruning a closed history never permits its public history identifier to be
+  reused, because the per-identity generation ledger survives retention cleanup;
 - the first successful snapshot produces `first_observed`, not a fabricated
   issue event, and an identical refresh creates no new version or event;
 - creation, appearance, update, extension, escalation, downgrade, finite
@@ -41,10 +46,12 @@ record disappears, CSV/JSON parity, attribution, processed-data notice, local
 completeness boundary, ambiguity, and the official-warning disclaimer.
 
 The React tests cover the `Aktywne`/`Historia` browser, filters, permalink
-round-trip, current and retained historical detail, vertical before/after
-timeline, and simple/expert views. Playwright drives the real API and seeded
-SQLite history through a filtered `removed_from_source` event into its retained
-timeline.
+round-trip with validated dates and change kinds, accessible tab state, current
+and retained historical detail, conflict-only detail without an arbitrary
+current version, vertical before/after timeline, and simple/expert views. Date
+filters cover full calendar days in `Europe/Warsaw`, including DST boundaries.
+Playwright drives the real API and seeded SQLite history through a filtered
+`removed_from_source` event into its retained timeline.
 
 The prune command is dry-run by default, requires `--confirm`, deletes only
 whole closed histories older than `--before`, preserves active histories,
@@ -77,14 +84,16 @@ deduplicated snapshot.
 Commands and results:
 
 ```text
-backend: uv run --python 3.12 pytest -q       286 passed
+backend: uv run --python 3.12 pytest -q       290 passed
 backend: uv run --python 3.12 ruff check .    passed
-frontend: npm test -- --run                   95 passed
+frontend: npm test -- --run                  101 passed
 frontend: npm run lint                        passed
 frontend: npm run build                       passed
 frontend: npm run test:e2e                    6 passed
 TypeScript client: tsc --noEmit               passed
 OpenAPI client: regenerate + SHA-256 check    unchanged
+production backend image: docker build        passed
+production Compose + Prometheus config        passed
 repository: git diff --check                  passed
 ```
 

@@ -172,7 +172,9 @@ Implemented now:
   exports, retained historical detail, vertical timelines, and permalinked
   `history_id`. A fetch/parser failure or source `404` never creates a false
   removal, and the UI always shows the local completeness boundary,
-  attribution, ambiguity, and official-warning disclaimer.
+  attribution, ambiguity, and official-warning disclaimer. History date filters
+  cover complete Polish calendar days, conflict-only histories do not select an
+  arbitrary record, and manual pruning never reuses a public history permalink.
 
 - Stage 20 production operations: separate liveness/readiness health checks,
   private Prometheus metrics, request-correlated JSON logs, conservative Docker

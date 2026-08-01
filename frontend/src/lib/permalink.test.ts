@@ -77,6 +77,20 @@ describe("permalink", () => {
     });
   });
 
+  it("ignores unsupported history change kinds and malformed dates", () => {
+    expect(
+      decodePermalink("wv=h&wo=Krak%C3%B3w&wk=arbitrary&wf=not-a-date&wto=2026-02-29")
+        .warningHistoryFilters,
+    ).toEqual({
+      warningType: "",
+      office: "Kraków",
+      area: "",
+      changeKind: "",
+      from: "",
+      to: "",
+    });
+  });
+
   it("accepts legacy spatial filter aliases", () => {
     expect(decodePermalink("pr=12&co=1205&ba=B1").filters).toMatchObject({
       province: "12",

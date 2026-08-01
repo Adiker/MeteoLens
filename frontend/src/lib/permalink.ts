@@ -1,4 +1,6 @@
 import { DEFAULT_ACTIVE_LAYERS, type LayerKey } from "./layers";
+import { WARNING_CHANGE_KINDS, type WarningChangeKind } from "../api/client";
+import { isDateOnly } from "./format";
 import type {
   Filters,
   MapView,
@@ -167,13 +169,18 @@ export function decodePermalink(search: string): Partial<PermalinkState> {
     result.warningPanelView = "history";
   }
   const warningType = params.get("wt");
+  const changeKind = params.get("wk");
+  const from = params.get("wf");
+  const to = params.get("wto");
   const historyFilterValues = {
     warningType: warningType === "meteo" || warningType === "hydro" ? warningType : "",
     office: params.get("wo") ?? "",
     area: params.get("wa") ?? "",
-    changeKind: params.get("wk") ?? "",
-    from: params.get("wf") ?? "",
-    to: params.get("wto") ?? "",
+    changeKind: WARNING_CHANGE_KINDS.includes(changeKind as WarningChangeKind)
+      ? (changeKind as WarningChangeKind)
+      : "",
+    from: from && isDateOnly(from) ? from : "",
+    to: to && isDateOnly(to) ? to : "",
   } satisfies WarningHistoryFilters;
   if (Object.values(historyFilterValues).some(Boolean)) {
     result.warningHistoryFilters = historyFilterValues;

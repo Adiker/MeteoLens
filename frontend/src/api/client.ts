@@ -222,23 +222,26 @@ export interface WarningResponse {
   alerting_disclaimer: string;
 }
 
-export type WarningChangeKind =
-  | "first_observed"
-  | "created"
-  | "appeared_in_source"
-  | "updated"
-  | "extended"
-  | "escalated"
-  | "downgraded"
-  | "expired"
-  | "removed_from_source"
-  | "reappeared"
-  | "cancelled"
-  | "correction"
-  | "duplicate_conflict";
+export const WARNING_CHANGE_KINDS = [
+  "first_observed",
+  "created",
+  "appeared_in_source",
+  "updated",
+  "extended",
+  "escalated",
+  "downgraded",
+  "expired",
+  "removed_from_source",
+  "reappeared",
+  "cancelled",
+  "correction",
+  "duplicate_conflict",
+] as const;
+
+export type WarningChangeKind = (typeof WARNING_CHANGE_KINDS)[number];
 
 export interface WarningSnapshotMetadata {
-  snapshot_id: number;
+  snapshot_id: string;
   source_key?: string;
   completeness: "complete" | "partial";
   first_retrieved_at: string;
