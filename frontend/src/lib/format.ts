@@ -34,6 +34,71 @@ const PL = "pl-PL";
 // label) so viewers outside Poland see the source validity window, not a shift.
 const SOURCE_TIMEZONE = "Europe/Warsaw";
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+export function isDateOnly(value: string): boolean {
+  const match = DATE_ONLY.exec(value);
+  if (!match) {
+    return false;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  return (
+    candidate.getUTCFullYear() === year &&
+    candidate.getUTCMonth() === month - 1 &&
+    candidate.getUTCDate() === day
+  );
+}
+
+function sourceDateBoundary(value: string, dayOffset: number): number | null {
+  if (!isDateOnly(value)) {
+    return null;
+  }
+  const [year, month, day] = value.split("-").map(Number);
+  const desiredLocalAsUtc = Date.UTC(year, month - 1, day + dayOffset);
+  let instant = desiredLocalAsUtc;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SOURCE_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  for (let iteration = 0; iteration < 2; iteration += 1) {
+    const parts = Object.fromEntries(
+      formatter
+        .formatToParts(new Date(instant))
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, Number(part.value)]),
+    );
+    const representedLocalAsUtc = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    );
+    instant += desiredLocalAsUtc - representedLocalAsUtc;
+  }
+  return instant;
+}
+
+export function sourceDateStart(value: string): string | undefined {
+  const instant = sourceDateBoundary(value, 0);
+  return instant === null ? undefined : new Date(instant).toISOString();
+}
+
+export function sourceDateEnd(value: string): string | undefined {
+  const nextMidnight = sourceDateBoundary(value, 1);
+  return nextMidnight === null ? undefined : new Date(nextMidnight - 1).toISOString();
+}
+
 export function formatTimestamp(iso: string | null | undefined): string {
   if (!iso) {
     return "—";
@@ -125,6 +190,7 @@ export function warningChangeKindLabel(kind: WarningChangeKind): string {
 }
 
 export const WARNING_LEVEL_COLOR: Record<number, string> = {
+  [-1]: "#8b5cf6",
   1: "#eab308",
   2: "#f97316",
   3: "#dc2626",

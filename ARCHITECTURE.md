@@ -205,17 +205,23 @@ uses a new run and safely reprocesses completed slices.
 Stage 24 adds prospective warning history in
 `app/services/warning_history.py`. Every successful `warningsmeteo` or
 `warningshydro` refresh is persisted as one SQLite transaction after the full
-payload has been parsed. Consecutive identical source sets and warning versions
-are deduplicated. A parser warning or conflicting identity makes the snapshot
-`partial`: valid records may be retained, but absence from that snapshot cannot
-close another warning. Fetch failures and `404` responses create no snapshot
-and therefore never become inferred cancellations.
+payload has been parsed. Consecutive snapshots are deduplicated only when their
+members, parser warnings, and exact/conflicting duplicate counts are identical;
+quality metadata from distinct refresh states is never overwritten. Warning
+versions are deduplicated by normalized content. A parser warning or conflicting
+identity makes the snapshot `partial`: valid records may be retained, but absence
+from that snapshot cannot close another warning. An unchanged conflict produces
+one conflict event for its deduplicated snapshot rather than one event per poll.
+Fetch failures and `404` responses create no snapshot and therefore never become
+inferred cancellations.
 
 Warning identity is deliberately narrower than display matching.
 Meteorological warnings use the exact source ID; hydrological warnings use the
 exact source number plus exact office. Missing identity fields remain
-`ambiguous` and are never joined by phenomenon, text, name, or area. The first
-capture is `first_observed`, not an official creation. Field diffs may label
+`ambiguous` and are never joined by phenomenon, text, name, or area. Their full
+content hash is the conservative local key, so a content change starts another
+ambiguous history instead of fabricating a lifecycle update. The first capture
+is `first_observed`, not an official creation. Field diffs may label
 updates, extensions, and comparable level changes; finite `valid_to` produces
 a derived expiry. Two consecutive complete snapshots are required before
 `removed_from_source`, which remains ambiguous rather than being presented as
@@ -311,19 +317,24 @@ and preserve existing rows. Automatic age retention now targets only
 `live_refresh`; archive rows require the dry-run-first cleanup CLI and a
 verified backup before `--confirm`.
 
-Stage 24 adds normalized `warning_histories`, `warning_versions`,
+Stage 24 adds normalized `warning_histories`, `warning_identity_generations`,
+`warning_versions`,
 `warning_version_areas`, `warning_snapshots`, `warning_snapshot_members`, and
 `warning_events` tables. Versions preserve normalized and raw payloads, source
 metadata, missing fields, first/last-seen times, and a content hash. Events keep
 change categories, changed fields, detection/effective times, classification
 basis, and confidence. Feed, identity, area, and time indexes support bounded
 cursor pagination. The migration is additive and does not rewrite observation
-history.
+history. `warning_identity_generations` retains only a hashed identity and its
+highest allocated generation so pruning cannot make an old public `history_id`
+resolve to a later warning.
 
 Warning history has no scheduled retention. The dry-run-first
 `python -m app.operations.warning_history prune --before YYYY-MM-DD` command
 can transactionally remove only whole closed histories; `--confirm` is required
-and active timelines are never partially trimmed.
+and active timelines are never partially trimmed. The hashed generation counter
+is intentionally retained after pruning; it contains no warning payload and
+prevents public history permalink reuse.
 
 Stage 9 geometry design should add imported geometry metadata without mixing
 external dataset ingestion into IMGW parsers. Candidate tables include:

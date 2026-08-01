@@ -413,6 +413,35 @@ describe("DetailsPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the retained timeline inline for an active warning", async () => {
+    mockFetchByPath({
+      "/warning-histories/wh%3A1": { status: 200, body: warningHistoryResponse },
+      "/warnings/warningsmeteo%3ASk1": {
+        status: 200,
+        body: {
+          ...warningResponse,
+          warning: {
+            ...warningResponse.warning,
+            history_id: "wh:1",
+            history_available: true,
+            history_started_at: "2026-07-27T10:00:00Z",
+            history_identity_status: "exact",
+          },
+        },
+      },
+    });
+    useAppStore.setState({
+      selection: { kind: "warning", id: "warningsmeteo:Sk1" },
+      mode: "simple",
+    });
+
+    renderWithClient();
+
+    expect(await screen.findByText("Oś zmian")).toBeInTheDocument();
+    expect(screen.getByText("Zaktualizowano · Podniesiono stopień")).toBeInTheDocument();
+    expect(screen.getByText(/1 — żółty → 2 — pomarańczowy/)).toBeInTheDocument();
+  });
+
   it("shows geometry_not_found when the dataset is loaded but codes are unmatched", async () => {
     mockFetchByPath({
       "/warnings/warningshydro%3Aw1": {
@@ -536,6 +565,57 @@ describe("DetailsPanel", () => {
     expect(
       screen.getByText(/MeteoLens nie jest oficjalnym systemem ostrzegania/),
     ).toBeInTheDocument();
+  });
+
+  it("does not choose an arbitrary version for a conflicting history", async () => {
+    mockFetchByPath({
+      "/warning-histories/wh%3A1": {
+        status: 200,
+        body: {
+          ...warningHistoryResponse,
+          history: {
+            ...warningHistoryResponse.history,
+            status: "ambiguous",
+            current_version_id: null,
+          },
+        },
+      },
+    });
+    useAppStore.setState({
+      selection: { kind: "warning-history", id: "wh:1" },
+      mode: "simple",
+    });
+
+    renderWithClient();
+
+    expect(await screen.findByText("Konflikt danych źródłowych")).toBeInTheDocument();
+    expect(screen.getByText("Historia nie ma reprezentatywnej wersji")).toBeInTheDocument();
+    expect(screen.getByText(/nie wybiera arbitralnie żadnego z nich/)).toBeInTheDocument();
+    expect(screen.getByText("Oś zmian")).toBeInTheDocument();
+  });
+
+  it("surfaces a dangling current-version reference as inconsistent data", async () => {
+    mockFetchByPath({
+      "/warning-histories/wh%3A1": {
+        status: 200,
+        body: {
+          ...warningHistoryResponse,
+          history: {
+            ...warningHistoryResponse.history,
+            current_version_id: "wv:missing",
+          },
+        },
+      },
+    });
+    useAppStore.setState({
+      selection: { kind: "warning-history", id: "wh:1" },
+      mode: "simple",
+    });
+
+    renderWithClient();
+
+    expect(await screen.findByText("Historia ma niespójne dane")).toBeInTheDocument();
+    expect(screen.getByText(/bieżąca wersja nie występuje/)).toBeInTheDocument();
   });
 
   it("shows a cache-empty notice instead of masking the error as no-data", async () => {

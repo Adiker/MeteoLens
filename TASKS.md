@@ -871,6 +871,8 @@ Test tasks:
 - [x] Add API tests for warning-history filters and stable cursor pagination.
 - [x] Add frontend timeline tests.
 - [x] Add migration, backup/restore, atomic rollback, and retention tests.
+- [x] Verify prune cannot reuse public history IDs and snapshot deduplication
+  preserves parser-warning and duplicate-count changes.
 - [x] Add E2E tests for a warning-change workflow.
 
 Non-goals and blocked items:

@@ -7,7 +7,7 @@ import { ControlPanel } from "./ControlPanel";
 
 const initialState = useAppStore.getState();
 
-type JsonByPath = Record<string, unknown>;
+type JsonByPath = Record<string, unknown | ((url: string) => unknown)>;
 
 function stubFetch(byPath: JsonByPath) {
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
@@ -19,7 +19,7 @@ function stubFetch(byPath: JsonByPath) {
     return Promise.resolve({
       ok: true,
       status: 200,
-      json: () => Promise.resolve(match[1]),
+      json: () => Promise.resolve(typeof match[1] === "function" ? match[1](url) : match[1]),
     } as Response);
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -263,7 +263,7 @@ describe("ControlPanel warnings geometry states", () => {
   });
 
   it("browses prospective warning events and keeps ambiguity visible", async () => {
-    stubFetch({
+    const fetchMock = stubFetch({
       "/api/v1/map/layers": mapLayersResponse([polygonFeature], []),
       "/api/v1/warnings": { warnings: [warningRecord()], empty_state: null },
       "/api/v1/warning-events": {
@@ -303,7 +303,46 @@ describe("ControlPanel warnings geometry states", () => {
     });
 
     renderPanel();
-    fireEvent.click(screen.getByRole("button", { name: "Historia" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Historia" }));
+
+    expect(screen.getByRole("tab", { name: "Historia" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.queryByLabelText(/Województwo \(TERYT\)/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Powiat \(TERYT\)/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Zlewnia/)).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Rodzaj"), { target: { value: "hydro" } });
+    fireEvent.change(screen.getByLabelText("Zmiana"), { target: { value: "extended" } });
+    fireEvent.change(screen.getByLabelText("Biuro"), { target: { value: "BPH Kraków" } });
+    fireEvent.change(screen.getByLabelText("Kod obszaru"), {
+      target: { value: "Z_K_MA_1" },
+    });
+    fireEvent.change(screen.getByLabelText("Od"), { target: { value: "2026-07-01" } });
+    fireEvent.change(screen.getByLabelText("Do"), { target: { value: "2026-07-27" } });
+
+    await waitFor(() => {
+      const historyCalls = fetchMock.mock.calls
+        .map((call) => String(call[0]))
+        .filter((url) => url.includes("/api/v1/warning-events?"));
+      const last = historyCalls[historyCalls.length - 1] ?? "";
+      expect(last).toContain("type=hydro");
+      expect(last).toContain("change_kind=extended");
+      expect(last).toContain("office=BPH+Krak%C3%B3w");
+      expect(last).toContain("area=Z_K_MA_1");
+      expect(last).toContain("from=2026-06-30T22%3A00%3A00.000Z");
+      expect(last).toContain("to=2026-07-27T21%3A59%3A59.999Z");
+    });
+
+    expect(screen.getByRole("link", { name: "Eksport CSV" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("change_kind=extended"),
+    );
+    expect(screen.getByRole("link", { name: "Eksport JSON" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("from=2026-06-30T22%3A00%3A00.000Z"),
+    );
 
     const historyEvent = await screen.findByRole("button", {
       name: /Zniknęło ze źródła.*niepotwierdzone/,
@@ -313,5 +352,57 @@ describe("ControlPanel warnings geometry states", () => {
       kind: "warning-history",
       id: "wh:1",
     });
+  });
+
+  it("loads older warning-history pages with the opaque cursor", async () => {
+    const event = (id: string, historyId: string, eventName: string) => ({
+      event_id: id,
+      history_id: historyId,
+      source_key: "warningsmeteo",
+      source_id: eventName,
+      warning_type: "meteo",
+      detected_at: "2026-07-27T10:10:00Z",
+      effective_at: "2026-07-27T10:10:00Z",
+      change_kinds: ["updated"],
+      changed_fields: ["content"],
+      classification_basis: "field_diff",
+      confidence: "derived",
+      from_version_id: "wv:1",
+      to_version_id: "wv:2",
+      identity_status: "exact",
+      history_status: "active",
+      history_started_at: "2026-07-27T10:00:00Z",
+      warning: warningRecord({ event: eventName }),
+      source: warningRecord().source,
+      snapshot: null,
+    });
+    const fetchMock = stubFetch({
+      "/api/v1/map/layers": mapLayersResponse([polygonFeature], []),
+      "/api/v1/warnings": { warnings: [warningRecord()], empty_state: null },
+      "/api/v1/warning-events": (url: string) => ({
+        generated_at: "2026-07-27T10:10:00Z",
+        cache: [],
+        empty_state: null,
+        next_cursor: url.includes("cursor=page-2") ? null : "page-2",
+        history_started_at: "2026-07-27T10:00:00Z",
+        attribution: "Źródło danych: IMGW-PIB.",
+        processed_notice: "Dane IMGW-PIB zostały przetworzone przez MeteoLens.",
+        alerting_disclaimer: "MeteoLens nie jest oficjalnym systemem ostrzegania.",
+        events: url.includes("cursor=page-2")
+          ? [event("we:2", "wh:2", "Starsze ostrzeżenie")]
+          : [event("we:1", "wh:1", "Nowsze ostrzeżenie")],
+      }),
+      "/api/v1/sources": { sources: [] },
+    });
+
+    renderPanel();
+    fireEvent.click(screen.getByRole("tab", { name: "Historia" }));
+    expect(await screen.findByText("Nowsze ostrzeżenie")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pokaż starsze" }));
+
+    expect(await screen.findByText("Starsze ostrzeżenie")).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).includes("cursor=page-2")),
+    ).toBe(true);
   });
 });

@@ -93,7 +93,10 @@ Statuses:
 - History (Stage 24): successful refreshes are stored prospectively using the
   exact source endpoint plus `id` identity. The first local observation is a
   baseline, not proof of issue time. Two consecutive complete snapshots are
-  required before a missing warning is classified as removed.
+  required before a missing warning is classified as removed. If the source ID
+  is absent, the full normalized content hash keeps the record ambiguous; a
+  later content change starts a separate ambiguous history rather than being
+  guessed to be an update of the first.
 - Status: `implemented`.
 
 ## Current Hydrological Warnings
@@ -125,7 +128,9 @@ snapshot that may preserve valid records but cannot close absent histories.
 Download failures, parser failures, and source `404` responses do not create a
 snapshot and never mean an official empty list. Identical duplicate records
 are collapsed and counted; conflicting records under one identity are retained
-as a data-quality event and do not advance that history.
+as a data-quality event and do not advance that history. Snapshot deduplication
+includes parser warnings and duplicate counts so changes in source quality stay
+auditable even when the valid normalized members are unchanged.
 
 ## Product/File API
 

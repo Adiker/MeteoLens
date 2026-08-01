@@ -73,6 +73,9 @@ def persist_warning_snapshot(
         {
             "source_key": source_key,
             "completeness": completeness,
+            "parser_warnings": parser_warnings,
+            "exact_duplicates": exact_duplicates,
+            "conflicting_duplicates": conflicting_duplicates,
             "members": sorted(
                 (item.identity_key, item.content_hash)
                 for items in grouped.values()
@@ -139,22 +142,28 @@ def persist_warning_snapshot(
                         """,
                         (snapshot_id, history_id, version_id),
                     )
-                events_created += _insert_event(
+                if not _snapshot_has_event(
                     connection,
                     history_id=history_id,
-                    source_key=source_key,
-                    warning_type=representative.warning.warning_type,
-                    detected_at=retrieved_iso,
-                    effective_at=None,
-                    change_kinds=["duplicate_conflict"],
-                    changed_fields=[],
-                    classification_basis="source_conflict",
-                    confidence="ambiguous",
-                    from_version_id=history["current_version_id"],
-                    to_version_id=conflict_version_ids[0],
                     snapshot_id=snapshot_id,
-                    event_kind_counts=event_kind_counts,
-                )
+                    change_kinds=["duplicate_conflict"],
+                ):
+                    events_created += _insert_event(
+                        connection,
+                        history_id=history_id,
+                        source_key=source_key,
+                        warning_type=representative.warning.warning_type,
+                        detected_at=retrieved_iso,
+                        effective_at=None,
+                        change_kinds=["duplicate_conflict"],
+                        changed_fields=[],
+                        classification_basis="source_conflict",
+                        confidence="ambiguous",
+                        from_version_id=history["current_version_id"],
+                        to_version_id=conflict_version_ids[0],
+                        snapshot_id=snapshot_id,
+                        event_kind_counts=event_kind_counts,
+                    )
                 connection.execute(
                     """
                     UPDATE warning_histories
@@ -443,6 +452,7 @@ def list_warning_events(
                v.published_at, v.office, v.missing_fields, v.normalized_payload,
                v.raw_payload, v.source_metadata,
                s.completeness AS snapshot_completeness,
+               s.snapshot_hash AS snapshot_hash,
                s.first_retrieved_at AS snapshot_first_retrieved_at,
                s.last_retrieved_at AS snapshot_last_retrieved_at,
                s.seen_count AS snapshot_seen_count,
@@ -503,6 +513,7 @@ def get_warning_history(history_id: str) -> dict[str, Any] | None:
                v.published_at, v.office, v.missing_fields, v.normalized_payload,
                v.raw_payload, v.source_metadata,
                s.completeness AS snapshot_completeness,
+               s.snapshot_hash AS snapshot_hash,
                s.first_retrieved_at AS snapshot_first_retrieved_at,
                s.last_retrieved_at AS snapshot_last_retrieved_at,
                s.seen_count AS snapshot_seen_count,
@@ -700,11 +711,36 @@ def _resolve_history(
     if latest is not None:
         return latest, False, False
 
+    identity_hash = _hash_text(item.identity_key)
     generation_row = connection.execute(
-        "SELECT MAX(generation) AS generation FROM warning_histories WHERE identity_key = ?",
+        """
+        SELECT MAX(generation) AS generation
+        FROM warning_histories
+        WHERE identity_key = ?
+        """,
         (item.identity_key,),
     ).fetchone()
-    generation = int(generation_row["generation"] or 0) + 1
+    ledger_row = connection.execute(
+        """
+        SELECT last_generation
+        FROM warning_identity_generations
+        WHERE identity_hash = ?
+        """,
+        (identity_hash,),
+    ).fetchone()
+    generation = max(
+        int(generation_row["generation"] or 0),
+        int(ledger_row["last_generation"] if ledger_row is not None else 0),
+    ) + 1
+    connection.execute(
+        """
+        INSERT INTO warning_identity_generations (identity_hash, last_generation)
+        VALUES (?, ?)
+        ON CONFLICT(identity_hash) DO UPDATE SET
+            last_generation = MAX(last_generation, excluded.last_generation)
+        """,
+        (identity_hash, generation),
+    )
     history_id = f"wh:{_hash_text(f'{item.identity_key}:{generation}')[:24]}"
     connection.execute(
         """
@@ -1048,9 +1084,9 @@ def _insert_event(
         'from': from_version_id,
         'to': to_version_id,
     })[:24]}"
-    cursor = connection.execute(
+    connection.execute(
         """
-        INSERT OR IGNORE INTO warning_events (
+        INSERT INTO warning_events (
             event_id, history_id, source_key, warning_type, detected_at,
             effective_at, change_kinds, changed_fields, classification_basis,
             confidence, from_version_id, to_version_id, snapshot_id
@@ -1072,11 +1108,29 @@ def _insert_event(
             snapshot_id,
         ),
     )
-    created = int(cursor.rowcount > 0)
-    if created:
-        for change_kind in change_kinds:
-            event_kind_counts[change_kind] = event_kind_counts.get(change_kind, 0) + 1
-    return created
+    for change_kind in change_kinds:
+        event_kind_counts[change_kind] = event_kind_counts.get(change_kind, 0) + 1
+    return 1
+
+
+def _snapshot_has_event(
+    connection: sqlite3.Connection,
+    *,
+    history_id: str,
+    snapshot_id: int,
+    change_kinds: list[str],
+) -> bool:
+    return (
+        connection.execute(
+            """
+            SELECT 1
+            FROM warning_events
+            WHERE history_id = ? AND snapshot_id = ? AND change_kinds = ?
+            """,
+            (history_id, snapshot_id, _json(change_kinds)),
+        ).fetchone()
+        is not None
+    )
 
 
 def _version_payload(connection: sqlite3.Connection, version_id: str) -> dict[str, Any]:
@@ -1200,7 +1254,11 @@ def _event_payload(row: sqlite3.Row) -> dict[str, Any]:
         "source": source,
         "snapshot": (
             {
-                "snapshot_id": row["snapshot_id"],
+                "snapshot_id": _public_snapshot_id(
+                    row["source_key"],
+                    row["snapshot_first_retrieved_at"],
+                    row["snapshot_hash"],
+                ),
                 "completeness": row["snapshot_completeness"],
                 "first_retrieved_at": row["snapshot_first_retrieved_at"],
                 "last_retrieved_at": row["snapshot_last_retrieved_at"],
@@ -1245,7 +1303,9 @@ def _public_warning_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _snapshot_payload(row: sqlite3.Row) -> dict[str, Any]:
     return {
-        "snapshot_id": row["id"],
+        "snapshot_id": _public_snapshot_id(
+            row["source_key"], row["first_retrieved_at"], row["snapshot_hash"]
+        ),
         "source_key": row["source_key"],
         "completeness": row["completeness"],
         "first_retrieved_at": row["first_retrieved_at"],
@@ -1255,6 +1315,14 @@ def _snapshot_payload(row: sqlite3.Row) -> dict[str, Any]:
         "exact_duplicate_count": row["exact_duplicate_count"],
         "conflicting_duplicate_count": row["conflicting_duplicate_count"],
     }
+
+
+def _public_snapshot_id(
+    source_key: str,
+    first_retrieved_at: str,
+    snapshot_hash: str,
+) -> str:
+    return f"ws:{_hash_json([source_key, first_retrieved_at, snapshot_hash])[:24]}"
 
 
 def _prune_counts(
