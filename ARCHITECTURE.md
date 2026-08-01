@@ -320,7 +320,9 @@ verified backup before `--confirm`.
 Synchronous FastAPI endpoints use one SQLite connection per worker thread.
 Connections share the configured database file but never their mutable SQLite
 connection state, preventing overlapping requests from concurrently operating
-on one connection object.
+on one connection object. The supported `sqlite:///:memory:` mode uses a named
+shared-cache URI so its schema and committed data remain visible to every
+thread-affine connection.
 
 Stage 24 adds normalized `warning_histories`, `warning_identity_generations`,
 `warning_versions`,

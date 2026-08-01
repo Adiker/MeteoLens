@@ -62,7 +62,8 @@ warning-history row in the restored SQLite database.
 Concurrent synchronous API requests use separate thread-affine connections to
 the same SQLite file. A regression test proves two worker threads receive
 distinct connection objects and observe the same committed warning-history
-state.
+state. A second regression test covers the supported shared in-memory database
+configuration.
 
 ## Real-Source Smoke
 
@@ -89,7 +90,7 @@ deduplicated snapshot.
 Commands and results:
 
 ```text
-backend: uv run --python 3.12 pytest -q       291 passed
+backend: uv run --python 3.12 pytest -q       292 passed
 backend: uv run --python 3.12 ruff check .    passed
 frontend: npm test -- --run                  101 passed
 frontend: npm run lint                        passed

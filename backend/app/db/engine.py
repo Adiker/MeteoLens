@@ -369,7 +369,16 @@ def get_engine() -> sqlite3.Connection:
         path = database_path_from_url(settings.database_url)
         if path != Path(":memory:"):
             path.parent.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(str(path), check_same_thread=False)
+        connect_target = (
+            "file:meteolens?mode=memory&cache=shared"
+            if path == Path(":memory:")
+            else str(path)
+        )
+        connection = sqlite3.connect(
+            connect_target,
+            check_same_thread=False,
+            uri=path == Path(":memory:"),
+        )
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         _ENGINE_CONNECTIONS[thread_id] = connection
