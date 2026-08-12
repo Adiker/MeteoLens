@@ -1,0 +1,6 @@
+paths:
+  .github/workflows/claude-code-review.yml:
+    ignore:
+      # This paid automatic-review workflow is deliberately fail-closed until
+      # its OAuth and cost behavior are revalidated; see SECURITY.md.
+      - 'constant expression "false" in condition'

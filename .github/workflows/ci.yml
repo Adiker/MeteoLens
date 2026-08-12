@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions: {}
 
@@ -41,10 +42,36 @@ jobs:
               - "frontend/**"
               - "docker-compose*.yml"
               - ".github/workflows/ci.yml"
+  workflow-lint:
+    name: workflow-lint
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run actionlint
+        shell: bash
+        env:
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+        run: |
+          set -euo pipefail
+
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          curl --fail --location --proto '=https' --tlsv1.2 --retry 3 \
+            --output "${RUNNER_TEMP}/${archive}" "${url}"
+          printf '%s  %s\n' "${ACTIONLINT_SHA256}" "${RUNNER_TEMP}/${archive}" \
+            | sha256sum --check --strict
+          tar --extract --gzip --file "${RUNNER_TEMP}/${archive}" \
+            --directory "${RUNNER_TEMP}" actionlint
+          "${RUNNER_TEMP}/actionlint" -color
 
   backend:
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -72,7 +99,7 @@ jobs:
 
   frontend:
     needs: changes
-    if: needs.changes.outputs.frontend == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -95,7 +122,7 @@ jobs:
 
   e2e:
     needs: changes
-    if: needs.changes.outputs.e2e == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
