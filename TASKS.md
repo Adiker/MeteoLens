@@ -5,6 +5,10 @@
 - [x] Document the ongoing contribution policy for allowed branch prefixes,
   Conventional Commit-style subjects, topic-branch cleanup, pull requests, and
   squash/rebase/merge guidance.
+- [x] Add a Dependabot-only exact-head squash auto-merge workflow with current
+  base-SHA, CI/security, clean-mergeability, and one-merge-per-run guards.
+- [x] Validate GitHub Actions workflow changes with pinned, checksum-verified
+  `actionlint` in CI.
 
 Acceptance criteria:
 

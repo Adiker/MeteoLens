@@ -613,6 +613,44 @@ continues to use `npm ci` for frontend and Playwright E2E jobs. Path filtering
 keeps the MeteoLens backend/frontend split, and security CI adds dependency,
 secret, and production-backend-image scans. Dependabot checks action pins daily.
 
+### Dependabot auto-merge contract
+
+`.github/workflows/dependabot-auto-merge.yml` is a privileged metadata-only
+maintainer workflow. It runs after completed `CI` or `Security checks` runs,
+through a daily recovery sweep, and on manual dispatch (dry-run by default). It
+never checks out or executes pull-request code. Its job-scoped token can only
+read Actions, checks, pull requests, and statuses and write repository contents
+for the final merge.
+
+An update is eligible only when every condition below holds:
+
+- the open, non-draft PR is authored by `dependabot[bot]`, originates in this
+  repository, and targets the repository's current default branch;
+- successful pull-request runs of both `CI` and `Security checks` refer to the
+  exact PR head and record the same base SHA as a direct read of the default
+  branch Git ref;
+- every current check run and commit status is complete and non-failing, with
+  explicit successful `changes`, `workflow-lint`, `dependency-review`,
+  `secret-scan`, and `container-scan` jobs;
+- a fresh PR read still reports the same head SHA, `mergeable == true`, and
+  `mergeable_state == clean`;
+- a second direct default-branch Git-ref read immediately before the merge still
+  matches the base SHA used by the successful validation runs.
+
+The workflow uses the merge API with `merge_method=squash` and the exact head
+SHA. GitHub atomically rejects a changed head, but its merge API has no matching
+base-SHA precondition; the two direct Git-ref reads narrow that unavoidable
+TOCTOU window. After one successful merge the run exits so later Dependabot PRs
+must be validated again against the newly changed base. The regular CI
+`workflow-lint` job runs pinned, checksum-verified `actionlint` on every CI run,
+including GitHub Actions dependency updates.
+
+GitHub suppresses most follow-up workflow events caused by `GITHUB_TOKEN`.
+Therefore a separate post-merge job, scoped only to `actions: write`, dispatches
+full `CI` and `Security checks` runs on the updated default branch. Manual CI
+dispatch deliberately runs backend, frontend, E2E, and workflow lint regardless
+of path classification. The merge job itself has no Actions write permission.
+
 ## Observability
 
 MVP should log:
