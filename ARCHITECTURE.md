@@ -643,7 +643,9 @@ base-SHA precondition; the two direct Git-ref reads narrow that unavoidable
 TOCTOU window. After one successful merge the run exits so later Dependabot PRs
 must be validated again against the newly changed base. The regular CI
 `workflow-lint` job runs pinned, checksum-verified `actionlint` on every CI run,
-including GitHub Actions dependency updates.
+including GitHub Actions dependency updates. Its only configured suppression is
+scoped to the documented, deliberate `if: false` guard in the disabled paid
+Claude auto-review workflow; all other files and diagnostics remain enforced.
 
 GitHub suppresses most follow-up workflow events caused by `GITHUB_TOKEN`.
 Therefore a separate post-merge job, scoped only to `actions: write`, dispatches
