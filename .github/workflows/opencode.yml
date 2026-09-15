@@ -29,7 +29,7 @@ jobs:
           persist-credentials: false
 
       - name: Run opencode
-        uses: anomalyco/opencode/github@16747470f976aca3d362ad730bcd3fe82ecc2c9a # v1.18.29
+        uses: anomalyco/opencode/github@d44b52ca66b6bf69626c0384626d1a9cd9555977 # v2.0.3
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
         with:
