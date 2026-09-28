@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,7 +74,13 @@ def test_ai_workflows_require_trusted_comment_authors_and_pin_actions() -> None:
     assert "author_association" in opencode
     assert "@latest" not in opencode
     assert "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" in ci
-    assert "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d" in ci
+    setup_uv_pins = re.findall(
+        r"^\s+- uses: astral-sh/setup-uv@([0-9a-f]+)(?:\s+# v[^\n]+)?$",
+        ci,
+        flags=re.MULTILINE,
+    )
+    assert len(setup_uv_pins) == 2
+    assert all(len(sha) == 40 for sha in setup_uv_pins)
     assert "uv sync --frozen --extra dev" in ci
     assert "runs-on: ubuntu-24.04" in ci
     assert "if: false" in automatic_review
